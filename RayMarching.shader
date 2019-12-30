@@ -8,14 +8,14 @@
 		SubShader{
 
 			Tags{
-				"Queue" = "Transparent"
+				"Queue" = "Geometry"
 				"IgnoreProjector" = "True"
-				"RenderType" = "Transparent"
+				"RenderType" = "Opaque"
 			}
 
 			ColorMask RGB
 			Cull Back
-			ZWrite On
+			ZWrite Off
 			ZTest On
 			Blend SrcAlpha OneMinusSrcAlpha
 
@@ -26,6 +26,7 @@
 				#include "UnityCG.cginc"
 				#include "Lighting.cginc"
 				#include "RayMarch.cginc"
+				#include "Assets/Tools/Playtime Painter/Shaders/quizcanners_cg.cginc"
 
 				#pragma vertex vert
 				#pragma fragment frag
@@ -44,8 +45,11 @@
 					float4 color: 		COLOR;
 				};
 
-				sampler2D _Global_Noise_Lookup;
+				 sampler2D _RayMarchingVolume;
+				 float4 _RayMarchingVolumeVOLUME_POSITION_N_SIZE;
+				 float4 _RayMarchingVolumeVOLUME_H_SLICES;
 
+	
 				sampler2D _MainTex;
 				float _RayMarchSmoothness;
 				float _RayMarchShadowSoftness;
@@ -131,23 +135,26 @@
 					float closest = mint;
 					totalDist = mint;
 					pos = start;
+					float h = 999;
 
-					for ( int i=0; i< 35; i++)
+					int steps = _maxRayMarchSteps + 1;
+
+					for ( int i=0; i< steps; i+=1)
 					{
 						pos = start + direction * totalDist;
 
-						float h = SceneSdf(pos);
+						h = SceneSdf(pos);
 						
 						closest = min(h/ totalDist, closest);
 
-						//if (h < 0.01)
-						//	return 0.0;
+						if (h < 0.01)
+							return 0.0;
 
 						totalDist += h;
 					}
 
 
-					return  closest/ mint;
+					return  closest / mint;
 				}
 
 	
@@ -167,9 +174,7 @@
 
 					float4 tex = tex2D(_MainTex, (o.screenPos.xy)*0.5);
 
-//					return tex;
-
-					o.viewDir.xyz = normalize(o.viewDir.xyz + o.normal.xyz);
+					o.viewDir.xyz = normalize(o.viewDir.xyz);
 
 					float3 position = o.worldPos.xyz;
 					float3 direction = -o.viewDir.xyz;
@@ -181,13 +186,7 @@
 					float dist;
 					float dott = 1;
 
-					//const float maxSteps = 40;
 					_MaxRayMarchDistance += 1;
-
-
-					bool gotSky = false;
-
-
 
 					for (int i = 0; i < _maxRayMarchSteps; i++) {
 
@@ -203,14 +202,16 @@
 						
 					}
 
-				
-
 					float3 normal = EstimateNormal(position);
+
+					float4 bake = SampleVolume(_RayMarchingVolume, position, 
+						_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
+						_RayMarchingVolumeVOLUME_H_SLICES);
 
 					dott = 1 - max(0, dot(-direction, normal));
 			
 
-					float3 lightSource = RayMarchLight_0.xyz; //_WorldSpaceLightPos0
+					float3 lightSource = RayMarchLight_0.xyz; 
 
 					float3 toCenterVec = lightSource - position;
 
@@ -240,6 +241,10 @@
 
 					float reflectedSky = Reflection(position, -reflected, 0.1, 1, reflectedDistance, reflectionPos, _maxRayMarchSteps);
 
+					float4 bakeReflected = SampleVolume(_RayMarchingVolume, reflectionPos,
+						_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
+						_RayMarchingVolumeVOLUME_H_SLICES);
+
 					float3 toCenterVecRefl = lightSource - reflectionPos;
 
 					float toCenterRefl = length(toCenterVecRefl);
@@ -255,13 +260,9 @@
 
 					float4 col = 1;
 
-				
-
 					float lightBrightnessReflected = max(0, lightRange - toCenterRefl) *deLightRange;
 
-					//return lightBrightnessReflected;
-
-					col.rgb = (_RayMarchLightColor.rgb * light * shadow * lightBrightness + unity_AmbientEquator.rgb);
+					col.rgb = bake.rgb* (_RayMarchLightColor.rgb * light * shadow * lightBrightness);
 
 					float deFog = saturate(1 - totalDistance / _MaxRayMarchDistance);
 					deFog *= deFog;
@@ -274,7 +275,7 @@
 
 					dott *= reflAmount;
 						
-					reflectedSky = reflectedSky * (reflAmount) +(1 - reflAmount);
+					reflectedSky = reflectedSky * (reflAmount) + (1 - reflAmount);
 
 					lightBrightnessReflected *= reflAmount;
 
@@ -282,7 +283,7 @@
 
 					float edge = pow(dott , 4) * reflAmount * reflAmount;
 
-					reflCol = reflCol * _RayMarchReflectionColor.rgb * (1 - edge);
+					reflCol = reflCol * _RayMarchReflectionColor.rgb * bakeReflected.rgb * (1 - edge);
 
 					col.rgb += dott * reflCol;
 

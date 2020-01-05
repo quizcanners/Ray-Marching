@@ -4,6 +4,26 @@ inline float SphereDistance(float3 position, float4 posNsize, float4 reps) {
 	return length(frac((position - posNsize.xyz + reps.y)* reps.z) * reps.x - reps.y) - posNsize.w;
 }
 
+inline float SphereDistance(float3 position, float4 posNsize) {
+	return length(position - posNsize.xyz) - posNsize.w;
+}
+
+inline float GridDistance(float3 p, float size, float thickness) {
+
+	float halfSize = size * 0.5;
+
+	float3 rem =  halfSize - abs(p % size);
+
+	return min(
+		min(
+			length(rem.xy),
+			length(rem.yz)
+		)
+		,length(rem.xz)
+	) 
+		- thickness;
+}
+
 inline float CubeDistance(float3 p, float4 posNsize, float3 size, float softness) {
 
 	p -= posNsize.xyz;

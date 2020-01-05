@@ -46,6 +46,7 @@
 				};
 
 				 sampler2D _RayMarchingVolume;
+				 sampler2D _qcPp_DestBuffer;
 				 float4 _RayMarchingVolumeVOLUME_POSITION_N_SIZE;
 				 float4 _RayMarchingVolumeVOLUME_H_SLICES;
 
@@ -88,18 +89,25 @@
 				inline float SceneSdf(float3 position) {
 
 				
+					//RayMarchSphere_0.w = RayMarchSphere_0.w * 1.0001; // 0.3 * 3; //)* 0.3;
+
 					float s0 = SphereDistance(position, RayMarchSphere_0, RayMarchSphere_0_Reps);
-					float s1 = SphereDistance(position, RayMarchSphere_1, RayMarchSphere_1_Reps);
+					float s1 = SphereDistance(position, RayMarchSphere_1); //, RayMarchSphere_1_Reps);
 
 					float c0 = CubeDistance(position, RayMarchCube_0, RayMarchCube_0_Size.xyz, _RayMarchSmoothness);
 					float c1 =	CubeDistance(position, RayMarchCube_1, RayMarchCube_1_Size.xyz, _RayMarchSmoothness);
 
-					float dist = CubicSmin(s0, s1 , _RayMarchSmoothness);
-					
+					float grid = GridDistance(position, 3000 + 2500 * _SinTime.z, 50);
 
-					dist = OpSmoothSubtraction(dist, c1, _RayMarchSmoothness);
+
+					float dist = CubicSmin(s0, c1, _RayMarchSmoothness);
+					
+					dist = CubicSmin(dist, grid, _RayMarchSmoothness);
 
 					dist = CubicSmin(dist, c0, _RayMarchSmoothness * 2);
+
+					dist = OpSmoothSubtraction(dist, s1, _RayMarchSmoothness);
+
 
 					return dist;
 				}
@@ -202,9 +210,14 @@
 						
 					}
 
+					float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.screenPos.xy * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0));
+
+					noise.rgb -= 0.5;
+
 					float3 normal = EstimateNormal(position);
 
-					float4 bake = SampleVolume(_RayMarchingVolume, position, 
+					float4 bake = SampleVolume(_qcPp_DestBuffer//_RayMarchingVolume
+						, position,
 						_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
 						_RayMarchingVolumeVOLUME_H_SLICES);
 
@@ -224,8 +237,7 @@
 
 					float lightBrightness = max(0, lightRange - toCenter) * deLightRange;
 
-					float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.screenPos.xy * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0));
-
+				
 					float shadow = 0;
 					
 					if (lightRange> toCenter)
@@ -241,7 +253,8 @@
 
 					float reflectedSky = Reflection(position, -reflected, 0.1, 1, reflectedDistance, reflectionPos, _maxRayMarchSteps);
 
-					float4 bakeReflected = SampleVolume(_RayMarchingVolume, reflectionPos,
+					float4 bakeReflected = SampleVolume(_qcPp_DestBuffer//_RayMarchingVolume
+						, reflectionPos,
 						_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
 						_RayMarchingVolumeVOLUME_H_SLICES);
 
@@ -273,23 +286,23 @@
 
 					reflectedFog *= reflAmount;
 
-					dott *= reflAmount;
+					//dott *= reflAmount;
 						
 					reflectedSky = reflectedSky * (reflAmount) + (1 - reflAmount);
 
 					lightBrightnessReflected *= reflAmount;
 
-					float3 reflCol = (_RayMarchLightColor.rgb * reflectedShadow * lightBrightnessReflected *(1 - reflectedSky));
+	
+					float3 reflCol = (_RayMarchLightColor.rgb * reflectedShadow * lightBrightnessReflected *
+						bakeReflected.rgb );
 
-					float edge = pow(dott , 4) * reflAmount * reflAmount;
 
-					reflCol = reflCol * _RayMarchReflectionColor.rgb * bakeReflected.rgb * (1 - edge);
-
-					col.rgb += dott * reflCol;
-
-					col.rgb +=  (noise.rgb - 0.5)*col.rgb*0.2;
+					col.rgb += dott *  ( reflCol * (1 - reflectedSky) + _RayMarchFogColor.rgb * reflectedSky) * _RayMarchReflectionColor.rgb * bake.a;
+					
 
 					col.rgb = col.rgb * deFog + _RayMarchFogColor.rgb *(1-deFog);
+
+					col.rgb += noise.rgb*col.rgb*0.2;
 
 					return 	col;
 

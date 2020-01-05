@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp:RayMarching:RayMarchingManager/RayMarchingConfigs
   configurations:
   - name: One
-    data: sm|26|m|4|0.01|v|4|2.46|x|3|100||col|24|r|1|1|g|1|1|b|1|1|a|1|1||shSo|25|m|4|0.01|v|4|16.8|x|2|60||fog|35|r|5|0.125|g|4|0.16|b|5|0.143|a|1|1||refl|36|r|5|0.151|g|5|0.151|b|5|0.151|a|1|1||
+    data: sm|25|m|4|0.01|v|3|1.8|x|3|100||col|24|r|1|1|g|1|1|b|1|1|a|1|1||shSo|24|m|4|0.01|v|3|2.5|x|2|60||fog|36|r|5|0.462|g|5|0.462|b|5|0.462|a|1|1||refl|36|r|5|0.264|g|5|0.264|b|5|0.264|a|1|1||
   - name: Two
     data: sm|26|m|4|0.01|v|4|16.4|x|3|100||col|22|g|5|0.385|b|1|1|a|1|1||shSo|23|m|4|0.01|v|2|50|x|2|50||fog|22|r|1|1|g|5|0.022|a|1|1||refl|24|r|1|1|g|1|1|b|1|1|a|1|1||
   - name: Three
-    data: sm|22|m|4|0.01|v|1|1|x|2|10||col|26|r|5|0.783|g|5|0.033|a|1|1||shSo|23|m|4|0.01|v|2|90|x|2|90||fog|22|g|5|0.395|b|1|1|a|1|1||refl|24|r|1|1|g|1|1|b|1|1|a|1|1||
+    data: sm|22|m|4|0.01|v|1|1|x|2|10||col|24|r|1|1|g|1|1|b|1|1|a|1|1||shSo|23|m|4|0.01|v|2|90|x|2|90||fog|22|g|5|0.395|b|1|1|a|1|1||refl|24|r|1|1|g|1|1|b|1|1|a|1|1||

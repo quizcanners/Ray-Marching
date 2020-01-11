@@ -99,45 +99,41 @@
 
 				float totalDistance = length(_WorldSpaceCameraPos - position);
 
-			/*	float s0;
-				float s1;
-				float dist;
-				float dott = 1;
+				
 
-				_MaxRayMarchDistance += 1;
+				float dist;
+
+				float3 fromCameraRayPosition = _WorldSpaceCameraPos;
+
+				float totalFromCameraDist = 0;
 
 				for (int i = 0; i < _maxRayMarchSteps; i++) {
 
-					dist = SceneSdf(position);
+					dist = SceneSdf(fromCameraRayPosition);
 
-					position += dist * direction;
+					totalFromCameraDist += dist;
 
-					totalDistance += dist;
+					fromCameraRayPosition += dist * direction;
+
+					if (totalFromCameraDist >= totalDistance) {
+						break;
+					}
 
 					if (dist < 0.01) {
-						i = 999;
+						clip(-1);
 					}
-				}*/
+				}
 
 				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.screenPos.xy * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0));
 
 				noise.rgb -= 0.5;
 
-
-
-				float3 normal = o.normal.xyz;// EstimateNormal(position);
+				float3 normal = o.normal.xyz;
 
 				applyTangent(normal, tnormal, o.wTangent);
 
-
 				float4 bake = tex;
 					
-
-					/*SampleVolume(_qcPp_DestBuffer//_RayMarchingVolume
-					, position,
-					_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
-					_RayMarchingVolumeVOLUME_H_SLICES);*/
-
 				float deDott = max(0, dot(-direction, normal));
 
 				float dott = 1 - deDott;
@@ -161,7 +157,6 @@
 
 				float precision = 1 + deFog * deFog * _maxRayMarchSteps;
 
-
 				float shadow = 0;
 
 				if (lightRange > toCenter)
@@ -175,9 +170,6 @@
 
 				float3 reflectionPos;
 
-				// Reflection
-
-
 				float reflectedSky = Reflection(position, -reflected, 0.1, 1,
 					reflectedDistance, reflectionPos, precision);
 
@@ -187,63 +179,53 @@
 
 				float reflectedDott = max(0, dot(reflected, reflectedNormal));
 
-				//	return reflectedDott;
+				float4 bakeReflected = SampleVolume(_RayMarchingVolume
+					, reflectionPos,
+					_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
+					_RayMarchingVolumeVOLUME_H_SLICES);
 
-					float4 bakeReflected = SampleVolume(_qcPp_DestBuffer//_RayMarchingVolume
-						, reflectionPos,
-						_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
-						_RayMarchingVolumeVOLUME_H_SLICES);
+				float3 toCenterVecRefl = lightSource - reflectionPos;
 
-					float3 toCenterVecRefl = lightSource - reflectionPos;
+				float toCenterRefl = length(toCenterVecRefl);
 
-					float toCenterRefl = length(toCenterVecRefl);
+				float3 lightDirRef = normalize(toCenterVecRefl);
 
-					float3 lightDirRef = normalize(toCenterVecRefl);
+				float lightAttenRef = max(0, dot(lightDirRef, reflectedNormal));
 
-					float lightAttenRef = max(0, dot(lightDirRef, reflectedNormal));
+				float reflectedShadow = 0;
 
-					//return lightAttenRef;
+				precision = 1 + precision * max(0, 1 - reflectedDistance / _MaxRayMarchDistance) * 0.5f * gloss * gloss;
 
-					float reflectedShadow = 0;
+				if (lightRange > toCenterRefl)
+					reflectedShadow = Softshadow(reflectionPos, lightDirRef, 2,
+						toCenterRefl, _RayMarchShadowSoftness, precision);
 
-					precision = 1 + precision * max(0, 1 - reflectedDistance / _MaxRayMarchDistance) * 0.5f * gloss * gloss;
+				float lightAtten = max(0, dot(lightDir, normal));
 
-					//return precision / _maxRayMarchSteps;
+				float4 col = 1;
 
-					//return precision/ _maxRayMarchSteps;
+				shadow *= lightAtten;
 
-					if (lightRange > toCenterRefl)
-						reflectedShadow = Softshadow(reflectionPos, lightDirRef, 2,
-							toCenterRefl, _RayMarchShadowSoftness, precision);
+				float lightBrightnessReflected = max(0, lightRange - toCenterRefl) *deLightRange;
 
-					float lightAtten = max(0, dot(lightDir, normal));
+				col.rgb = (bake.rgb * (_RayMarchLightColor.rgb * 2 * shadow * lightBrightness
+					//+ _RayMarchFogColor.rgb
+					));
 
-					float4 col = 1;
+				float reflectedFog = max(0, 1 - reflectedDistance / _MaxRayMarchDistance);
 
-					shadow *= lightAtten;
+				float reflAmount = pow(deFog * reflectedFog, 1);
 
-					float lightBrightnessReflected = max(0, lightRange - toCenterRefl) *deLightRange;
+				reflectedFog *= reflAmount;
 
-					col.rgb = (bake.rgb * (_RayMarchLightColor.rgb * 2 * shadow * lightBrightness
-						//+ _RayMarchFogColor.rgb
-						));
+				reflectedSky = reflectedSky * (reflAmount)+(1 - reflAmount);
 
+				lightBrightnessReflected *= reflAmount;
 
+				float3 reflCol = (_RayMarchLightColor.rgb * reflectedShadow * lightAttenRef * lightBrightnessReflected *
+					bakeReflected.rgb);
 
-					float reflectedFog = max(0, 1 - reflectedDistance / _MaxRayMarchDistance);
-
-					float reflAmount = pow(deFog * reflectedFog, 1);
-
-					reflectedFog *= reflAmount;
-
-					reflectedSky = reflectedSky * (reflAmount)+(1 - reflAmount);
-
-					lightBrightnessReflected *= reflAmount;
-
-					float3 reflCol = (_RayMarchLightColor.rgb * reflectedShadow * lightAttenRef * lightBrightnessReflected *
-						bakeReflected.rgb);
-
-					float lightRelected = pow(max(0, dot(-reflected, lightDir)), 1 + gloss * 512);
+				float lightRelected = pow(max(0, dot(-reflected, lightDir)), 1 + gloss * 512);
 
 
 					col.rgb += (1+dott)*0.5 * 
@@ -264,11 +246,9 @@
 					return 	col;
 
 
-				}
-				ENDCG
 			}
+			ENDCG
 		}
-			Fallback "Legacy Shaders/Transparent/VertexLit"
-
-						//CustomEditor "CircleDrawerGUI
+	}
+		Fallback "Legacy Shaders/Transparent/VertexLit"
 }

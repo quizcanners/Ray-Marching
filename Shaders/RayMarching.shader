@@ -111,7 +111,7 @@
 
 					float3 normal = EstimateNormal(position);
 
-					float4 bake = SampleVolume(_qcPp_DestBuffer//_RayMarchingVolume
+					float4 bake = SampleVolume(_RayMarchingVolume
 						, position,
 						_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
 						_RayMarchingVolumeVOLUME_H_SLICES);

@@ -22,11 +22,16 @@ inline float SceneSdf(float3 position) {
 
 	//RayMarchSphere_0.w = RayMarchSphere_0.w * 1.0001; // 0.3 * 3; //)* 0.3;
 
+	//float3 bp = 2 * normalize(float3(1,1,1))
+
+
 	float s0 = SphereDistance(position, RayMarchSphere_0, RayMarchSphere_0_Reps);
 	float s1 = SphereDistance(position, RayMarchSphere_1); //, RayMarchSphere_1_Reps);
 
 	float c0 = CubeDistance(position, RayMarchCube_0, RayMarchCube_0_Size.xyz, _RayMarchSmoothness);
 	float c1 = CubeDistance(position, RayMarchCube_1, RayMarchCube_1_Size.xyz, _RayMarchSmoothness);
+
+	c0 = abs(c0) - 1;
 
 	float grid = GridDistance(position, 200 + 50 * _SinTime.z, 5);
 
@@ -64,9 +69,8 @@ inline float Softshadow(float3 start, float3 direction, float mint, float maxt, 
 
 		maxSteps--;
 
-		if (dist*maxSteps < 0.0001)
-			return 0.0;
-
+		if (dist*maxSteps < 0.001)
+			return 0;
 
 	}
 	return res;

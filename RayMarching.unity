@@ -261,6 +261,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -355,7 +356,7 @@ MonoBehaviour:
   savedMeshData: n|4|Cube|vrt|2058|e|263|u0|12|x|1|1|y|1|1||u1|26|x|8|0.996658|y|8|0.652836||u0|6|x|1|1||u1|26|x|8|0.004056|y|8|0.652836||u0|6|y|1|1||u1|26|x|8|0.995944|y|8|0.309727||uvs|70|e|12|i|1|0|bw|0|||e|20|i|1|1|uvi|1|1|bw|0|||e|20|i|1|2|uvi|1|2|bw|0||||pos|35|x|9|-0.631639|y|3|0.5|z|8|0.508184|||e|248|u0|6|x|1|1||u1|26|x|8|0.996658|y|8|0.347164||u0|12|x|1|1|y|1|1||u1|26|x|8|0.652836|y|8|0.309727||u0|0||u1|26|x|8|0.690273|y|8|0.309727||uvs|70|e|12|i|1|3|bw|0|||e|20|i|1|4|uvi|1|1|bw|0|||e|20|i|1|5|uvi|1|2|bw|0||||pos|26|x|4|-0.5|y|4|-0.5|z|3|0.5|||e|261|u0|12|x|1|1|y|1|1||u1|26|x|8|0.004056|y|8|0.347164||u0|6|x|1|1||u1|26|x|8|0.652836|y|8|0.347164||u0|12|x|1|1|y|1|1||u1|26|x|8|0.995944|y|8|0.004056||uvs|70|e|12|i|1|6|bw|0|||e|20|i|1|7|uvi|1|1|bw|0|||e|20|i|1|8|uvi|1|2|bw|0||||pos|26|x|4|-0.5|y|3|0.5|z|4|-0.5|||e|248|u0|6|y|1|1||u1|26|x|8|0.690986|y|8|0.652836||u0|0||u1|26|x|8|0.309727|y|8|0.652836||u0|12|x|1|1|y|1|1||u1|26|x|8|0.004056|y|8|0.309727||uvs|72|e|12|i|1|9|bw|0|||e|21|i|2|10|uvi|1|1|bw|0|||e|21|i|2|11|uvi|1|2|bw|0||||pos|24|x|3|0.5|y|3|0.5|z|3|0.5|||e|258|u0|12|x|1|1|y|1|1||u1|26|x|8|0.652836|y|8|0.652836||u0|6|x|1|1||u1|26|x|8|0.652836|y|8|0.004056||u0|6|x|1|1||u1|26|x|8|0.690273|y|8|0.004056||uvs|73|e|13|i|2|12|bw|0|||e|21|i|2|13|uvi|1|1|bw|0|||e|21|i|2|14|uvi|1|2|bw|0||||pos|27|x|4|-0.5|y|4|-0.5|z|4|-0.5|||e|243|u0|0||u1|26|x|8|0.690986|y|8|0.347164||u0|6|y|1|1||u1|26|x|8|0.347164|y|8|0.309727||u0|6|x|1|1||u1|26|x|8|0.309727|y|8|0.309727||uvs|73|e|13|i|2|15|bw|0|||e|21|i|2|16|uvi|1|1|bw|0|||e|21|i|2|17|uvi|1|2|bw|0||||pos|25|x|3|0.5|y|4|-0.5|z|3|0.5|||e|243|u0|6|y|1|1||u1|26|x|8|0.309727|y|8|0.347164||u0|0||u1|26|x|8|0.347164|y|8|0.347164||u0|6|y|1|1||u1|26|x|8|0.004056|y|8|0.004056||uvs|73|e|13|i|2|18|bw|0|||e|21|i|2|19|uvi|1|1|bw|0|||e|21|i|2|20|uvi|1|2|bw|0||||pos|25|x|3|0.5|y|3|0.5|z|4|-0.5|||e|238|u0|6|y|1|1||u1|26|x|8|0.347164|y|8|0.652836||u0|0||u1|26|x|8|0.347164|y|8|0.004056||u0|0||u1|26|x|8|0.309727|y|8|0.004056||uvs|73|e|13|i|2|21|bw|0|||e|21|i|2|22|uvi|1|1|bw|0|||e|21|i|2|23|uvi|1|2|bw|0||||pos|26|x|3|0.5|y|4|-0.5|z|4|-0.5||||tri|309|e|19|0|2|15|1|1|9|2|1|0||e|19|0|2|15|1|1|0|2|1|3||e|20|0|2|10|1|2|18|2|1|6||e|19|0|2|10|1|1|6|2|1|1||e|21|0|2|19|1|2|21|2|2|12||e|20|0|2|19|1|2|12|2|1|7||e|20|0|2|22|1|2|16|2|1|4||e|20|0|2|22|1|1|4|2|2|13||e|18|0|1|5|1|1|2|2|1|8||e|19|0|1|5|1|1|8|2|2|14||e|21|0|2|23|1|2|20|2|2|11||e|21|0|2|23|1|2|11|2|2|17|||sub|1|1|bv|6|e|1|0||gcls|0||biP|8|len|1|0||sctdUV|1|0|t_uv|31|offset|0||tile|12|x|1|1|y|1|1|||
   meshDataSavedFor: {fileID: 921042821}
   tilingY: 8
-  _pluginStd: mdls|114|pgns|104|TilAtlsPntr|21|sm|0||iai|1|0|ar|1|1||VolTexM|0||UiMdl|0||TerCol|0||TerHeight|0||TerLight|0||TerSplat|0||||
+  _pluginStd: mdls|119|pgns|109|TilAtlsPntr|21|sm|0||iai|1|0|ar|1|1||VolTexM|5|b|0|||UiMdl|0||TerCol|0||TerHeight|0||TerLight|0||TerSplat|0||||
   forcedMeshCollider: 1
   autoSelectMaterialByNumberOfPointedSubMesh: 1
   isBeingDisabled: 0
@@ -740,6 +741,7 @@ Mesh:
   m_MeshMetrics[1]: 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
+    serializedVersion: 2
     offset: 0
     size: 0
     path: 
@@ -989,6 +991,7 @@ Mesh:
   m_MeshMetrics[1]: 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
+    serializedVersion: 2
     offset: 0
     size: 0
     path: 
@@ -1036,7 +1039,7 @@ Transform:
   m_GameObject: {fileID: 620299460}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 61, y: 7.86, z: -2.82}
-  m_LocalScale: {x: 184.68, y: 2.79, z: 7.2}
+  m_LocalScale: {x: 184.68, y: 11.11, z: 7.2}
   m_Children:
   - {fileID: 82276672}
   m_Father: {fileID: 0}
@@ -1102,6 +1105,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 4294967295
   m_RendererPriority: 0
   m_Materials:
@@ -1350,6 +1354,7 @@ Mesh:
   m_MeshMetrics[1]: 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
+    serializedVersion: 2
     offset: 0
     size: 0
     path: 
@@ -2097,6 +2102,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2142,7 +2148,7 @@ Transform:
   m_LocalScale: {x: 3, y: 3, z: 3}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 11
+  m_RootOrder: 10
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1524379921
 GameObject:
@@ -2205,6 +2211,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2238,98 +2245,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1524379921}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &1586523452
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1586523455}
-  - component: {fileID: 1586523454}
-  - component: {fileID: 1586523453}
-  m_Layer: 0
-  m_Name: DepthProjectorCamera
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!20 &1586523453
-Camera:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1586523452}
-  m_Enabled: 0
-  serializedVersion: 2
-  m_ClearFlags: 3
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
-  m_projectionMatrixMode: 1
-  m_GateFitMode: 2
-  m_FOVAxisMode: 0
-  m_SensorSize: {x: 36, y: 24}
-  m_LensShift: {x: 0, y: 0}
-  m_FocalLength: 50
-  m_NormalizedViewPortRect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
-  near clip plane: 0.3
-  far clip plane: 1000
-  field of view: 60
-  orthographic: 0
-  orthographic size: 5
-  m_Depth: -1000
-  m_CullingMask:
-    serializedVersion: 2
-    m_Bits: 3221225471
-  m_RenderingPath: -1
-  m_TargetTexture: {fileID: 0}
-  m_TargetDisplay: 0
-  m_TargetEye: 3
-  m_HDR: 0
-  m_AllowMSAA: 0
-  m_AllowDynamicResolution: 0
-  m_ForceIntoRT: 0
-  m_OcclusionCulling: 1
-  m_StereoConvergence: 10
-  m_StereoSeparation: 0.022
---- !u!114 &1586523454
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1586523452}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1dbc66bbcc52a544b4d513ce320fd7c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _projectorCamera: {fileID: 1586523453}
-  _projectFromMainCamera: 0
-  _centerOnMousePosition: 0
-  pauseAutoUpdates: 0
-  _foldOut: 0
---- !u!4 &1586523455
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1586523452}
-  m_LocalRotation: {x: -0.0011891307, y: 0.9923608, z: -0.12299072, w: -0.009594598}
-  m_LocalPosition: {x: 0.070100226, y: 1.6791592, z: 28.539642}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 10
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1813402369
 GameObject:
   m_ObjectHideFlags: 0
@@ -2391,6 +2306,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2617,8 +2533,6 @@ MonoBehaviour:
   dataHolder: {fileID: 11400000, guid: 239fa0bb4dc0c564588758d49ee3f24e, type: 2}
   disableSecondBufferUpdateDebug: 0
   mainDirectionalLight: {fileID: 0}
-  focusedPainter: {fileID: 105113281}
-  isLinearColorSpace: 1
   _mainCamera: {fileID: 1831009878}
   painterCamera: {fileID: 1931052087}
   brushPrefab: {fileID: 114218434713451120, guid: 28dd40865c642244687d2f1f5835f69e,
@@ -2690,6 +2604,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2834,6 +2749,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2912,7 +2828,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _maxSteps: 50
-  _maxDistance: 10000
+  _maxDistance: 9454
   configs: {fileID: 11400000, guid: d3a61179dc8db2c4fa841593866d73f4, type: 2}
 --- !u!4 &2115791986
 Transform:

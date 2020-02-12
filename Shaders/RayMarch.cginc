@@ -1,4 +1,16 @@
 
+// You can add/subtract sin(pos.x/y/y); but use: if  abs(dist)<0.1 
+// abs(dist) - thickness to create a shell
+
+inline float Plane(float3 position) {
+	return position.y;
+}
+
+inline float Plane(float3 position, float3 direction) {
+	return dot(position.y, direction);
+}
+
+
 inline float SphereDistance(float3 position, float4 posNsize, float4 reps) {
 
 	return length(frac((position - posNsize.xyz + reps.y)* reps.z) * reps.x - reps.y) - posNsize.w;

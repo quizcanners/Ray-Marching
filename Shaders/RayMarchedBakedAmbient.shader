@@ -53,7 +53,6 @@
 			uniform float4 _RayMarchFogColor;
 			uniform float4 _RayMarchReflectionColor;
 
-			sampler2D _Global_Noise_Lookup;
 
 			v2f vert(appdata_full v) {
 				v2f o;
@@ -66,7 +65,7 @@
 
 			float4 frag(v2f o) : COLOR{
 
-				float3 position = volumeUVtoWorld(i.texcoord.xy, VOLUME_POSITION_N_SIZE_BRUSH, VOLUME_H_SLICES_BRUSH);
+				float3 position = volumeUVtoWorld(o.texcoord.xy, VOLUME_POSITION_N_SIZE_BRUSH, VOLUME_H_SLICES_BRUSH);
 
 				float3 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.texcoord.xy * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0)).rgb - 0.5;
 

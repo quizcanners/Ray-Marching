@@ -130,7 +130,7 @@
 
 				float3 normal = o.normal.xyz;
 
-				applyTangent(normal, tnormal, o.wTangent);
+				ApplyTangent(normal, tnormal, o.wTangent);
 
 				float4 bake = tex;
 					

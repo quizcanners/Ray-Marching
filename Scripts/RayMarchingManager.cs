@@ -1,11 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using NodeNotes_Visual.ECS;
+﻿using System;
 using PlayerAndEditorGUI;
 using QuizCannersUtilities;
 using UnityEngine;
-using System;
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif

@@ -1,9 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using PlayerAndEditorGUI;
+﻿using PlayerAndEditorGUI;
 using QuizCannersUtilities;
 using UnityEngine;
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -45,7 +42,7 @@ namespace RayMarching
         {
 
             positionAndSize.GlobalValue = transform.position.ToVector4(transform.localScale.x);
-            sizeCubic.GlobalValue = transform.localScale.ToVector4(0);
+            sizeCubic.GlobalValue = transform.localScale.ToVector4();
 
             float repeat = 10 + 5 * transform.localScale.x;
             repeatProps.GlobalValue = new Vector4(repeat, repeat*0.5f, 1f/repeat, 0);

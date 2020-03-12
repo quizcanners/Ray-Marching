@@ -25,7 +25,7 @@ inline float SceneSdf(float3 position) {
 	//float3 bp = 2 * normalize(float3(1,1,1))
 
 
-	float s0 = SphereDistance(position, RayMarchSphere_0, RayMarchSphere_0_Reps);
+	float s0 = SphereDistance(position, RayMarchSphere_0);
 	float s1 = SphereDistance(position, RayMarchSphere_1); //, RayMarchSphere_1_Reps);
 
 	float c0 = CubeDistance(position, RayMarchCube_0, RayMarchCube_0_Size.xyz, _RayMarchSmoothness);
@@ -33,14 +33,14 @@ inline float SceneSdf(float3 position) {
 
 	c0 = abs(c0) - 1;
 
-	float grid = GridDistance(position, 200 + 50 * _SinTime.z, 5);
+	//float grid = GridDistance(position, 200 + 50 * _SinTime.z, 5);
 
 
-	float dist = CubicSmin(s0, grid, _RayMarchSmoothness);
+	float //dist = CubicSmin(s0, grid, _RayMarchSmoothness);
 
-	dist = CubicSmin(dist, grid, _RayMarchSmoothness);
+	//dist = CubicSmin(dist, grid, _RayMarchSmoothness);
 
-	dist = CubicSmin(dist, c0, _RayMarchSmoothness * 2);
+	dist = CubicSmin(s0, c0, _RayMarchSmoothness * 2);
 
 	dist = OpSmoothSubtraction(dist, s1, _RayMarchSmoothness);
 

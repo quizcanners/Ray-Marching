@@ -36,6 +36,7 @@
 
 			struct v2f {
 				float4 pos : 		SV_POSITION;
+				float3 viewDir: 	TEXCOORD1;
 				float4 screenPos : 	TEXCOORD2;
 				float2 texcoord :	TEXCOORD3;
 			};
@@ -60,12 +61,15 @@
 				o.pos = UnityObjectToClipPos(v.vertex);
 				o.screenPos = ComputeScreenPos(o.pos);
 				o.texcoord = v.texcoord.xy;
+				o.viewDir.xyz = WorldSpaceViewDir(v.vertex);
 				return o;
 			}
 
 			float4 frag(v2f o) : COLOR{
 
-				float3 position = volumeUVtoWorld(o.texcoord.xy, VOLUME_POSITION_N_SIZE_BRUSH, VOLUME_H_SLICES_BRUSH);
+				o.viewDir.xyz = normalize(o.viewDir.xyz);
+
+				float3 position = volumeUVtoWorld(o.texcoord.xy, _RayMarchingVolumeVOLUME_POSITION_N_SIZE, _RayMarchingVolumeVOLUME_H_SLICES); //VOLUME_POSITION_N_SIZE_BRUSH, VOLUME_H_SLICES_BRUSH);
 
 				float3 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.texcoord.xy * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0)).rgb - 0.5;
 
@@ -124,15 +128,11 @@
 				if (lightRange > toCenter)
 					shadow = Softshadow(position, lightDir, 5, toCenter, _RayMarchShadowSoftness, precision);
 
-				//return shadow;
-
 				float toview = max(0, dot(normal, o.viewDir.xyz));
 
 				float3 reflected = normalize(o.viewDir.xyz - 2 * (toview)*normal);
 
 				float lightRelected = pow(max(0, dot(-reflected, lightDir)), 1 + bake.a * 128);
-
-				//return lightRelected;
 
 				float reflectedDistance;
 

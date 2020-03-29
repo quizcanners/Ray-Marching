@@ -62,7 +62,6 @@ inline float OpSmoothSubtraction(float d1, float d2, float k) {
 	float h = saturate((1 - (d2 + d1) / (k + 0.0001))*0.5);
 
 	return Mix(d1, -d2, h) + k * h * (1 - h);
-
 }
 
 inline float DifferenceSDF(float distA, float distB) {
@@ -84,19 +83,6 @@ inline bool IntersectSphere(float3 center, float3 orig, float3 dir, float radius
 	float thc = sqrt(radius2 - d2);
 	t0 = tca - thc;
 	t1 = tca + thc;
-
-	/*if (t0 > t1) {
-		float tmp = t0;
-		t0 = t1;
-		t1 = tmp;
-	}
-
-	if (t0 < 0) {
-		t0 = t1; // if t0 is negative, let's use t1 instead 
-		if (t0 < 0) return false; // both t0 and t1 are negative 
-	}
-
-	t = t0;*/
 
 	return true;
 }

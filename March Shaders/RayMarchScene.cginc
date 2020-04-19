@@ -1,17 +1,7 @@
 #include "RayMarch.cginc"
 
-uniform float4 RayMarchCube_0;
-uniform float4 RayMarchCube_0_Size;
-uniform float4 RayMarchCube_1;
-uniform float4 RayMarchCube_1_Size;
-uniform float4 RayMarchCube_1_Reps;
-uniform float4 RayMarchSphere_0;
-uniform float4 RayMarchSphere_0_Reps;
-uniform float4 RayMarchSphere_1;
-uniform float4 RayMarchSphere_1_Reps;
-
 float _maxRayMarchSteps;
-float _MaxRayMarchDistance;
+
 
 
 float _RayMarchSmoothness;

@@ -41,18 +41,9 @@
 				float2 texcoord :	TEXCOORD3;
 			};
 
-			sampler2D _RayMarchingVolume;
-			sampler2D _qcPp_DestBuffer;
-			float4 _RayMarchingVolumeVOLUME_POSITION_N_SIZE;
-			float4 _RayMarchingVolumeVOLUME_H_SLICES;
 
 			sampler2D _MainTex;
 
-			uniform float4 RayMarchLight_0;
-
-			uniform float4 _RayMarchLightColor;
-			uniform float4 _RayMarchFogColor;
-			uniform float4 _RayMarchReflectionColor;
 
 
 			v2f vert(appdata_full v) {

@@ -45,20 +45,13 @@
 					float4 color: 		COLOR;
 				};
 
-				 sampler2D _RayMarchingVolume;
-				 sampler2D _qcPp_DestBuffer;
-				 float4 _RayMarchingVolumeVOLUME_POSITION_N_SIZE;
-				 float4 _RayMarchingVolumeVOLUME_H_SLICES;
+
 
 	
 				sampler2D _MainTex;
 			
-			
-				uniform float4 RayMarchLight_0;
 
-				uniform float4 _RayMarchLightColor;
-				uniform float4 _RayMarchFogColor;
-				uniform float4 _RayMarchReflectionColor;
+
 
 				v2f vert(appdata_full v) {
 					v2f o;
@@ -235,6 +228,10 @@
 					
 
 					col.rgb = col.rgb * deFog + _RayMarchFogColor.rgb *(1-deFog);
+
+					// gamma correction
+					col = max(0, col - 0.004);
+					col = (col*(6.2*col + .5)) / (col*(6.2*col + 1.7) + 0.06);
 
 					col.rgb += noise.rgb*col.rgb*0.2;
 

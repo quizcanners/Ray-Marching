@@ -1,4 +1,4 @@
-
+#include "Assets/Ray-Marching/QuizCannersRays.cginc"
 // You can add/subtract sin(pos.x/y/y); but use: if  abs(dist)<0.1 
 // abs(dist) - thickness to create a shell
 
@@ -9,7 +9,6 @@ inline float Plane(float3 position) {
 inline float Plane(float3 position, float3 direction) {
 	return dot(position.y, direction);
 }
-
 
 inline float SphereDistance(float3 position, float4 posNsize, float4 reps) {
 

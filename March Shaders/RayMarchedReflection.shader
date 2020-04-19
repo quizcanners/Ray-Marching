@@ -49,21 +49,13 @@
 				float4 color: 		COLOR;
 			};
 
-			sampler2D _RayMarchingVolume;
-			sampler2D _qcPp_DestBuffer;
-			float4 _RayMarchingVolumeVOLUME_POSITION_N_SIZE;
-			float4 _RayMarchingVolumeVOLUME_H_SLICES;
 
 			sampler2D _MainTex;
 			sampler2D _Gloss;
 			sampler2D _Normal;
 			float4 _Normal_ST;
 
-			uniform float4 RayMarchLight_0;
 
-			uniform float4 _RayMarchLightColor;
-			uniform float4 _RayMarchFogColor;
-			uniform float4 _RayMarchReflectionColor;
 
 			v2f vert(appdata_full v) {
 				v2f o;

@@ -15,7 +15,7 @@ RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
   m_Fog: 0
-  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  m_FogColor: {r: 1, g: 1, b: 1, a: 1}
   m_FogMode: 3
   m_FogDensity: 0.01
   m_LinearFogStart: 0
@@ -419,7 +419,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfd9686030c1c6a4dbb95895ac7e6ebd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 20
+  speed: 2
   sensitivity: 5
   _disableRotation: 0
   rotateWithoutRmb: 0
@@ -940,6 +940,10 @@ MonoBehaviour:
     min: 0.01
     max: 1000
     _value: 9
+  _material:
+    min: 0.01
+    max: 5
+    _value: 0.2
   RenderingVolume: {fileID: 82276668}
 --- !u!4 &620299462
 Transform:
@@ -1088,6 +1092,10 @@ MonoBehaviour:
     min: 0.01
     max: 1000
     _value: 412
+  _material:
+    min: 0.01
+    max: 5
+    _value: 0.2
   RenderingVolume: {fileID: 0}
 --- !u!4 &716978090
 Transform:
@@ -2652,6 +2660,10 @@ MonoBehaviour:
     min: 0.01
     max: 1000
     _value: 3.24
+  _material:
+    min: 0.01
+    max: 5
+    _value: 0.2
   RenderingVolume: {fileID: 2003969667}
 --- !u!4 &2033426575
 Transform:
@@ -2857,6 +2869,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df86ad1390c6aa349a96f0d6a60bce43, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainCamera: {fileID: 1831009878}
   _maxSteps: 50
   _maxDistance: 9454
   configs: {fileID: 11400000, guid: d3a61179dc8db2c4fa841593866d73f4, type: 2}
@@ -2937,6 +2950,10 @@ MonoBehaviour:
     min: 0.01
     max: 1000
     _value: 6.86692
+  _material:
+    min: 0.01
+    max: 5
+    _value: 0.2
   RenderingVolume: {fileID: 2045651428}
 --- !u!1 &7586080463548731917
 GameObject:
@@ -2972,6 +2989,10 @@ MonoBehaviour:
     min: 0.01
     max: 1000
     _value: 33
+  _material:
+    min: 0.01
+    max: 5
+    _value: 0.2
   RenderingVolume: {fileID: 1813402369}
 --- !u!1 &7883392477935558230
 GameObject:

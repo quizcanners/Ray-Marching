@@ -199,12 +199,12 @@
 
 					col.rgb += (1 + dott) * 0.5 *  (
 						reflCol * (1 - reflectedSky) +
-						_RayMarchFogColor.rgb * reflectedSky +
+						_RayMarchSkyColor.rgb * reflectedSky +
 						lightRelected * 64 * shadow
-						) * _RayMarchReflectionColor.rgb * bake.a;
+						) * unity_FogColor.rgb * bake.a;
 
 
-					col.rgb = col.rgb * deFog + _RayMarchFogColor.rgb *(1 - deFog);
+					col.rgb = col.rgb * deFog + _RayMarchSkyColor.rgb *(1 - deFog);
 
 					col.rgb += noise.rgb*col.rgb*0.2;
 

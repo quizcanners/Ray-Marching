@@ -20,11 +20,11 @@ namespace RayMarching
             set
             {
                 ActiveConfig = value;
-                RayMarchingManager.inspected.Decode(data);
+                RayRenderingManager.inspected.Decode(data);
             }
 
         }
 
-        public override CfgEncoder EncodeData() => RayMarchingManager.inspected.Encode();
+        public override CfgEncoder EncodeData() => RayRenderingManager.inspected.Encode();
     }
 }

@@ -201,7 +201,7 @@
 				float lightBrightnessReflected = max(0, lightRange - toCenterRefl) *deLightRange;
 
 				col.rgb = (bake.rgb * (_RayMarchLightColor.rgb * 2 * shadow * lightBrightness
-					//+ _RayMarchFogColor.rgb
+					//+ _RayMarchSkyColor.rgb
 					));
 
 				float reflectedFog = max(0, 1 - reflectedDistance / _MaxRayMarchDistance);
@@ -223,15 +223,15 @@
 					col.rgb += (1+dott)*0.5 * 
 						(
 						reflCol * (1 - reflectedSky) +
-						_RayMarchFogColor.rgb * reflectedSky + 
+						_RayMarchSkyColor.rgb * reflectedSky + 
 						lightRelected * 64 * shadow
 						
 						) 
 						
-						* _RayMarchReflectionColor.rgb * gloss;
+						* unity_FogColor.rgb * gloss;
 
 
-					col.rgb = col.rgb * deFog + _RayMarchFogColor.rgb *(1 - deFog);
+					col.rgb = col.rgb * deFog + _RayMarchSkyColor.rgb *(1 - deFog);
 
 					col.rgb += noise.rgb*col.rgb*0.2;
 

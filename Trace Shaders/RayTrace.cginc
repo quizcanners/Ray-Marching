@@ -33,7 +33,8 @@
 // Disk:            https://www.shadertoy.com/view/lsfGDB
 //
 
-#define MAX_DIST 1e10
+#define MAX_DIST 10000//1e10
+#define MAX_DIST_EDGE MAX_DIST - 10//1e10
 
 float dot2(in float3 v) { return dot(v, v); }
 
@@ -655,7 +656,7 @@ float iGoursat(in float3 ro, in float3 rd, in float2 distBound, inout float3 nor
 // added a simple ray tracer to visualize a scene with all primitives.
 //
 
-#define PATH_LENGTH 6
+#define PATH_LENGTH 12
 
 //
 // Ray tracer helper functions
@@ -731,12 +732,7 @@ float3 rotateY(const in float3 p, const in float t) {
 	return float3(xz.x, p.y, xz.y);
 }
 
-float3 opU(float3 d, float iResult, float mat) {
 
-	float useResult = step(iResult, d.y);
-
-	return useResult * float3(d.x, iResult, mat) + d * (1. - useResult);
-}
 
 float iMesh(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal) {
 	const float3 tri0 = float3(-2. / 3. * 0.43301270189, 0, 0);
@@ -759,38 +755,10 @@ float iMesh(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal
 // Palette by Íñigo Quílez: 
 // https://www.shadertoy.com/view/ll2GD3
 //
-float3 Pallete(in float t, in float3 a, in float3 b, in float3 c, in float3 d) {
-	return a + b * cos(6.28318530718*(c*t + d));
-}
 
-float checkerBoard(float2 p) {
-	return abs((floor(p.x) + floor(p.y)) % 2);
-}
 
-#define LAMBERTIAN 0.
-#define METAL 1.
-#define DIELECTRIC 2.
 
-float gpuIndepentHash(float p) {
-	p = (p * 0.1031) % 1;
-	p *= p + 19.19;
-	p *= p + p;
-	return p % 1;
-}
 
-void getMaterialProperties(in float3 pos, in float mat,	out float3 albedo, out float type, out float roughness) {
-
-	if (mat < 1.5) {
-		albedo =  0.25 + 0.25*checkerBoard(pos.xz * 5.0);
-		roughness = 0.75 * albedo.x - 0.15;
-		type = METAL;
-	}
-	else {
-		albedo = Pallete(mat*0.59996323 + 0.5, 0.5, 0.5, 1, float3(0, 0.1, 0.2));
-		type = floor(gpuIndepentHash(mat + .3) * 3.);
-		roughness = (1. - type * .475) * gpuIndepentHash(mat);
-	}
-}
 
 
 float schlick(float cosine, float r0) {

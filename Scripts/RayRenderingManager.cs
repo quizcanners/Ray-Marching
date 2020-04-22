@@ -12,6 +12,11 @@ namespace RayMarching
     [ExecuteAlways]
     public class RayRenderingManager : MonoBehaviour, IPEGI, ICfg, ILinkedLerping
     {
+
+
+        //https://github.com/keijiro/ParticleMotionVector // Maybe just get previous _WorldToCamera matrix if object is expected to be static.
+        // 
+
         public static RayRenderingManager instance;
 
         [Header("Common")]

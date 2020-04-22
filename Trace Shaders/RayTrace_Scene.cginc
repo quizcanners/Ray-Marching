@@ -13,7 +13,7 @@ float3 worldhit(in float3 ro, in float3 rd, in float2 dist, out float3 normal) {
 	d = opU(d, iBox(ro - RayMarchCube_0.xyz, rd, d.xy, normal, RayMarchCube_0.w),								RayMarchCube_0_Size.w);
 	d = opU(d, iSphere(ro - RayMarchSphere_0.xyz, rd, d.xy, normal, RayMarchSphere_0.w),						RayMarchSphere_0_Size.w);
 	d = opU(d, iCylinder(ro, rd, d.xy, normal,								float3(2.1, .1, -2), float3(1.9, .5, -1.9), .08),	4.);
-	d = opU(d, iCylinder(ro - float3(1, .100, -2), rd, d.xy, normal,		float3(0, 0, 0), float3(0, .4, 0), .1),				5.);
+	d = opU(d, iCylinder(ro - float3(1, .100, -7), rd, d.xy, normal,		float3(0, 0, 0), float3(0, .4, 0), .1),				5.);
 	d = opU(d, iTorus(ro - float3(0, .250, 1), rd, d.xy, normal,			float2(.2, .05)),									6.);
 	d = opU(d, iCapsule(ro - float3(1, .000, -1), rd, d.xy, normal,			float3(-.1, .1, -.1), float3(.2, .4, .2), .1),		7.);
 	d = opU(d, iGoursat(ro - RayMarchCube_1.xyz, rd, d.xy, normal,			RayMarchCube_1.w, RayMarchCube_1.w * 1.25),		RayMarchCube_1_Size.w);
@@ -156,7 +156,7 @@ float3 render(in float3 ro, in float3 rd, inout float4 seed) {
 #endif
 			else
 			{
-				return col * albedo * 2;
+				return col * albedo * 4;
 			}
 
 		}

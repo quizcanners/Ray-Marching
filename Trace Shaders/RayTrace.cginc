@@ -732,8 +732,6 @@ float3 rotateY(const in float3 p, const in float t) {
 	return float3(xz.x, p.y, xz.y);
 }
 
-
-
 float iMesh(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal) {
 	const float3 tri0 = float3(-2. / 3. * 0.43301270189, 0, 0);
 	const float3 tri1 = float3(1. / 3. * 0.43301270189, 0, .25);
@@ -748,8 +746,6 @@ float iMesh(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal
 
 	return d.y < distBound.y ? d.y : MAX_DIST;
 }
-
-
 
 //
 // Palette by Íñigo Quílez: 

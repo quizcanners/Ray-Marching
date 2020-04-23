@@ -21,11 +21,11 @@ uniform float4 _RayMarchSkyColor;
 uniform float _RayTraceTransparency;
 
 
-float _MaxRayMarchDistance;
+uniform float _MaxRayMarchDistance;
 
 uniform float4 RayMarchLight_0;
 
-sampler2D _RayMarchingVolume;
-sampler2D _qcPp_DestBuffer;
-float4 _RayMarchingVolumeVOLUME_POSITION_N_SIZE;
-float4 _RayMarchingVolumeVOLUME_H_SLICES;
+uniform sampler2D _RayMarchingVolume;
+uniform sampler2D _qcPp_DestBuffer;
+uniform float4 _RayMarchingVolumeVOLUME_POSITION_N_SIZE;
+uniform float4 _RayMarchingVolumeVOLUME_H_SLICES;

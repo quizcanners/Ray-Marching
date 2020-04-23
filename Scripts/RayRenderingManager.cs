@@ -1,5 +1,6 @@
 ﻿using System;
 using PlayerAndEditorGUI;
+using PlaytimePainter.Examples;
 using QuizCannersUtilities;
 using UnityEngine;
 #if UNITY_EDITOR
@@ -21,12 +22,32 @@ namespace RayMarching
 
         [Header("Common")]
 
-        public Camera mainCamera;
+        public GodMode godModeCamera;
+        public Camera MainCamera => godModeCamera ? godModeCamera.MainCam : null;
+        private bool firstIsSourceBuffer;
+        public RenderTexture[] twoBuffers;
+        private readonly ShaderProperty.ShaderKeyword MOTION_TRACING = new ShaderProperty.ShaderKeyword("RT_MOTION_TRACING");
+        private readonly ShaderProperty.TextureValue PathTracingSourceBuffer = new ShaderProperty.TextureValue("_RayTracing_SourceBuffer");
+        private readonly ShaderProperty.TextureValue PathTracingTargetBuffer = new ShaderProperty.TextureValue("_RayTracing_TargetBuffer");
+        private RenderTexture SourceBuffer => firstIsSourceBuffer ? twoBuffers[0] : twoBuffers[1];
+        private RenderTexture TargetBuffer => firstIsSourceBuffer ? twoBuffers[1] : twoBuffers[0];
 
 
+        public PrimitiveObject cube0, cube1, cube2, cube3, cube4, cube5, sphere0, sphere1;
+
+
+        private void Swap()
+        {
+            firstIsSourceBuffer = !firstIsSourceBuffer;
+            PathTracingSourceBuffer.GlobalValue = SourceBuffer;
+            PathTracingTargetBuffer.GlobalValue = TargetBuffer;
+            if (MainCamera)
+                MainCamera.targetTexture = TargetBuffer;
+        }
+        
         LinkedLerp.MaterialColor _sunLightColor = new LinkedLerp.MaterialColor("_RayMarchLightColor", Color.grey, 10);
         LinkedLerp.MaterialColor _skyColor = new LinkedLerp.MaterialColor("_RayMarchSkyColor", Color.grey, 10);
-        LinkedLerp.ColorValue _fogColor = new LinkedLerp.ColorValue("Fog");
+        LinkedLerp.ColorValue _fogColor = new LinkedLerp.ColorValue("Fog", speed: 10);
         [NonSerialized] private bool useRayTracing = true;
         
         [Header("Ray-Marthing")]
@@ -43,8 +64,8 @@ namespace RayMarching
         [NonSerialized] private QcUtils.DynamicRangeFloat shadowSoftness = new QcUtils.DynamicRangeFloat(0.01f, 10, 1);
 
         [Header("Ray-Tracing")]
-        LinkedLerp.MaterialFloat _RayTraceDepthOfField = new LinkedLerp.MaterialFloat("_RayTraceDofDist", 1f); // x - distance 
-        [NonSerialized] private QcUtils.DynamicRangeFloat DOFdistance = new QcUtils.DynamicRangeFloat(0.01f, 10, 1);
+        [NonSerialized] LinkedLerp.MaterialFloat _RayTraceDepthOfField = new LinkedLerp.MaterialFloat("_RayTraceDofDist", startingValue: 1f, startingSpeed: 10f); // x - distance 
+        [NonSerialized] private QcUtils.DynamicRangeFloat DOFdistance = new QcUtils.DynamicRangeFloat(min: 0.01f, max: 10, value: 1);
 
         [NonSerialized] private LinkedLerp.MaterialFloat DOFTargetStrength = new LinkedLerp.MaterialFloat("_RayTraceDOF", 0.0001f);
 
@@ -52,9 +73,7 @@ namespace RayMarching
         ShaderProperty.FloatValue _RayTraceTraparency = new ShaderProperty.FloatValue("_RayTraceTransparency");
 
         ShaderProperty.ShaderKeyword _rayTraceUseDielecrtic = new ShaderProperty.ShaderKeyword("RT_USE_DIELECTRIC");
-
-
-
+        
         public void SetDirty()
         {
             _stableFrames = 0;
@@ -74,71 +93,111 @@ namespace RayMarching
 
         #region Linked Lerp
 
+        [SerializeField] private int _stopUpdatingAfter = 100;
         private float _stableFrames = 0;
         private Vector3 _previousCamPosition = Vector3.zero;
         private Quaternion _previousCamRotation = Quaternion.identity;
+        private bool lerpAnimation;
 
         public void Update()
         {
-            ld.Reset();
-
-            Portion(ld);
-
-            Lerp(ld, false);
-
-            
-            if (mainCamera)
+            if (lerpAnimation)
             {
-                var tf = mainCamera.transform;
-
-                float diff =(_previousCamPosition - tf.position).magnitude*10 +
-                    Quaternion.Angle(_previousCamRotation, tf.rotation);
-                    ;
-
-                _previousCamRotation = tf.rotation;
-                _previousCamPosition = tf.position;
-
-                diff = 1 - Mathf.Clamp01(diff);
-
-                _stableFrames = _stableFrames * diff + diff;
-
-                _RayTraceTraparency.GlobalValue = _stableFrames < 2 ? 1f : Mathf.Clamp(2f/_stableFrames, 0.01f, 0.5f); 
+                lerpData.Reset();
+                Portion(lerpData);
+                Lerp(lerpData, false);
+                if (lerpData.MinPortion == 1)
+                {
+                    lerpAnimation = false;
+                    if (godModeCamera)
+                        godModeCamera.mode = GodMode.Mode.STATIC;
+                }
             }
+            
+            if (MainCamera)
+            {
+                var tf = MainCamera.transform;
 
+                cameraShakeDebug = (_previousCamPosition - tf.position).magnitude +
+                    Quaternion.Angle(_previousCamRotation, tf.rotation)*0.1f;
+
+                _previousCamPosition = tf.position;
+                _previousCamRotation = tf.rotation;
+               
+
+                cameraShakeDebug = 1 - Mathf.Clamp01(cameraShakeDebug);
+
+                _stableFrames = _stableFrames * cameraShakeDebug + cameraShakeDebug;
+
+                _RayTraceTraparency.GlobalValue = _stableFrames < 2 ? 1f : Mathf.Clamp(2f/_stableFrames, 0.01f, 0.5f);
+
+                MOTION_TRACING.Enabled = _stableFrames < 2;
+
+                MainCamera.enabled = _stableFrames < _stopUpdatingAfter;
+
+                if (MainCamera.enabled)
+                {
+                    Swap();
+                }
+            }
         }
+
+        private float cameraShakeDebug;
 
         [SerializeField] private RayMarchingConfigs configs;
         
-        LerpData ld = new LerpData();
+        LerpData lerpData = new LerpData();
         
         public void Portion(LerpData ld)
         {
             _rayMarchSmoothness.Portion(ld, smoothness.Value);
-            _sunLightColor.Portion(ld);
             _rayMarchShadowSoftness.Portion(ld, shadowSoftness.Value);
+            _sunLightColor.Portion(ld);
             _skyColor.Portion(ld);
             _fogColor.Portion(ld);
             _RayTraceDepthOfField.Portion(ld, DOFdistance.Value);
             DOFTargetStrength.Portion(ld);
+
+            if (godModeCamera && lerpAnimation)
+                godModeCamera.Portion(ld);
+
+
+            cube0.Portion(ld);
+            cube1.Portion(ld);
+            cube2.Portion(ld);
+            cube3.Portion(ld);
+            cube4.Portion(ld);
+            cube5.Portion(ld);
+            sphere0.Portion(ld);
+            sphere1.Portion(ld);
         }
 
         public void Lerp(LerpData ld, bool canSkipLerp)
         {
+            
             _rayMarchSmoothness.Lerp(ld, canSkipLerp || useRayTracing);
             _rayMarchShadowSoftness.Lerp(ld, canSkipLerp || useRayTracing);
-
             _sunLightColor.Lerp(ld, canSkipLerp);
             _skyColor.Lerp(ld, canSkipLerp);
-
             _fogColor.Lerp(ld, canSkipLerp);
             RenderSettings.fogColor = _fogColor.CurrentValue;
 
             _RayTraceDepthOfField.Lerp(ld, canSkipLerp);
             DOFTargetStrength.Lerp(ld, canSkipLerp);
+
+            if (godModeCamera && lerpAnimation)
+                godModeCamera.Lerp(ld, canSkipLerp);
+
+            cube0.Lerp(ld, canSkipLerp);
+            cube1.Lerp(ld, canSkipLerp);
+            cube2.Lerp(ld, canSkipLerp);
+            cube3.Lerp(ld, canSkipLerp);
+            cube4.Lerp(ld, canSkipLerp);
+            cube5.Lerp(ld, canSkipLerp);
+            sphere0.Lerp(ld, canSkipLerp);
+            sphere1.Lerp(ld, canSkipLerp);
         }
-
         
-
         #endregion
         
         #region Inspector
@@ -151,14 +210,32 @@ namespace RayMarching
 
             inspected = this;
 
+            if (lerpAnimation)
+            {
+                "Lerp is Active".writeWarning();
+                "Dominant: {0} [{1}]".F(lerpData.dominantParameter, lerpData.MinPortion).nl();
+                pegi.nl();
+            } else 
+            "Lerp Done: {0} [{1}]".F(lerpData.dominantParameter, lerpData.MinPortion).nl();
+
+            if (godModeCamera && godModeCamera.mode == GodMode.Mode.STATIC && "Edit Camera".Click().nl())
+                godModeCamera.mode = GodMode.Mode.FPS;
+
             pegi.toggleDefaultInspector(this);
 
-            if (!mainCamera)
-                "Main Camera".edit(ref mainCamera).nl();
+            if (!MainCamera)
+            {
+                "God Mode".edit(ref godModeCamera);
+
+                if (icon.Search.Click().nl())
+                    godModeCamera = FindObjectOfType<GodMode>();
+
+                return false;
+            }
 
             if (useRayTracing)
             {
-                "RAY-TRACING [frms: {0}]".F((int)_stableFrames).write(PEGI_Styles.ListLabel);
+                "RAY-TRACING [frms: {0} | {1}]".F((int)_stableFrames, cameraShakeDebug).write(PEGI_Styles.ListLabel);
                 if (icon.PreviewShader.Click("Switch to Ray-Marching").nl())
                     useRayTracing = false;
             }
@@ -189,15 +266,16 @@ namespace RayMarching
                 if ("DOF Strength".edit(90, ref trg, 0.0001f, 0.1f).nl(ref changed))
                     DOFTargetStrength.TargetValue = trg;
 
-
-                DOFTargetStrength.Inspect().nl();
-
                 _rayTraceUseDielecrtic.Inspect().nl(ref changed);
             }
 
             "Light Color".edit(ref _sunLightColor.targetValue).nl(ref changed);
             "Sky Color".edit(ref _skyColor.targetValue).nl(ref changed);
             "Fog Color".edit(ref _fogColor.targetValue).nl(ref changed);
+
+
+            if (changed)
+                this.SkipLerp(lerpData);
             
             ConfigurationsListBase.Inspect(ref configs).changes(ref changed);
 
@@ -205,7 +283,7 @@ namespace RayMarching
             {
                 UpdateShadeVariables();
                 _stableFrames = 0;
-                this.SkipLerp(ld);
+               
             }
 
             return changed;
@@ -220,7 +298,8 @@ namespace RayMarching
                 .Add_Bool("useRT", useRayTracing)
                 .Add("col", _sunLightColor.TargetValue)
                 .Add("sky", _skyColor.TargetValue)
-                .Add("fog", _fogColor.TargetValue);
+                .Add("fog", _fogColor.TargetValue)
+                .Add("gm", godModeCamera);
 
             if (!useRayTracing) cody
                 .Add("sm", smoothness)
@@ -229,6 +308,15 @@ namespace RayMarching
             if (useRayTracing) cody
                 .Add("dofD", DOFdistance)
                 .Add("dofPow", DOFTargetStrength.TargetValue);
+
+            cody.Add("c0", cube0)
+                .Add("c1", cube1)
+                .Add("c2", cube2)
+                .Add("c3", cube3)
+                .Add("c4", cube4)
+                .Add("c5", cube5)
+                .Add("s0", sphere0)
+                .Add("s1", sphere1);
 
             return cody;
         }
@@ -242,17 +330,32 @@ namespace RayMarching
                 case "shSo": shadowSoftness.Decode(data); break;
                 case "sky": _skyColor.TargetValue = data.ToColor(); break;
                 case "fog": _fogColor.TargetValue = data.ToColor(); break;
+                case "gm": godModeCamera.Decode(data); break;
                 case "dofD": DOFdistance.Decode(data); break;
                 case "dofPow": DOFTargetStrength.TargetValue = data.ToFloat(); break;
                 case "useRT": useRayTracing = data.ToBool(); break;
+                case "c0": cube0.Decode(data); break;
+                case "c1": cube1.Decode(data); break;
+                case "c2": cube2.Decode(data); break;
+                case "c3": cube3.Decode(data); break;
+                case "c4": cube4.Decode(data); break;
+                case "c5": cube5.Decode(data); break;
+                case "s0": sphere0.Decode(data); break;
+                case "s1": sphere1.Decode(data); break;
                 default: return false;
             }
 
             return true;
         }
 
-        public void Decode(string data) => new CfgDecoder(data).DecodeTagsFor(this);
-        
+        public void Decode(string data)
+        {
+            new CfgDecoder(data).DecodeTagsFor(this);
+            lerpAnimation = true;
+            if (godModeCamera)
+                godModeCamera.mode = GodMode.Mode.STATIC;
+        }
+
         #endregion
     }
 

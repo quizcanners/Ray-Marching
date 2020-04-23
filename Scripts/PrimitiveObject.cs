@@ -9,7 +9,7 @@ namespace RayMarching
 {
     
     [ExecuteAlways]
-    public class PrimitiveObject : MonoBehaviour, IPEGI
+    public class PrimitiveObject : MonoBehaviour, IPEGI, ICfg, ILinkedLerping
     {
 
         public string variableName;
@@ -19,9 +19,11 @@ namespace RayMarching
         private ShaderProperty.VectorValue repeatProps;
 
         [SerializeField] private QcUtils.DynamicRangeFloat _size = new QcUtils.DynamicRangeFloat(0.01f, 1000f, 1);
-
         [SerializeField] private QcUtils.DynamicRangeFloat _material = new QcUtils.DynamicRangeFloat(0.01f, 5f, 0.2f);
+
         
+        LinkedLerp.TransformLocalPosition lrpPosition;
+        LinkedLerp.TransformLocalScale lrpScale;
 
         public GameObject RenderingVolume;
 
@@ -49,7 +51,7 @@ namespace RayMarching
             var tf = transform;
 
             if (_isDirty || (Vector3.Distance(positionAndSize.GlobalValue, tf.position) + 
-                 Vector3.Distance(tf.localScale, sizeAndMaterial.latestValue.XYZ()))>float.Epsilon * 10)
+                 Vector3.Distance(tf.localScale, sizeAndMaterial.latestValue.XYZ()))>float.Epsilon * 10000)
             {
                 _isDirty = false;
 
@@ -91,6 +93,78 @@ namespace RayMarching
 
             return changed;
         }
+
+        #region Linked Lerp
+
+        private bool _isLerping;
+
+        public void Portion(LerpData ld)
+        {
+            if (_isLerping)
+            {
+                lrpPosition.Portion(ld);
+                lrpScale.Portion(ld);
+            }
+        }
+
+        public void Lerp(LerpData ld, bool canSkipLerp)
+        {
+            if (_isLerping)
+            {
+                lrpPosition.Lerp(ld);
+                lrpScale.Lerp(ld);
+                if (ld.MinPortion == 1)
+                    _isLerping = false;
+            }
+        }
+
+        #endregion
+
+        #region Encode & Decode
+        public CfgEncoder Encode()
+        {
+            var cody = new CfgEncoder();
+            if (_isLerping)
+            {
+                cody.Add("pos", lrpPosition.TargetValue)
+                    .Add("size", lrpScale.TargetValue);
+            }
+            else
+            {
+                cody.Add("pos", transform.localPosition)
+                    .Add("size", transform.localScale);
+            
+            }
+
+            return cody;
+        }
+        
+        public bool Decode(string tg, string data)
+        {
+            switch (tg)
+            {
+                case "pos": lrpPosition.TargetValue = data.ToVector3(); break;
+                case "size": lrpScale.TargetValue = data.ToVector3(); break;
+                default: return false;
+            }
+
+            return true;
+        }
+
+        public void Decode(string data)
+        {
+            _isLerping = true;
+
+            if (lrpPosition == null)
+            {
+                lrpPosition = new LinkedLerp.TransformLocalPosition(transform, 10);
+                lrpScale = new LinkedLerp.TransformLocalScale(transform, 10);
+            }
+
+            new CfgDecoder(data).DecodeTagsFor(this);
+        }
+
+        #endregion
     }
 
 

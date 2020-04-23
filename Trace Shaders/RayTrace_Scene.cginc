@@ -1,5 +1,13 @@
 #include "RayTrace.cginc"
 
+
+
+#if RT_MOTION_TRACING
+	#define PATH_LENGTH 6
+#else
+	#define PATH_LENGTH 12
+#endif
+
 float3 opU(float3 d, float iResult, float mat) {
 	return d.y > iResult ? float3(d.x, iResult, mat) : d;
 }
@@ -76,11 +84,13 @@ void getMaterialProperties(in float3 pos, in float mat, out float3 albedo, out f
 	}
 }
 
-float3 render(in float3 ro, in float3 rd, inout float4 seed) {
+float3 render(in float3 ro, in float3 rd, in float4 seed) {
 
 	float3 albedo, normal;
 	float3 col = 1;
 	float roughness, type;
+
+
 
 	for (int i = 0; i < PATH_LENGTH; ++i) {
 		float3 res = worldhit(ro, rd, float2(.0001, MAX_DIST_EDGE), normal);

@@ -36,6 +36,7 @@
 #define MAX_DIST 10000//1e10
 #define MAX_DIST_EDGE MAX_DIST - 10//1e10
 
+
 float dot2(in float3 v) { return dot(v, v); }
 
 // Plane 
@@ -655,8 +656,6 @@ float iGoursat(in float3 ro, in float3 rd, in float2 distBound, inout float3 nor
 // to "Raymarching - Primitives": https://www.shadertoy.com/view/Xds3zN) and
 // added a simple ray tracer to visualize a scene with all primitives.
 //
-
-#define PATH_LENGTH 12
 
 //
 // Ray tracer helper functions

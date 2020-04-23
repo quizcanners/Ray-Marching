@@ -9,7 +9,6 @@
 
 		Tags{
 			"Queue" = "Geometry"
-			"IgnoreProjector" = "True"
 			"RenderType" = "Opaque"
 		}
 
@@ -17,21 +16,19 @@
 		Cull Back
 		ZWrite On
 		ZTest Off
-		Blend SrcAlpha OneMinusSrcAlpha
+		Blend One Zero //SrcAlpha OneMinusSrcAlpha
 
 		Pass{
 
 			CGPROGRAM
 
-			#include "UnityCG.cginc"
-			#include "Lighting.cginc"
 			#include "RayTrace_Scene.cginc"
 			#include "Assets/Tools/Playtime Painter/Shaders/quizcanners_cg.cginc"
 
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma multi_compile __ RT_USE_DIELECTRIC
-			#pragma target 3.0
+			#pragma multi_compile __ RT_MOTION_TRACING
 
 			struct v2f {
 				float4 pos : 		SV_POSITION;
@@ -53,28 +50,61 @@
 
 			uniform float _RayTraceDofDist;
 			uniform float _RayTraceDOF;
+			uniform sampler2D _RayTracing_SourceBuffer;
 
 			float4 frag(v2f o) : COLOR{
 
-				float3 ro = _WorldSpaceCameraPos.xyz; 
-				float3 rd = -normalize(o.viewDir.xyz);
+				float3 rayOrigin = _WorldSpaceCameraPos.xyz; 
+				float3 rayDirection = -normalize(o.viewDir.xyz);
+
+				o.screenPos.xy /= o.screenPos.w;
 
 				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.screenPos.xy * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0));
 
-				// AA
-				rd += normalize(noise.rgb-0.5)*noise.a * (_ScreenParams.z-1) * 2;
+				float4 previousFrame = tex2Dlod(_RayTracing_SourceBuffer, float4(o.screenPos.xy, 0, 0));
 
+				float aaCoef = (_ScreenParams.z - 1) * 2;
 
-				// DOF
-		
-					float3 fp = ro + rd * _RayTraceDofDist;
-					ro = ro + normalize(noise.rgb - 0.5) * _RayTraceDOF;
+				/*
+#if RT_MOTION_TRACING
+				#define ITER  3
+				for (int i = 0; i < ITER; i++) {
+
+#endif
+*/
+					float3 rand = normalize(noise.rgb - 0.5);
+
+					// AA
+					float3 rd = rayDirection + rand *noise.a * aaCoef;
+
+					// DOF
+
+					float3 fp = rayOrigin + rd * _RayTraceDofDist;
+					float3 ro = rayOrigin + rand.gbr * _RayTraceDOF;
 					rd = normalize(fp - ro);
 
 
-				float3 col = 	render(ro, rd, noise);
+					float3 col = render(ro, rd, noise);
+					/*
+#if RT_MOTION_TRACING
 
-				return float4(col, _RayTraceTransparency);
+					noise = noise.gbar;
+				}
+				
+				col /= ITER;
+
+				float diff = 0.5 + saturate(abs(col.a - previousFrame.a))*0.5;
+
+				col.rgb = col.rgb * diff + previousFrame.rgb * (1 - diff);
+
+				//col = (previousFrame.rgb + col.rgb)/ (ITER + 1);
+
+#else*/
+				col = col * _RayTraceTransparency + previousFrame.rgb * (1 - _RayTraceTransparency);
+//#endif
+
+
+				return float4(col,1);
 			}
 			ENDCG
 		}

@@ -16,11 +16,9 @@ namespace RayMarching
 
         private ShaderProperty.VectorValue positionAndSize;
         private ShaderProperty.VectorValue sizeAndMaterial;
-        private ShaderProperty.VectorValue repeatProps;
 
-        [SerializeField] private QcUtils.DynamicRangeFloat _size = new QcUtils.DynamicRangeFloat(0.01f, 1000f, 1);
+        [SerializeField] private QcUtils.DynamicRangeFloat _size = new QcUtils.DynamicRangeFloat(0.01f, 5f, 1);
         [SerializeField] private QcUtils.DynamicRangeFloat _material = new QcUtils.DynamicRangeFloat(0.01f, 5f, 0.2f);
-
         
         LinkedLerp.TransformLocalPosition lrpPosition;
         LinkedLerp.TransformLocalScale lrpScale;
@@ -31,7 +29,6 @@ namespace RayMarching
         {
             positionAndSize = new ShaderProperty.VectorValue(variableName);
             sizeAndMaterial = new ShaderProperty.VectorValue(variableName+"_Size");
-            //repeatProps = new ShaderProperty.VectorValue(variableName + "_Reps");
         }
 
         void OnEnable()

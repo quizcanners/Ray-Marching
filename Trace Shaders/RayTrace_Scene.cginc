@@ -5,7 +5,7 @@
 #if RT_MOTION_TRACING
 	#define PATH_LENGTH 6
 #else
-	#define PATH_LENGTH 12
+	#define PATH_LENGTH 20
 #endif
 
 float3 opU(float3 d, float iResult, float mat) {
@@ -18,24 +18,37 @@ float3 worldhit(in float3 ro, in float3 rd, in float2 dist, out float3 normal) {
 
 	float3 d = float3(dist, 0.);
 	d = opU(d, iPlane(ro, rd, d.xy, normal, float3(0, 1, 0), 0.),																1.);
-	d = opU(d, iBox(ro - RayMarchCube_0.xyz, rd, d.xy, normal, RayMarchCube_0.w),								RayMarchCube_0_Size.w);
-	d = opU(d, iSphere(ro - RayMarchSphere_0.xyz, rd, d.xy, normal, RayMarchSphere_0.w),						RayMarchSphere_0_Size.w);
-	d = opU(d, iCylinder(ro, rd, d.xy, normal,								float3(2.1, .1, -2), float3(1.9, .5, -1.9), .08),	4.);
-	d = opU(d, iCylinder(ro - float3(1, .100, -7), rd, d.xy, normal,		float3(0, 0, 0), float3(0, .4, 0), .1),				5.);
-	d = opU(d, iTorus(ro - float3(0, .250, 1), rd, d.xy, normal,			float2(.2, .05)),									6.);
-	d = opU(d, iCapsule(ro - float3(1, .000, -1), rd, d.xy, normal,			float3(-.1, .1, -.1), float3(.2, .4, .2), .1),		7.);
-	d = opU(d, iGoursat(ro - RayMarchCube_1.xyz, rd, d.xy, normal,			RayMarchCube_1.w, RayMarchCube_1.w * 1.25),		RayMarchCube_1_Size.w);
-	d = opU(d, iEllipsoid(ro - float3(-1, .300, 0), rd, d.xy, normal,		float3(.2, .25, .05)),								11.);
+
+
+	float3 m = sign(rd) / max(abs(rd), 1e-8);
+
+	d = opU(d, iBox(ro - RayMarchCube_0.xyz, rd, d.xy, normal, RayMarchCube_0_Size.rgb, m), RayMarchCube_0_Size.w);
+	d = opU(d, iBox(ro - RayMarchCube_1.xyz, rd, d.xy, normal, RayMarchCube_1_Size.rgb, m), RayMarchCube_1_Size.w);
+	d = opU(d, iBox(ro - RayMarchCube_2.xyz, rd, d.xy, normal, RayMarchCube_2_Size.rgb, m), RayMarchCube_2_Size.w);
+	d = opU(d, iBox(ro - RayMarchCube_3.xyz, rd, d.xy, normal, RayMarchCube_3_Size.rgb, m), RayMarchCube_3_Size.w);
+	d = opU(d, iBox(ro - RayMarchCube_4.xyz, rd, d.xy, normal, RayMarchCube_4_Size.rgb, m), RayMarchCube_4_Size.w);
+
+
+	d = opU(d, iGoursat(ro - RayMarchCube_5.xyz, rd, d.xy, normal, RayMarchCube_5.w, RayMarchCube_5.w * 1.25),					RayMarchCube_5_Size.w);
+	/*d = opU(d, iCylinder(ro - RayMarchCube_2.xyz, rd, d.xy, normal,	 float3(2.1, .1, -2), float3(1.9, .5, -1.9), .08),			4.);
+	d = opU(d, iCylinder(ro - RayMarchCube_3.xyz, rd, d.xy, normal,	float3(0, 0, 0), float3(0, .4, 0), .1),						5.);
+	d = opU(d, iTorus(ro - RayMarchCube_4.xyz, rd, d.xy, normal, float2(.2, .05)),												6.);
+	d = opU(d, iCapsule(ro - RayMarchCube_5.xyz, rd, d.xy, normal, float3(-.1, .1, -.1), float3(.2, .4, .2), .1),				7.);
+	
+	d = opU(d, iEllipsoid(ro - float3(-1, .300, 0), rd, d.xy, normal,	float3(.2, .25, .05)),									11.);
 	d = opU(d, iRoundedCone(ro - float3(2, .200, -1), rd, d.xy, normal,		float3(.1, 0, 0), float3(-.1, .3, .1), 0.15, 0.05), 12.);
 	d = opU(d, iRoundedCone(ro - float3(-1, .200, -2), rd, d.xy, normal,	float3(0, .3, 0), float3(0, 0, 0), .1, .2),			13.);
-	d = opU(d, iMesh(ro - float3(2, .090, 1), rd, d.xy, normal),																14.);
-	d = opU(d, iSphere4(ro - RayMarchSphere_1.xyz, rd, d.xy, normal, RayMarchSphere_1.w),								RayMarchSphere_1_Size.w);
+	d = opU(d, iMesh(ro - float3(2, .090, 1), rd, d.xy, normal),																14.);*/
 
-	tmp1 = opU(d, iBox(rotateY(ro - GlassCube_0.rgb, 0.78539816339), rotateY(rd, 0.78539816339), d.xy, tmp0, GlassCube_0.w * float3(.1, .2, .1)), GlassCube_0_Size.w);
+	d = opU(d, iSphere(ro - RayMarchSphere_0.xyz, rd, d.xy, normal,		RayMarchSphere_0.w),									RayMarchSphere_0_Size.w);
+	d = opU(d, iSphere4(ro - RayMarchSphere_1.xyz, rd, d.xy, normal,	RayMarchSphere_1.w),									RayMarchSphere_1_Size.w);
+	
+
+	/*tmp1 = opU(d, iBox(rotateY(ro - GlassCube_0.rgb, 0.78539816339), rotateY(rd, 0.78539816339), d.xy, tmp0, GlassCube_0.w * float3(.1, .2, .1)), GlassCube_0_Size.w);
 	if (tmp1.y < d.y) {
 		d = tmp1;
 		normal = rotateY(tmp0, -0.78539816339);
-	}
+	}*/
 
 	//d = opU(d, iCone(ro - float3(2, .200, 0), rd, d.xy, normal, float3(.1, 0, 0), float3(-.1, .3, .1), .15, .05), 8.);
 

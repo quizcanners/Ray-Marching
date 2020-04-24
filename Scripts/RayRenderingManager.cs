@@ -119,7 +119,7 @@ namespace RayMarching
                 var tf = MainCamera.transform;
 
                 cameraShakeDebug = (_previousCamPosition - tf.position).magnitude +
-                    Quaternion.Angle(_previousCamRotation, tf.rotation)*0.1f;
+                    Quaternion.Angle(_previousCamRotation, tf.rotation);
 
                 _previousCamPosition = tf.position;
                 _previousCamRotation = tf.rotation;
@@ -129,7 +129,7 @@ namespace RayMarching
 
                 _stableFrames = _stableFrames * cameraShakeDebug + cameraShakeDebug;
 
-                _RayTraceTraparency.GlobalValue = _stableFrames < 2 ? 1f : Mathf.Clamp(2f/_stableFrames, 0.01f, 0.5f);
+                _RayTraceTraparency.GlobalValue = _stableFrames < 2 ? 1f : Mathf.Clamp(2f/_stableFrames, 0.001f, 0.5f);
 
                 MOTION_TRACING.Enabled = _stableFrames < 2;
 

@@ -59,6 +59,7 @@ float iSphere(in float3 ro, in float3 rd, in float2 distBound, inout float3 norm
 	float b = dot(ro, rd);
 	float c = dot(ro, ro) - sphereRadius * sphereRadius;
 	float h = b * b - c;
+
 	if (h < 0.) {
 		return MAX_DIST;
 	}
@@ -80,10 +81,31 @@ float iSphere(in float3 ro, in float3 rd, in float2 distBound, inout float3 norm
 	}
 }
 
+
+/*
+void iBox( in vec3 ro, in vec3 m, in vec3 boxSize, inout vec2 nearestCast)
+{
+
+	vec3 n = m*ro;
+	vec3 k = abs(m)*boxSize;
+
+	vec3 t1 = -n - k;
+	vec3 t2 = -n + k;
+
+	float tN = max( max( t1.x, t1.y ), t1.z );
+	float tF = min( min( t2.x, t2.y ), t2.z );
+
+	float isNear = step(tN, tF) * step(0., tF) * step(tN, nearestCast.x);
+
+	nearestCast = mix(nearestCast, vec2(tN, tF), isNear);
+}
+
+*/
+
 // Box:             https://www.shadertoy.com/view/ld23DV
 float iBox(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,
-	in float3 boxSize) {
-	float3 m = sign(rd) / max(abs(rd), 1e-8);
+	in float3 boxSize, in float3 m) {
+
 	float3 n = m * ro;
 	float3 k = abs(m)*boxSize;
 
@@ -93,21 +115,18 @@ float iBox(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,
 	float tN = max(max(t1.x, t1.y), t1.z);
 	float tF = min(min(t2.x, t2.y), t2.z);
 
-	if (tN > tF || tF <= 0.) {
+	if (tN > tF 
+		//|| tF <= 0. 
+		|| 
+		tN > distBound.y 
+		|| tN < distBound.x
+		)
+	{
 		return MAX_DIST;
 	}
 	else {
-		if (tN >= distBound.x && tN <= distBound.y) {
 			normal = -sign(rd)*step(t1.yzx, t1.xyz)*step(t1.zxy, t1.xyz);
 			return tN;
-		}
-		else if (tF >= distBound.x && tF <= distBound.y) {
-			normal = -sign(rd)*step(t1.yzx, t1.xyz)*step(t1.zxy, t1.xyz);
-			return tF;
-		}
-		else {
-			return MAX_DIST;
-		}
 	}
 }
 

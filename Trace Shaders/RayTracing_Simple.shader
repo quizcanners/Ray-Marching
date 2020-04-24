@@ -59,7 +59,7 @@
 
 				o.screenPos.xy /= o.screenPos.w;
 
-				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.screenPos.xy * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0));
+				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.screenPos.xy * 13.5123 + float2(_SinTime.w, _CosTime.w) * 32.12345612, 0, 0));
 
 				float4 previousFrame = tex2Dlod(_RayTracing_SourceBuffer, float4(o.screenPos.xy, 0, 0));
 
@@ -100,9 +100,8 @@
 				//col = (previousFrame.rgb + col.rgb)/ (ITER + 1);
 
 #else*/
-				col = col * _RayTraceTransparency + previousFrame.rgb * (1 - _RayTraceTransparency);
+				col = col * _RayTraceTransparency * 1000 + max(0,previousFrame.rgb) * (1 - _RayTraceTransparency);
 //#endif
-
 
 				return float4(col,1);
 			}

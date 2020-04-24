@@ -3,18 +3,24 @@ uniform float4 RayMarchCube_0_Size;
 
 uniform float4 RayMarchCube_1;
 uniform float4 RayMarchCube_1_Size;
-uniform float4 RayMarchCube_1_Reps;
+
+uniform float4 RayMarchCube_2;
+uniform float4 RayMarchCube_2_Size;
+
+uniform float4 RayMarchCube_3;
+uniform float4 RayMarchCube_3_Size;
+
+uniform float4 RayMarchCube_4;
+uniform float4 RayMarchCube_4_Size;
+
+uniform float4 RayMarchCube_5;
+uniform float4 RayMarchCube_5_Size;
 
 uniform float4 RayMarchSphere_0;
-uniform float4 RayMarchSphere_0_Reps;
 uniform float4 RayMarchSphere_0_Size;
 
 uniform float4 RayMarchSphere_1;
-uniform float4 RayMarchSphere_1_Reps;
 uniform float4 RayMarchSphere_1_Size;
-
-uniform float4 GlassCube_0;
-uniform float4 GlassCube_0_Size;
 
 uniform float4 _RayMarchLightColor;
 uniform float4 _RayMarchSkyColor;

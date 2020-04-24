@@ -76,6 +76,8 @@
 					col.rgb = blur /= 9;
 #endif*/
 
+					col *= 0.001;
+
 					// gamma correction
 					col = max(0, col - 0.004);
 					col = (col*(6.2*col + .5)) / (col*(6.2*col + 1.7) + 0.06);

@@ -13,23 +13,24 @@ namespace RayMarching
     {
 
         public string variableName;
+        
+        [SerializeField] private QcUtils.DynamicRangeFloat _size = new QcUtils.DynamicRangeFloat(0.01f, 5f, 1);
+        [SerializeField] private QcUtils.DynamicRangeFloat _material = new QcUtils.DynamicRangeFloat(0.01f, 5f, 0.2f);
 
         private ShaderProperty.VectorValue positionAndSize;
         private ShaderProperty.VectorValue sizeAndMaterial;
 
-        [SerializeField] private QcUtils.DynamicRangeFloat _size = new QcUtils.DynamicRangeFloat(0.01f, 5f, 1);
-        [SerializeField] private QcUtils.DynamicRangeFloat _material = new QcUtils.DynamicRangeFloat(0.01f, 5f, 0.2f);
-        
-        LinkedLerp.TransformLocalPosition lrpPosition;
-        LinkedLerp.TransformLocalScale lrpScale;
+        void InitializeProperties()
+        {
+            if (positionAndSize == null)
+            {
+                positionAndSize = new ShaderProperty.VectorValue(variableName);
+                sizeAndMaterial = new ShaderProperty.VectorValue(variableName + "_Size");
+            }
+        }
 
         public GameObject RenderingVolume;
 
-        void InitializeProperties()
-        {
-            positionAndSize = new ShaderProperty.VectorValue(variableName);
-            sizeAndMaterial = new ShaderProperty.VectorValue(variableName+"_Size");
-        }
 
         void OnEnable()
         {
@@ -40,30 +41,7 @@ namespace RayMarching
         }
 
         private bool _isDirty = false;
-
-        // Update is called once per frame
-        void Update()
-        {
-
-            var tf = transform;
-
-            if (_isDirty || (Vector3.Distance(positionAndSize.GlobalValue, tf.position) + 
-                 Vector3.Distance(tf.localScale, sizeAndMaterial.latestValue.XYZ()))>float.Epsilon * 10000)
-            {
-                _isDirty = false;
-
-                positionAndSize.GlobalValue = tf.position.ToVector4(transform.localScale.x);
-                sizeAndMaterial.GlobalValue = tf.localScale.ToVector4(_material.Value);
-
-                if (RayRenderingManager.instance)
-                    RayRenderingManager.instance.SetDirty();
-            }
-
-
-           // float repeat = 10 + 5 * tf.localScale.x;
-           // repeatProps.GlobalValue = new Vector4(repeat, repeat*0.5f, 1f/repeat, 0);
-        }
-
+        
         public bool Inspect()
         {
             var changed = false;
@@ -92,6 +70,35 @@ namespace RayMarching
         }
 
         #region Linked Lerp
+
+
+
+
+        // Update is called once per frame
+        void Update()
+        {
+
+            var tf = transform;
+
+            if (_isDirty || (Vector3.Distance(positionAndSize.GlobalValue, tf.position) +
+                             Vector3.Distance(tf.localScale, sizeAndMaterial.latestValue.XYZ())) > float.Epsilon * 10000)
+            {
+                _isDirty = false;
+
+                positionAndSize.GlobalValue = tf.position.ToVector4(transform.localScale.x);
+                sizeAndMaterial.GlobalValue = tf.localScale.ToVector4(_material.Value);
+
+                if (RayRenderingManager.instance)
+                    RayRenderingManager.instance.SetDirty();
+            }
+
+
+            // float repeat = 10 + 5 * tf.localScale.x;
+            // repeatProps.GlobalValue = new Vector4(repeat, repeat*0.5f, 1f/repeat, 0);
+        }
+
+        LinkedLerp.TransformLocalPosition lrpPosition;
+        LinkedLerp.TransformLocalScale lrpScale;
 
         private bool _isLerping;
 
@@ -154,8 +161,10 @@ namespace RayMarching
 
             if (lrpPosition == null)
             {
-                lrpPosition = new LinkedLerp.TransformLocalPosition(transform, 10);
-                lrpScale = new LinkedLerp.TransformLocalScale(transform, 10);
+                lrpPosition = new LinkedLerp.TransformLocalPosition(transform, 100);
+                lrpPosition.lerpMode = LinkedLerp.LerpSpeedMode.Unlimited;
+                lrpScale = new LinkedLerp.TransformLocalScale(transform, 100);
+                lrpScale.lerpMode = LinkedLerp.LerpSpeedMode.Unlimited;
             }
 
             new CfgDecoder(data).DecodeTagsFor(this);

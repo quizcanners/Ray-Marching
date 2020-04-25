@@ -5,7 +5,7 @@
 #if RT_MOTION_TRACING
 	#define PATH_LENGTH 6
 #else
-	#define PATH_LENGTH 20
+	#define PATH_LENGTH 12
 #endif
 
 float3 opU(float3 d, float iResult, float mat) {

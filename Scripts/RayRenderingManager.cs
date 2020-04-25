@@ -3,6 +3,7 @@ using PlayerAndEditorGUI;
 using PlaytimePainter.Examples;
 using QuizCannersUtilities;
 using UnityEngine;
+using NodeNotes_Visual;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -11,13 +12,9 @@ namespace RayMarching
 {
 
     [ExecuteAlways]
-    public class RayRenderingManager : MonoBehaviour, IPEGI, ICfg, ILinkedLerping
+    public class RayRenderingManager : NodeNodesNeedEnableAbstract, IPEGI, ICfg, ILinkedLerping
     {
-
-
-        //https://github.com/keijiro/ParticleMotionVector // Maybe just get previous _WorldToCamera matrix if object is expected to be static.
-        // 
-
+        
         public static RayRenderingManager instance;
 
         [Header("Common")]
@@ -31,11 +28,9 @@ namespace RayMarching
         private readonly ShaderProperty.TextureValue PathTracingTargetBuffer = new ShaderProperty.TextureValue("_RayTracing_TargetBuffer");
         private RenderTexture SourceBuffer => firstIsSourceBuffer ? twoBuffers[0] : twoBuffers[1];
         private RenderTexture TargetBuffer => firstIsSourceBuffer ? twoBuffers[1] : twoBuffers[0];
-
-
+        
         public PrimitiveObject cube0, cube1, cube2, cube3, cube4, cube5, sphere0, sphere1;
-
-
+        
         private void Swap()
         {
             firstIsSourceBuffer = !firstIsSourceBuffer;
@@ -68,12 +63,17 @@ namespace RayMarching
         [NonSerialized] private QcUtils.DynamicRangeFloat DOFdistance = new QcUtils.DynamicRangeFloat(min: 0.01f, max: 10, value: 1);
 
         [NonSerialized] private LinkedLerp.MaterialFloat DOFTargetStrength = new LinkedLerp.MaterialFloat("_RayTraceDOF", 0.0001f);
-
-
+        
         ShaderProperty.FloatValue _RayTraceTraparency = new ShaderProperty.FloatValue("_RayTraceTransparency");
 
         ShaderProperty.ShaderKeyword _rayTraceUseDielecrtic = new ShaderProperty.ShaderKeyword("RT_USE_DIELECTRIC");
-        
+
+        public override void ManagedOnEnable()
+        {
+            UpdateShadeVariables();
+            instance = this;
+        }
+
         public void SetDirty()
         {
             _stableFrames = 0;
@@ -83,12 +83,6 @@ namespace RayMarching
         {
             _maxStepsInShader.GlobalValue = _maxSteps;
             _maxDistanceInShader.GlobalValue = _maxDistance;
-        }
-
-        void OnEnable()
-        {
-            UpdateShadeVariables();
-            instance = this;
         }
 
         #region Linked Lerp
@@ -209,18 +203,7 @@ namespace RayMarching
             var changed = false;
 
             inspected = this;
-
-            if (lerpAnimation)
-            {
-                "Lerp is Active".writeWarning();
-                "Dominant: {0} [{1}]".F(lerpData.dominantParameter, lerpData.MinPortion).nl();
-                pegi.nl();
-            } else 
-            "Lerp Done: {0} [{1}]".F(lerpData.dominantParameter, lerpData.MinPortion).nl();
-
-            if (godModeCamera && godModeCamera.mode == GodMode.Mode.STATIC && "Edit Camera".Click().nl())
-                godModeCamera.mode = GodMode.Mode.FPS;
-
+            
             pegi.toggleDefaultInspector(this);
 
             if (!MainCamera)
@@ -272,8 +255,7 @@ namespace RayMarching
             "Light Color".edit(ref _sunLightColor.targetValue).nl(ref changed);
             "Sky Color".edit(ref _skyColor.targetValue).nl(ref changed);
             "Fog Color".edit(ref _fogColor.targetValue).nl(ref changed);
-
-
+            
             if (changed)
                 this.SkipLerp(lerpData);
             
@@ -283,8 +265,19 @@ namespace RayMarching
             {
                 UpdateShadeVariables();
                 _stableFrames = 0;
-               
             }
+
+            if (lerpAnimation)
+            {
+                "Lerp is Active".writeWarning();
+                "Dominant: {0} [{1}]".F(lerpData.dominantParameter, lerpData.MinPortion).nl();
+                pegi.nl();
+            }
+            else
+                "Lerp Done: {0} [{1}]".F(lerpData.dominantParameter, lerpData.MinPortion).nl();
+
+            if (godModeCamera && godModeCamera.mode == GodMode.Mode.STATIC && "Edit Camera".Click().nl())
+                godModeCamera.mode = GodMode.Mode.FPS;
 
             return changed;
         }
@@ -355,6 +348,8 @@ namespace RayMarching
             if (godModeCamera)
                 godModeCamera.mode = GodMode.Mode.STATIC;
         }
+
+     
 
         #endregion
     }

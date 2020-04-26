@@ -680,9 +680,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   godModeCamera: {fileID: 0}
-  twoBuffers:
-  - {fileID: 8400000, guid: f154d97feee8e9941af4e8cf03a66be4, type: 2}
-  - {fileID: 8400000, guid: 12c21df7634ccb24288293a7eae9e699, type: 2}
   cube0: {fileID: 1659842604196899526}
   cube1: {fileID: 1659842603488480909}
   cube2: {fileID: 1659842603749555720}
@@ -693,7 +690,11 @@ MonoBehaviour:
   sphere1: {fileID: 8886341330509574054}
   _maxSteps: 50
   _maxDistance: 9454
-  _stopUpdatingAfter: 100
+  twoBuffers:
+  - {fileID: 8400000, guid: f154d97feee8e9941af4e8cf03a66be4, type: 2}
+  - {fileID: 8400000, guid: 12c21df7634ccb24288293a7eae9e699, type: 2}
+  _stopUpdatingAfter: 250
+  playLerpAnimation: 0
   configs: {fileID: 11400000, guid: d3a61179dc8db2c4fa841593866d73f4, type: 2}
 --- !u!114 &1659842603502420592
 MonoBehaviour:

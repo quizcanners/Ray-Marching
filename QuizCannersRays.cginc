@@ -1,3 +1,6 @@
+static const float GAMMA_TO_LINEAR = 2.2;
+static const float LINEAR_TO_GAMMA = 1 / GAMMA_TO_LINEAR;
+
 uniform float4 RayMarchCube_0;
 uniform float4 RayMarchCube_0_Size;
 
@@ -12,6 +15,7 @@ uniform float4 RayMarchCube_3_Size;
 
 uniform float4 RayMarchCube_4;
 uniform float4 RayMarchCube_4_Size;
+uniform float4 RayMarchCube_4_Rot;
 
 uniform float4 RayMarchCube_5;
 uniform float4 RayMarchCube_5_Size;
@@ -26,6 +30,7 @@ uniform float4 _RayMarchLightColor;
 uniform float4 _RayMarchSkyColor;
 uniform float _RayTraceTransparency;
 
+uniform float4 _RayTracing_TargetBuffer_ScreenFillAspect;
 
 uniform float _MaxRayMarchDistance;
 

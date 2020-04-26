@@ -19,6 +19,7 @@ namespace RayMarching
 
         private ShaderProperty.VectorValue positionAndSize;
         private ShaderProperty.VectorValue sizeAndMaterial;
+        private ShaderProperty.VectorValue rotationValue;
 
         void InitializeProperties()
         {
@@ -26,6 +27,7 @@ namespace RayMarching
             {
                 positionAndSize = new ShaderProperty.VectorValue(variableName);
                 sizeAndMaterial = new ShaderProperty.VectorValue(variableName + "_Size");
+                rotationValue = new ShaderProperty.VectorValue(variableName + "_Rot");
             }
         }
 
@@ -63,6 +65,9 @@ namespace RayMarching
             if (changed && RayRenderingManager.instance)
                 RayRenderingManager.instance.SetDirty();
 
+            if (!RayRenderingManager.instance)
+                "No manager Singleton".writeWarning();
+
             if (changed)
                 _isDirty = true;
 
@@ -87,6 +92,7 @@ namespace RayMarching
 
                 positionAndSize.GlobalValue = tf.position.ToVector4(transform.localScale.x);
                 sizeAndMaterial.GlobalValue = tf.localScale.ToVector4(_material.Value);
+                rotationValue.GlobalValue = tf.eulerAngles.ToVector4();
 
                 if (RayRenderingManager.instance)
                     RayRenderingManager.instance.SetDirty();
@@ -140,6 +146,8 @@ namespace RayMarching
             
             }
 
+            cody.Add("mat", _material);
+
             return cody;
         }
         
@@ -149,6 +157,7 @@ namespace RayMarching
             {
                 case "pos": lrpPosition.TargetValue = data.ToVector3(); break;
                 case "size": lrpScale.TargetValue = data.ToVector3(); break;
+                case "mat": _material.Decode(data); break;
                 default: return false;
             }
 

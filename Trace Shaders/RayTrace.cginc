@@ -477,8 +477,9 @@ float iRoundedCone(in float3 ro, in float3 rd, in float2 distBound, inout float3
 // Triangle:        https://www.shadertoy.com/view/MlGcDz
 float iTriangle(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,
 	in float3 v0, in float3 v1, in float3 v2) {
-	float3 v1v0 = v1 - v0;
-	float3 v2v0 = v2 - v0;
+
+	float3 v1v0 = v1 - v0; // Can be passed in
+	float3 v2v0 = v2 - v0; // Can be passed in
 	float3 rov0 = ro - v0;
 
 	float3  n = cross(v1v0, v2v0);
@@ -488,7 +489,7 @@ float iTriangle(in float3 ro, in float3 rd, in float2 distBound, inout float3 no
 	float v = d * dot(q, v1v0);
 	float t = d * dot(-n, rov0);
 
-	if (u < 0. || v<0. || (u + v)>1. || t<distBound.x || t>distBound.y) {
+	if (u < 0. || v<0. || (u + v) > 1. || t<distBound.x || t>distBound.y) {
 		return MAX_DIST;
 	}
 	else {

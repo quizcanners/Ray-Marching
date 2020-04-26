@@ -57,26 +57,27 @@
 
 					float4 col = tex2Dlod(_RayTracing_TargetBuffer, float4(screenUV,0,0));
 
-/*
+
 #if RT_MOTION_TRACING
-					float2 off = _MainTex_TexelSize.xy * 1.5;
+					float2 off = _RayTracing_TargetBuffer_ScreenFillAspect.zw * 1.5;
 
-					#define R(kernel) tex2Dlod( _MainTex, float4(screenUV + kernel* off  ,0,0))
+					float4 blur;
+					float same;
 
-					float4 blur =	
-						R(float2(-1, 0)) + 
-						R(float2( 1, 0)) + 
-						R(float2( 0, -1)) + 
-						R(float2( 0, 1)) +
-						R(float2( 1, 1)) +
-						R(float2(-1,-1)) +
-						R(float2(1, -1)) +
-						R(float2(-1, 1)) + col;
+					#define R(kernel) blur = tex2Dlod( _RayTracing_TargetBuffer, float4(screenUV + kernel* off  ,0,0)); same = 1 - min(1, abs(blur.a - col.a)*0.01); col.rgb = max(col.rgb, blur.rgb * same * 0.55)
 
-					col.rgb = blur /= 9;
-#endif*/
+					//float4 blur =	
+					R(float2(-1, 0));
+					R(float2(1, 0));
+					R(float2(0, -1));
+					R(float2(0, 1));
+					R(float2(1, 1));
+					R(float2(-1, -1));
+					R(float2(1, -1));
+					R(float2(-1, 1)); //col;
 
-					col *= 0.001;
+					//col.rgb = blur /= 9;
+#endif
 
 					// gamma correction
 					col = max(0, col - 0.004);

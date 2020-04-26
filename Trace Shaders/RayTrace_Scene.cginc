@@ -1,9 +1,7 @@
 #include "RayTrace.cginc"
 
-
-
 #if RT_MOTION_TRACING
-	#define PATH_LENGTH 6
+	#define PATH_LENGTH 4
 #else
 	#define PATH_LENGTH 12
 #endif
@@ -13,12 +11,9 @@ float3 opU(float3 d, float iResult, float mat) {
 }
 
 float3 worldhit(in float3 ro, in float3 rd, in float2 dist, out float3 normal) {
-	float3 tmp0; 
-	float3 tmp1; 
 
 	float3 d = float3(dist, 0.);
-	d = opU(d, iPlane(ro, rd, d.xy, normal, float3(0, 1, 0), 0.),																1.);
-
+	d = opU(d, iPlane(ro, rd, d.xy, normal, float3(0, 1, 0), 0.),																0.2);
 
 	float3 m = sign(rd) / max(abs(rd), 1e-8);
 
@@ -28,8 +23,20 @@ float3 worldhit(in float3 ro, in float3 rd, in float2 dist, out float3 normal) {
 	d = opU(d, iBox(ro - RayMarchCube_3.xyz, rd, d.xy, normal, RayMarchCube_3_Size.rgb, m), RayMarchCube_3_Size.w);
 	d = opU(d, iBox(ro - RayMarchCube_4.xyz, rd, d.xy, normal, RayMarchCube_4_Size.rgb, m), RayMarchCube_4_Size.w);
 
+	/*float3 tmpNorm;
+	float3 tmp1 = opU(d, iBox(rotateY(ro - RayMarchCube_4.xyz, RayMarchCube_4_Rot.y), rotateY(rd, RayMarchCube_4_Rot.y), d.xy, tmpNorm, RayMarchCube_4_Size.rgb, m), 16.);
+	if (tmp1.y < d.y) {
+		d = tmp1;
+		normal = rotateY(tmpNorm, -RayMarchCube_4_Rot.y);
+	}*/
+
+
 
 	d = opU(d, iGoursat(ro - RayMarchCube_5.xyz, rd, d.xy, normal, RayMarchCube_5.w, RayMarchCube_5.w * 1.25),					RayMarchCube_5_Size.w);
+
+
+	//d = opU(d, iTriangle(ro, rd, d.xy, normal, float3(5, 5, 5), float3 (0, 0, 0), float3(5,0,5)), 2.12);
+
 	/*d = opU(d, iCylinder(ro - RayMarchCube_2.xyz, rd, d.xy, normal,	 float3(2.1, .1, -2), float3(1.9, .5, -1.9), .08),			4.);
 	d = opU(d, iCylinder(ro - RayMarchCube_3.xyz, rd, d.xy, normal,	float3(0, 0, 0), float3(0, .4, 0), .1),						5.);
 	d = opU(d, iTorus(ro - RayMarchCube_4.xyz, rd, d.xy, normal, float2(.2, .05)),												6.);
@@ -85,25 +92,30 @@ float gpuIndepentHash(float p) {
 
 void getMaterialProperties(in float3 pos, in float mat, out float3 albedo, out float type, out float roughness) {
 
+#if RT_USE_CHECKERBOARD
 	if (mat < 1.5) {
 		albedo = 0.25 + 0.25*checkerBoard(pos.xz * 5.0);
 		roughness = 0.75 * albedo.x - 0.15;
 		type = METAL;
 	}
-	else {
+	else
+#endif
+
+	{
 		albedo = Pallete(mat*0.59996323 + 0.5, 0.5, 0.5, 1, float3(0, 0.1, 0.2));
 		type = floor(gpuIndepentHash(mat) * 4.);
 		roughness = (1. - type * .475) * gpuIndepentHash(mat);
 	}
 }
 
-float3 render(in float3 ro, in float3 rd, in float4 seed) {
+float4 render(in float3 ro, in float3 rd, in float4 seed) {
 
 	float3 albedo, normal;
 	float3 col = 1;
 	float roughness, type;
 
-
+	float isFirst = 1;
+	float distance = MAX_DIST_EDGE;
 
 	for (int i = 0; i < PATH_LENGTH; ++i) {
 		float3 res = worldhit(ro, rd, float2(.0001, MAX_DIST_EDGE), normal);
@@ -116,6 +128,15 @@ float3 render(in float3 ro, in float3 rd, in float4 seed) {
 			ro += rd * res.y;
 
 			getMaterialProperties(ro, res.z, albedo, type, roughness);
+
+#if RT_DENOISING
+			distance = isFirst > 0.5 ? 
+				res.y +
+				dot(rd, normal)
+				: distance;
+			isFirst = 0;
+#endif
+
 
 			if (type < .5) { // Added/hacked a reflection term  0 - 0.5
 							
@@ -144,7 +165,6 @@ float3 render(in float3 ro, in float3 rd, in float4 seed) {
 				float3 refracted = 0;
 				float ni_over_nt, cosine, reflectProb = 1.;
 				float theDot = dot(rd, normal);
-				//float r0;
 
 				if (theDot > 0.) {
 					normalOut = -normal;
@@ -179,7 +199,7 @@ float3 render(in float3 ro, in float3 rd, in float4 seed) {
 #endif
 			else
 			{
-				return col * albedo * 4;
+				return float4(col * albedo * 4, distance);
 			}
 
 		}
@@ -191,7 +211,7 @@ float3 render(in float3 ro, in float3 rd, in float4 seed) {
 			
 			//col.rgb = col.rgb * (1- fog) + fog * ((_RayMarchSkyColor.rgb + unity_FogColor.rgb)*0.5);*/
 
-			return col * skyCol;
+			return float4(col * skyCol, distance);
 		}
 	}
 	return 0;

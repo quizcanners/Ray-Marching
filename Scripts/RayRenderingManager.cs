@@ -10,8 +10,7 @@ using UnityEditor;
 
 namespace RayMarching
 {
-
-    [ExecuteAlways]
+    
     public class RayRenderingManager : NodeNodesNeedEnableAbstract, IPEGI, ICfg, ILinkedLerping
     {
         
@@ -23,7 +22,6 @@ namespace RayMarching
         public Camera MainCamera => godModeCamera ? godModeCamera.MainCam : null;
 
         public PrimitiveObject cube0, cube1, cube2, cube3, cube4, cube5, sphere0, sphere1;
-        
         
         LinkedLerp.MaterialColor _sunLightColor = new LinkedLerp.MaterialColor("_RayMarchLightColor", Color.grey, 10);
         LinkedLerp.MaterialColor _skyColor = new LinkedLerp.MaterialColor("_RayMarchSkyColor", Color.grey, 10);
@@ -327,7 +325,7 @@ namespace RayMarching
 
         #region Encode & Decode
 
-        public CfgEncoder Encode()
+        public override CfgEncoder Encode()
         {
             var cody = new CfgEncoder()
                 .Add_Bool("useRT", useRayTracing)
@@ -358,7 +356,7 @@ namespace RayMarching
             return cody;
         }
 
-        public bool Decode(string tg, string data)
+        public override bool Decode(string tg, string data)
         {
             switch (tg)
             {
@@ -387,7 +385,7 @@ namespace RayMarching
             return true;
         }
 
-        public void Decode(string data)
+        public override void Decode(string data)
         {
             new CfgDecoder(data).DecodeTagsFor(this);
             playLerpAnimation = true;

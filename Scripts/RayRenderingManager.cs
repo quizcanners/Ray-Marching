@@ -13,7 +13,9 @@ namespace RayMarching
     
     public class RayRenderingManager : NodeNodesNeedEnableAbstract, IPEGI, ICfg, ILinkedLerping
     {
-        
+
+        public override string ClassTag => "RtxMgmt";
+
         public static RayRenderingManager instance;
 
         [Header("Common")]
@@ -290,9 +292,7 @@ namespace RayMarching
             "Light Color".edit(ref _sunLightColor.targetValue).nl(ref changed);
             "Sky Color".edit(ref _skyColor.targetValue).nl(ref changed);
             "Fog Color".edit(ref _fogColor.targetValue).nl(ref changed);
-
-
-
+            
             if (changed)
             {
                 lerpFinished = false;

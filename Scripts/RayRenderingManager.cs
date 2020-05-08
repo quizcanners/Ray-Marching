@@ -75,9 +75,7 @@ namespace RayMarching
         private RenderTexture SourceBuffer => firstIsSourceBuffer ? twoBuffers[0] : twoBuffers[1];
         private RenderTexture TargetBuffer => firstIsSourceBuffer ? twoBuffers[1] : twoBuffers[0];
 
-
-
-
+        
         public void OnEnable()
         {
             ManagedOnEnable();
@@ -396,10 +394,6 @@ namespace RayMarching
 
         #endregion
     }
-
-
-
-
 
 #if UNITY_EDITOR
     [CustomEditor(typeof(RayRenderingManager))]

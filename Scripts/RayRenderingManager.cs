@@ -227,7 +227,9 @@ namespace RayMarching
         private bool _pauseAccumulation;
 
         public static RayRenderingManager inspected;
-        
+
+        public override bool SaveOnEdit => false;
+
         public override bool Inspect()
         {
 

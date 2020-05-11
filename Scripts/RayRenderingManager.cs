@@ -11,7 +11,7 @@ using UnityEditor;
 namespace RayMarching
 {
     
-    public class RayRenderingManager : NodeNodesNeedEnableAbstract, IPEGI, ICfg, ILinkedLerping
+    public class RayRenderingManager : PresentationSystemsAbstract, IPEGI, ICfg, ILinkedLerping
     {
 
         public override string ClassTag => "RtxMgmt";
@@ -228,7 +228,7 @@ namespace RayMarching
 
         public static RayRenderingManager inspected;
         
-        public bool Inspect()
+        public override bool Inspect()
         {
 
             var changed = false;
@@ -319,6 +319,9 @@ namespace RayMarching
 
             return changed;
         }
+
+        public override string NameForDisplayPEGI() => "Ray Rendering";
+
         #endregion
 
         #region Encode & Decode

@@ -27,8 +27,7 @@
 
 			#include "UnityCG.cginc"
 			#include "Lighting.cginc"
-			#include "RayMarchScene.cginc"
-			#include "Assets/Tools/Playtime Painter/Shaders/quizcanners_cg.cginc"
+			#include "PrimitivesScene.cginc"
 
 			#pragma vertex vert
 			#pragma fragment frag

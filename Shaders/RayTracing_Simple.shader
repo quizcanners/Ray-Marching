@@ -22,8 +22,7 @@
 
 			CGPROGRAM
 
-			#include "RayTrace_Scene.cginc"
-			#include "Assets/Tools/Playtime Painter/Shaders/quizcanners_cg.cginc"
+			#include "PrimitivesScene.cginc"
 
 			#pragma vertex vert
 			#pragma fragment frag
@@ -49,11 +48,6 @@
 				o.screenPos = ComputeScreenPos(o.pos);
 				return o;
 			}
-
-			uniform float _RayTraceDofDist;
-			uniform float _RayTraceDOF;
-			uniform sampler2D _RayTracing_SourceBuffer;
-			uniform float4 _RayTracing_SourceBuffer_ScreenFillAspect;
 
 			inline float4 Denoise(float2 screenUV, float2 pixSize, float colA, float strictness) {
 				float4 off = tex2Dlod(_RayTracing_SourceBuffer, float4(screenUV + pixSize, 0, 0));

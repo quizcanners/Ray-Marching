@@ -23,13 +23,20 @@ namespace RayMarching
         public GodMode godModeCamera;
         public Camera MainCamera => godModeCamera ? godModeCamera.MainCam : null;
 
-        public PrimitiveObject cube0, cube1, cube2, cube3, cube4, cube5, sphere0, sphere1;
+        public PrimitiveObject cube0, cube1, cube2, cube3, cube4, cube5, sphere0, sphere1, light0;
         
         LinkedLerp.MaterialColor _sunLightColor = new LinkedLerp.MaterialColor("_RayMarchLightColor", Color.grey, 10);
         LinkedLerp.MaterialColor _skyColor = new LinkedLerp.MaterialColor("_RayMarchSkyColor", Color.grey, 10);
         LinkedLerp.ColorValue _fogColor = new LinkedLerp.ColorValue("Fog", speed: 10);
-        [NonSerialized] private bool useRayTracing = true;
+
+        private bool UseRayTracing
+        {
+            get { return !_usingRayMarching.Enabled; }
+            set { _usingRayMarching.Enabled = !value; }
+        }
         
+        ShaderProperty.ShaderKeyword _usingRayMarching = new ShaderProperty.ShaderKeyword("_IS_RAY_MARCHING");
+
         [Header("Ray-Marthing")]
         ShaderProperty.FloatValue _maxStepsInShader = new ShaderProperty.FloatValue("_maxRayMarchSteps");
         [SerializeField] private float _maxSteps = 50;
@@ -181,6 +188,7 @@ namespace RayMarching
             cube5.Portion(ld);
             sphere0.Portion(ld);
             sphere1.Portion(ld);
+            light0.Portion(ld);
         }
 
         public void Lerp(LerpData ld, bool canSkipLerp)
@@ -188,8 +196,8 @@ namespace RayMarching
             if (lerpFinished)
                 return;
 
-            _rayMarchSmoothness.Lerp(ld, canSkipLerp || useRayTracing);
-            _rayMarchShadowSoftness.Lerp(ld, canSkipLerp || useRayTracing);
+            _rayMarchSmoothness.Lerp(ld, canSkipLerp || UseRayTracing);
+            _rayMarchShadowSoftness.Lerp(ld, canSkipLerp || UseRayTracing);
             _sunLightColor.Lerp(ld, canSkipLerp);
             _skyColor.Lerp(ld, canSkipLerp);
             _fogColor.Lerp(ld, canSkipLerp);
@@ -209,6 +217,7 @@ namespace RayMarching
             cube5.Lerp(ld, canSkipLerp);
             sphere0.Lerp(ld, canSkipLerp);
             sphere1.Lerp(ld, canSkipLerp);
+            light0.Lerp(ld, canSkipLerp);
 
             if (ld.MinPortion == 1)
             {
@@ -249,22 +258,22 @@ namespace RayMarching
                 return false;
             }
 
-            if (useRayTracing)
+            if (UseRayTracing)
             {
                 pegi.toggle(ref _pauseAccumulation, icon.Play, icon.Pause);
 
                 "RAY-TRACING [frms: {0} | {1}]".F((int)_stableFrames, cameraShakeDebug).write(PEGI_Styles.ListLabel);
                 if (icon.PreviewShader.Click("Switch to Ray-Marching").nl())
-                    useRayTracing = false;
+                    _usingRayMarching.Enabled = true;
             }
             else
             {
                 "RAY-MARCHING".write(PEGI_Styles.ListLabel);
                 if (icon.OriginalShader.Click("Switch to Ray-Tacing").nl())
-                    useRayTracing = true;
+                    UseRayTracing = true;
             }
 
-            if (!useRayTracing)
+            if (_usingRayMarching.Enabled)
             {
                 "Max Steps".edit(ref _maxSteps, 1, 400).nl(ref changed);
 
@@ -278,16 +287,15 @@ namespace RayMarching
             }
             else
             {
-
-                "DOF".nl();
-                DOFdistance.Inspect().nl(ref changed);
-                var trg = DOFTargetStrength.TargetValue;
-                if ("DOF Strength".edit(90, ref trg, 0.0001f, 3f).nl(ref changed))
-                    DOFTargetStrength.TargetValue = trg;
-
                 _rayTraceUseDielecrtic.Inspect().nl(ref changed);
                 _rayTraceUseCheckerboard.Inspect().nl(ref changed);
             }
+
+            "DOF".nl();
+            DOFdistance.Inspect().nl(ref changed);
+            var trg = DOFTargetStrength.TargetValue;
+            if ("DOF Strength".edit(90, ref trg, 0.0001f, 3f).nl(ref changed))
+                DOFTargetStrength.TargetValue = trg;
 
             "Light Color".edit(ref _sunLightColor.targetValue).nl(ref changed);
             "Sky Color".edit(ref _skyColor.targetValue).nl(ref changed);
@@ -331,19 +339,17 @@ namespace RayMarching
         public override CfgEncoder Encode()
         {
             var cody = new CfgEncoder()
-                .Add_Bool("useRT", useRayTracing)
+                .Add_Bool("useRT", UseRayTracing)
                 .Add("col", _sunLightColor.TargetValue)
                 .Add("sky", _skyColor.TargetValue)
                 .Add("fog", _fogColor.TargetValue)
                 .Add("gm", godModeCamera);
 
-            if (!useRayTracing) cody
+            if (_usingRayMarching.Enabled) cody
                 .Add("sm", smoothness)
                 .Add("shSo", shadowSoftness);
                     
-            if (useRayTracing) cody
-                .Add("dofD", DOFdistance)
-                .Add("dofPow", DOFTargetStrength.TargetValue)
+            if (UseRayTracing) cody
                 .Add_Bool("diEl", _rayTraceUseDielecrtic.Enabled)
                 .Add_Bool("rtCB", _rayTraceUseCheckerboard.Enabled);
 
@@ -354,7 +360,10 @@ namespace RayMarching
                 .Add("c4", cube4)
                 .Add("c5", cube5)
                 .Add("s0", sphere0)
-                .Add("s1", sphere1);
+                .Add("dofD", DOFdistance)
+                .Add("dofPow", DOFTargetStrength.TargetValue)
+                .Add("s1", sphere1)
+                .Add("l0", light0);
 
             return cody;
         }
@@ -371,7 +380,7 @@ namespace RayMarching
                 case "gm": godModeCamera.Decode(data); break;
                 case "dofD": DOFdistance.Decode(data); break;
                 case "dofPow": DOFTargetStrength.TargetValue = data.ToFloat(); break;
-                case "useRT": useRayTracing = data.ToBool(); break;
+                case "useRT": UseRayTracing = data.ToBool(); break;
                 case "c0": cube0.Decode(data); break;
                 case "c1": cube1.Decode(data); break;
                 case "c2": cube2.Decode(data); break;
@@ -380,6 +389,7 @@ namespace RayMarching
                 case "c5": cube5.Decode(data); break;
                 case "s0": sphere0.Decode(data); break;
                 case "s1": sphere1.Decode(data); break;
+                case "l0": light0.Decode(data); break;
                 case "diEl": _rayTraceUseDielecrtic.Enabled = data.ToBool(); break;
                 case "rtCB": _rayTraceUseCheckerboard.Enabled = data.ToBool(); break;
                 default: return false;

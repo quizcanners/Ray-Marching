@@ -1,5 +1,3 @@
-#include "Assets/Ray-Marching/QuizCannersRays.cginc"
-
 
 // Ray Tracing - Primitives. Created by Reinder Nijhoff 2019
 // The MIT License

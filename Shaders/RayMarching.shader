@@ -25,8 +25,8 @@
 
 				#include "UnityCG.cginc"
 				#include "Lighting.cginc"
-				#include "RayMarchScene.cginc"
-				#include "Assets/Tools/Playtime Painter/Shaders/quizcanners_cg.cginc"
+				#include "PrimitivesScene.cginc"
+			
 
 				#pragma vertex vert
 				#pragma fragment frag
@@ -45,14 +45,8 @@
 					float4 color: 		COLOR;
 				};
 
-
-
-	
 				sampler2D _MainTex;
 			
-
-
-
 				v2f vert(appdata_full v) {
 					v2f o;
 					UNITY_SETUP_INSTANCE_ID(v);
@@ -113,7 +107,6 @@
 
 					dott = 1 - deDott;
 			
-
 					float3 lightSource = RayMarchLight_0.xyz; 
 
 					float3 toCenterVec = lightSource - position;

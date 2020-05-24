@@ -1,7 +1,7 @@
-#include "Assets/Ray-Marching/QuizCannersRays.cginc"
 // You can add/subtract sin(pos.x/y/y); but use: if  abs(dist)<0.1 
 // abs(dist) - thickness to create a shell
 
+// Sdf Functions
 inline float Plane(float3 position) {
 	return position.y;
 }
@@ -46,10 +46,7 @@ inline float CubeDistance(float3 p, float4 posNsize, float3 size, float softness
 	return dist;
 }
 
-inline float Mix(float a, float b, float p) {
-	return a * (1 - p) + b * p;
-}
-
+// Logic combinations
 inline float CubicSmin(float a, float b, float k)
 {
 	float h = max(k - abs(a - b), 0.0) / (k + 0.0001);
@@ -65,23 +62,4 @@ inline float OpSmoothSubtraction(float d1, float d2, float k) {
 
 inline float DifferenceSDF(float distA, float distB) {
 	return max(distA, -distB);
-}
-
-inline bool IntersectSphere(float3 center, float3 orig, float3 dir, float radius2) 
-{
-	float t0, t1; // solutions for t if the ray intersects 
-
-		// geometric solution
-	float3 L = center - orig;
-	float tca = dot(L, dir);
-	// if (tca < 0) return false;
-	float d2 = dot(L, L) - tca * tca;
-	if (d2 > radius2) 
-		return false;
-
-	float thc = sqrt(radius2 - d2);
-	t0 = tca - thc;
-	t1 = tca + thc;
-
-	return true;
 }

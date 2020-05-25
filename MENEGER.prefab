@@ -1,58 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &457502377336476216
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5009066945496002171}
-  - component: {fileID: 5375811376632788175}
-  m_Layer: 0
-  m_Name: LightPoint
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &5009066945496002171
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 457502377336476216}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
-  m_LocalScale: {x: 412, y: 412, z: 412}
-  m_Children: []
-  m_Father: {fileID: 4240182779195089284}
-  m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5375811376632788175
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 457502377336476216}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8181eda1fc18fe47b7dad958f3bda38, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  variableName: RayMarchLight_0
-  _size:
-    min: 0.01
-    max: 1000
-    _value: 412
-  _material:
-    min: 0.01
-    max: 5
-    _value: 0.2
-  RenderingVolume: {fileID: 0}
 --- !u!1 &1659842602608346274
 GameObject:
   m_ObjectHideFlags: 0
@@ -1236,7 +1183,6 @@ Transform:
   m_LocalScale: {x: 1.4247451, y: 1.4247451, z: 1.4247451}
   m_Children:
   - {fileID: 7314211342676865518}
-  - {fileID: 5009066945496002171}
   m_Father: {fileID: 1659842603502420593}
   m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

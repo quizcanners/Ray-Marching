@@ -48,24 +48,34 @@ inline float SceneSdf(float3 position) {
 	float s0 = SphereDistance(position, RayMarchSphere_0);
 	float s1 = SphereDistance(position, RayMarchSphere_1); 
 
-	float c0 = CubeDistance(position, RayMarchCube_0, RayMarchCube_0_Size.xyz, 1);
+	float c0 = CubeDistance(position, RayMarchCube_0, RayMarchCube_0_Size.xyz, _RayMarchSmoothness);
 	float c1 = CubeDistance(position, RayMarchCube_1, RayMarchCube_1_Size.xyz, _RayMarchSmoothness);
 	float c2 = CubeDistance(position, RayMarchCube_2, RayMarchCube_2_Size.xyz, _RayMarchSmoothness);
 	float c3 = CubeDistance(position, RayMarchCube_3, RayMarchCube_3_Size.xyz, _RayMarchSmoothness);
 	float c4 = CubeDistance(position, RayMarchCube_4, RayMarchCube_4_Size.xyz, _RayMarchSmoothness);
 	float c5 = CubeDistance(position, RayMarchCube_5, RayMarchCube_5_Size.xyz, _RayMarchSmoothness);
 
+	float plane = Plane(position);
 	//c0 = abs(c0) - 1;
 
 
-	float dist = min(s0, c0);
+	float //dist = min(plane, s0);
+		
+     dist = min(s0, c0);
 
-	dist =	min(dist, s1);
+	//dist =	min(dist, s1);
 
 	dist = min(dist, c1);
 	dist = min(dist, c2);
 	dist = min(dist, c3);
 	dist = min(dist, c4);
+	dist = min(dist, c5);
+
+	
+
+	dist = CubicSmin(dist, plane, _RayMarchSmoothness);
+
+	dist = OpSmoothSubtraction(dist, s1, _RayMarchSmoothness);
 
 	return dist;
 }
@@ -323,7 +333,6 @@ inline float Reflection(float3 start, float3 direction, float mint, float k, out
 		totalDist += h;
 	}
 
-
 	return  closest / mint;
 }
 
@@ -344,7 +353,14 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	float totalDistance = 0;
 
-	for (int i = 0; i < _maxRayMarchSteps; i++) {
+	float max_steps =
+#if RT_MOTION_TRACING
+		50;
+#else
+		_maxRayMarchSteps;
+#endif
+
+	for (int i = 0; i < max_steps; i++) {
 
 		dist = SceneSdf(ro);
 
@@ -384,35 +400,37 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 	float deFog = saturate(1 - totalDistance / _MaxRayMarchDistance);
 	deFog *= deFog;
 
-	float precision = 1 + deFog * deFog * _maxRayMarchSteps;
-
+	float precision = 1 + deFog * deFog * max_steps;
 
 	float shadow = 0;
 
 	if (lightRange > toCenter)
 		shadow = Softshadow(ro, lightDir, 5, toCenter, _RayMarchShadowSoftness, precision);
 
+	//return float4(normal,1);
+
 	//return shadow;
 
-	float toview = max(0, dot(normal, rd));
+	float toview = dot(normal, rd);
 
-	float3 reflected = normalize(rd - 2 * (toview)*normal);
+	//return toview;
 
-	float lightRelected = pow(max(0, dot(-reflected, lightDir)), 1 + bake.a * 128);
+	float3 reflected = -normalize(rd - 2 * (toview)*normal); // Returns world normal
 
-	//return lightRelected;
+	//return float4(reflected, 1);
 
 	float reflectedDistance;
 
 	float3 reflectionPos;
 
-	// Reflection
-
-
+	// Reflection MARCHING
 	float reflectedSky = Reflection(ro, -reflected, 0.1, 1,
 		reflectedDistance, reflectionPos, precision);
 
 	//reflectedSky = reflectedSky * deDott + 0.5 * dott;
+
+	float lightRelected = pow(max(0, dot(-reflected, lightDir)), 1 + bake.a * 128);
+
 
 	float3 reflectedNormal = EstimateNormal(reflectionPos);
 
@@ -474,6 +492,8 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	//return shadow;
 
+	//float3 getSkyColor(reflectedNormal);
+
 	col.rgb += (1 + dott) * 0.5 *  (
 		reflCol * (1 - reflectedSky) +
 		_RayMarchSkyColor.rgb * reflectedSky +
@@ -483,6 +503,6 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	col.rgb = col.rgb * deFog + _RayMarchSkyColor.rgb *(1 - deFog);
 	
-	return 	col;
+	return 	max(0, col);
 
 }

@@ -76,10 +76,13 @@
 					float3 rd = rayDirection + rand * aaCoef;
 
 					// DOF
-
-					float3 fp = rayOrigin + rd * _RayTraceDofDist;
-					float3 ro = rayOrigin + rand.gbr * _RayTraceDOF;
-					rd = normalize(fp - ro);
+					#if RT_MOTION_TRACING
+						float3 ro = rayOrigin;
+					#else
+						float3 fp = rayOrigin + rd * _RayTraceDofDist;
+						float3 ro = rayOrigin + rand.gbr * _RayTraceDOF;
+						rd = normalize(fp - ro);
+					#endif
 
 					//	ro += _ProjectionParams.y * rayDirection;
 
@@ -89,21 +92,20 @@
 						float4 col = render(ro, rd, noise);
 					#endif
 
-					#if RT_DENOISING
-					float2 pixSize = _RayTracing_SourceBuffer_ScreenFillAspect.zw * 4;// *(1 + 4 * _RayTraceTransparency);
+				#if RT_DENOISING && !_IS_RAY_MARCHING
+					float2 pixSize = _RayTracing_SourceBuffer_ScreenFillAspect.zw * 4;
 
 					float count = 0;
-					float3 previousFrame = 0; //tex2Dlod(_RayTracing_SourceBuffer, float4(screenUV, 0, 0)).rgb;
+					float3 previousFrame = 0;
 
 					#define APPLY previousFrame.rgb += deNoise.rgb * deNoise.a; count += deNoise.a;
 
-					float strictness = (10 * (1.1 - _RayTraceTransparency)); // 
+					float strictness = (10 * (1.1 - _RayTraceTransparency)); 
 					float4 deNoise = 0;
 
 						#if RT_MOTION_TRACING
-						deNoise = Denoise(screenUV, 0, col.a, strictness);
-						APPLY
-							//#define APPLY previousFrame.rgb = max(deNoise.rgb * deNoise.a, previousFrame.rgb); // count += deNoise.a;
+							deNoise = Denoise(screenUV, 0, col.a, strictness);
+							APPLY
 						#else
 							previousFrame = tex2Dlod(_RayTracing_SourceBuffer, float4(screenUV, 0, 0)).rgb;
 							count += 1;
@@ -121,7 +123,7 @@
 						deNoise = Denoise(screenUV, pixSize * rand.rbg, col.a, strictness);
 						APPLY
 
-					#if RT_MOTION_TRACING
+					#if RT_MOTION_TRACING && !_IS_RAY_MARCHING
 						col.rgb = max(previousFrame.rgb / count * 0.75 , (col.rgb + previousFrame.rgb) / (count + 1));
 					#else
 						previousFrame = previousFrame / count;

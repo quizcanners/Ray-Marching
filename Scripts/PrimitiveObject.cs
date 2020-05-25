@@ -63,7 +63,7 @@ namespace RayMarching
             _material.Inspect().nl(ref changed);
 
             if (changed && RayRenderingManager.instance)
-                RayRenderingManager.instance.SetDirty();
+                RayRenderingManager.instance.SetDirty("Inspector");
 
             if (!RayRenderingManager.instance)
                 "No manager Singleton".writeWarning();
@@ -95,7 +95,7 @@ namespace RayMarching
                 rotationValue.GlobalValue = tf.eulerAngles.ToVector4();
 
                 if (RayRenderingManager.instance)
-                    RayRenderingManager.instance.SetDirty();
+                    RayRenderingManager.instance.SetDirty(gameObject.name);
             }
 
 

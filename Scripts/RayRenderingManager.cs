@@ -90,16 +90,17 @@ namespace RayMarching
 
         public override void ManagedOnEnable()
         {
-            UpdateShadeVariables();
+            UpdateShaderVariables();
             instance = this;
         }
 
-        public void SetDirty()
+        public void SetDirty(string reason = "?")
         {
             _stableFrames = 0;
+            _setDirtyReason = reason;
         }
 
-        void UpdateShadeVariables()
+        void UpdateShaderVariables()
         {
             _maxStepsInShader.GlobalValue = _maxSteps;
             _maxDistanceInShader.GlobalValue = _maxDistance;
@@ -224,7 +225,7 @@ namespace RayMarching
                 lerpFinished = true;
                 playLerpAnimation = false;
 
-                if (godModeCamera)
+                if (godModeCamera && godModeCamera.mode != GodMode.Mode.FPS)
                     godModeCamera.mode = GodMode.Mode.STATIC;
                 
             }
@@ -234,6 +235,8 @@ namespace RayMarching
 
         #region Inspector
         private bool _pauseAccumulation;
+
+        private string _setDirtyReason;
 
         public static RayRenderingManager inspected;
 
@@ -258,11 +261,13 @@ namespace RayMarching
                 return false;
             }
 
+            pegi.toggle(ref _pauseAccumulation, icon.Play, icon.Pause);
+
             if (UseRayTracing)
             {
-                pegi.toggle(ref _pauseAccumulation, icon.Play, icon.Pause);
+               
 
-                "RAY-TRACING [frms: {0} | {1}]".F((int)_stableFrames, cameraShakeDebug).write(PEGI_Styles.ListLabel);
+                "RAY-TRACING [frms: {0} | stability: {1}]".F((int)_stableFrames, cameraShakeDebug).write(PEGI_Styles.ListLabel);
                 if (icon.PreviewShader.Click("Switch to Ray-Marching").nl())
                     _usingRayMarching.Enabled = true;
             }
@@ -305,13 +310,14 @@ namespace RayMarching
             {
                 lerpFinished = false;
                 this.SkipLerp(lerpData);
+                lerpFinished = true;
             }
 
             ConfigurationsListBase.Inspect(ref configs).changes(ref changed);
 
             if (changed)
             {
-                UpdateShadeVariables();
+                UpdateShaderVariables();
                 _stableFrames = 0;
             }
 
@@ -322,7 +328,7 @@ namespace RayMarching
                 pegi.nl();
             }
             else
-                "Lerp Done: {0} [{1}]".F(lerpData.dominantParameter, lerpData.MinPortion).nl();
+                "Lerp Done: {0} [{1}] | Dirty from: {2}".F(lerpData.dominantParameter, lerpData.MinPortion, _setDirtyReason).nl();
 
             if (godModeCamera && godModeCamera.mode == GodMode.Mode.STATIC && "Edit Camera".Click().nl())
                 godModeCamera.mode = GodMode.Mode.FPS;

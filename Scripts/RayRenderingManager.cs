@@ -226,7 +226,7 @@ namespace RayMarching
                 playLerpAnimation = false;
 
                 if (godModeCamera && godModeCamera.mode != GodMode.Mode.FPS)
-                    godModeCamera.mode = GodMode.Mode.STATIC;
+                    godModeCamera.mode = GodMode.Mode.FPS;
                 
             }
         }
@@ -410,7 +410,7 @@ namespace RayMarching
             playLerpAnimation = true;
             lerpFinished = false;
             if (godModeCamera)
-                godModeCamera.mode = GodMode.Mode.STATIC;
+                godModeCamera.mode = GodMode.Mode.FPS;
         }
 
         #endregion

@@ -410,7 +410,7 @@ namespace RayMarching
             playLerpAnimation = true;
             lerpFinished = false;
             if (godModeCamera)
-                godModeCamera.mode = GodMode.Mode.FPS;
+                godModeCamera.mode = GodMode.Mode.LERP;
         }
 
         #endregion

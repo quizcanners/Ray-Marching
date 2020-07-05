@@ -1,53 +1,77 @@
 ﻿Shader "Custom/RayBakingOfLight"
 {
-    Properties
-    {
-        _Color ("Color", Color) = (1,1,1,1)
-        _MainTex ("Albedo (RGB)", 2D) = "white" {}
-        _Glossiness ("Smoothness", Range(0,1)) = 0.5
-        _Metallic ("Metallic", Range(0,1)) = 0.0
-    }
-    SubShader
-    {
-        Tags { "RenderType"="Opaque" }
-        LOD 200
+	Properties{
+		   _MainTex("Albedo (RGB)", 2D) = "white" {}
+		   [Toggle(_DEBUG)] debugOn("Debug", Float) = 0
+	}
 
-        CGPROGRAM
-        // Physically based Standard lighting model, and enable shadows on all light types
-        #pragma surface surf Standard fullforwardshadows
+	SubShader{
 
-        // Use shader model 3.0 target, to get nicer looking lighting
-        #pragma target 3.0
+		Tags{
+			"Queue" = "Geometry"
+			"RenderType" = "Opaque"
+		}
 
-        sampler2D _MainTex;
+		ColorMask RGBA
+		Cull Back
+		ZWrite On
+		ZTest Off
+		Blend One Zero //SrcAlpha OneMinusSrcAlpha
 
-        struct Input
-        {
-            float2 uv_MainTex;
-        };
+		Pass{
 
-        half _Glossiness;
-        half _Metallic;
-        fixed4 _Color;
+			CGPROGRAM
 
-        // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
-        // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
-        // #pragma instancing_options assumeuniformscaling
-        UNITY_INSTANCING_BUFFER_START(Props)
-            // put more per-instance properties here
-        UNITY_INSTANCING_BUFFER_END(Props)
+			#include "PrimitivesScene.cginc"
 
-        void surf (Input IN, inout SurfaceOutputStandard o)
-        {
-            // Albedo comes from a texture tinted by color
-            fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color;
-            o.Albedo = c.rgb;
-            // Metallic and smoothness come from slider variables
-            o.Metallic = _Metallic;
-            o.Smoothness = _Glossiness;
-            o.Alpha = c.a;
-        }
-        ENDCG
-    }
-    FallBack "Diffuse"
+			#pragma vertex vert
+			#pragma fragment frag
+			#pragma multi_compile __ RT_USE_DIELECTRIC
+			#pragma multi_compile __ RT_USE_CHECKERBOARD
+			#pragma multi_compile __ _IS_RAY_MARCHING
+
+			struct v2f {
+				float4 pos : 		SV_POSITION;
+				float3 viewDir: 	TEXCOORD1;
+				float2 texcoord : TEXCOORD0;
+			};
+
+			sampler2D _MainTex;
+			float4 VOLUME_POSITION_N_SIZE_BRUSH;
+			float4 VOLUME_H_SLICES_BRUSH;
+
+			v2f vert(appdata_full v) {
+				v2f o;
+				UNITY_SETUP_INSTANCE_ID(v);
+
+				o.pos = UnityObjectToClipPos(v.vertex);
+				o.viewDir.xyz = WorldSpaceViewDir(v.vertex);
+				o.texcoord = v.texcoord.xy;
+				return o;
+			}
+
+			float4 frag(v2f o) : COLOR{
+
+				float3 worldPos = volumeUVtoWorld(o.texcoord.xy, VOLUME_POSITION_N_SIZE_BRUSH, VOLUME_H_SLICES_BRUSH);
+
+				float2 screenUV = o.texcoord.xy * ( 4 * _CosTime.y ) + _SinTime.x;
+
+
+				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(screenUV * (123.12345678)  
+					+ float2(_SinTime.w, _CosTime.w) * 32.12345612, 0, 0));
+
+				float3 rayDirection = normalize(noise.rgb - 0.5);
+
+				#if _IS_RAY_MARCHING
+					float4 col = renderSdf(worldPos, rayDirection, noise);
+				#else
+					float4 col = render(worldPos, rayDirection, noise);
+				#endif
+
+				return col;
+			}
+			ENDCG
+		}
+	}
+	Fallback "Legacy Shaders/Transparent/VertexLit"
 }

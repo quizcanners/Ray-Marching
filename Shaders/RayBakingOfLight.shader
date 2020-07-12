@@ -1,4 +1,4 @@
-﻿Shader "RayMarching/RayBakingOfLight"
+﻿Shader "RayTracing/RayBakingOfLight"
 {
 	Properties{
 		   _MainTex("Albedo (RGB)", 2D) = "white" {}
@@ -29,6 +29,7 @@
 			#pragma multi_compile __ RT_USE_DIELECTRIC
 			#pragma multi_compile __ RT_USE_CHECKERBOARD
 			#pragma multi_compile __ _IS_RAY_MARCHING
+			#pragma multi_compile __ RT_DENOISING
 
 			struct v2f {
 				float4 pos : 		SV_POSITION;
@@ -37,8 +38,7 @@
 			};
 
 			sampler2D _MainTex;
-			float4 _RayMarchingVolumeVOLUME_POSITION_OFFSET;
-
+	
 			v2f vert(appdata_full v) {
 				v2f o;
 				UNITY_SETUP_INSTANCE_ID(v);
@@ -56,17 +56,43 @@
 					, _RayMarchingVolumeVOLUME_H_SLICES);
 
 
+			float3 offsetPos = worldPos + _RayMarchingVolumeVOLUME_POSITION_OFFSET.xyz;
+
 				float4 previous = SampleVolume(_MainTex
-					, worldPos + _RayMarchingVolumeVOLUME_POSITION_OFFSET.xyz
+					, offsetPos
 					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE,
 					_RayMarchingVolumeVOLUME_H_SLICES);
 
-				float2 screenUV = o.texcoord.xy * ( 4 * _CosTime.y ) + _SinTime.x;
+				float2 screenUV = o.texcoord.xy * (4 * _CosTime.y) + _SinTime.x;
 
-				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(screenUV * (123.12345678)  
+
+				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(screenUV * (123.12345678)
 					+ float2(_SinTime.w, _CosTime.w) * 32.12345612, 0, 0));
 
 				float3 rayDirection = normalize(noise.rgb - 0.5);
+
+				/*
+				#if RT_DENOISING
+				float4 previous2 = SampleVolume(_MainTex
+					, offsetPos
+					+ rayDirection * _RayMarchingVolumeVOLUME_POSITION_OFFSET.w
+					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE,
+					_RayMarchingVolumeVOLUME_H_SLICES);
+
+				float4 previous3 = SampleVolume(_MainTex
+					, offsetPos
+					+ rayDirection.yzx * _RayMarchingVolumeVOLUME_POSITION_OFFSET.w
+					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE,
+					_RayMarchingVolumeVOLUME_H_SLICES);
+
+				float4 previous4 = SampleVolume(_MainTex
+					, offsetPos
+					- rayDirection.zxy * _RayMarchingVolumeVOLUME_POSITION_OFFSET.w
+					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE,
+					_RayMarchingVolumeVOLUME_H_SLICES);
+
+				previous = (previous + previous2 + previous3 + previous4) * 0.25f;
+				#endif*/
 
 				#if _IS_RAY_MARCHING
 					float4 col = renderSdf(worldPos, rayDirection, noise);
@@ -74,15 +100,11 @@
 					float4 col = render(worldPos, rayDirection, noise);
 				#endif
 
-				float accumulation = previous.a;
-
-				//float keepPrevious = (1 - _RayTraceTransparency)*accumulation;
+				float accumulation = previous.a * (1 - _RayTraceTransparency);
 
 				col.a = accumulation + 1;
 
-				col.rgb = (col.rgb + max(0,previous.rgb) * accumulation)/ col.a;
-
-				 //saturate(1 - pow((1-accumulation),2));
+				col.rgb = (col.rgb + max(0,previous.rgb) * (accumulation))/ col.a;
 
 				return col ;
 			}

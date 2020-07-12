@@ -17,6 +17,7 @@ uniform sampler2D _RayMarchingVolume;
 uniform sampler2D _qcPp_DestBuffer;
 uniform float4 _RayMarchingVolumeVOLUME_POSITION_N_SIZE;
 uniform float4 _RayMarchingVolumeVOLUME_H_SLICES;
+uniform float4 _RayMarchingVolumeVOLUME_POSITION_OFFSET;
 
 uniform float _MaxRayMarchDistance;
 float _maxRayMarchSteps;

@@ -27,7 +27,7 @@ namespace RayMarching
 
         private ShaderProperty.VectorValue _positionOffset;
 
-        public ShaderProperty.VectorValue PositionAndScaleProperty
+        public ShaderProperty.VectorValue PositionOffsetAndScale
         {
             get
             {
@@ -55,26 +55,35 @@ namespace RayMarching
         Vector3 _previous = Vector3.zero;
         Vector4 _previousDiff = Vector3.zero;
 
+        public void SetBakeDirty() => framesToBake = 300;
+
+        private int framesToBake = 300;
+
         public void LateUpdate()
         {
             if (bakingEnabled)
             {
+               
+
                 if (volume)
                 {
                     var current = volume.PosSize4Shader.XYZ();
 
-                    var diff = (current - _previous).ToVector4(0); 
+                    var diff = (current - _previous).ToVector4(volume.size); 
                     if (diff != _previousDiff)
                     {
-                       // Debug.Log("Updating pos n shader before baking" + Time.frameCount);
-                        PositionAndScaleProperty.GlobalValue = diff;
+                        PositionOffsetAndScale.GlobalValue = diff;
+                        SetBakeDirty();
                     }
                     _previousDiff = diff;
                     _previous = current;
                 }
 
-
-                Paint();
+                if (framesToBake > 0)
+                {
+                    framesToBake--;
+                    Paint();
+                }
             }
         }
 
@@ -84,7 +93,12 @@ namespace RayMarching
 
             pegi.toggleDefaultInspector(this);
 
-            "Bake".toggleIcon(ref bakingEnabled).nl();
+            "Bake {0}".F(framesToBake).toggleIcon(ref bakingEnabled).changes(ref changed);
+
+            if (framesToBake < 1 && "Reset Baking".Click())
+                SetBakeDirty();
+
+            pegi.nl();
 
             "Volume".edit(ref volume).changes(ref changed);
             if (!volume && icon.Search.Click())

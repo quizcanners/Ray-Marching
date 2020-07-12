@@ -81,11 +81,13 @@ inline float SceneSdf(float3 position) {
 }
 
 float3 opU(float3 d, float iResult, float mat) {
-	return d.y > iResult ? float3(d.x, iResult, mat) : d;
+	return d.y > iResult ? float3(d.x, iResult, mat) : d; // if closer make new result
 }
 
 
 float3 worldhit(in float3 ro, in float3 rd, in float2 dist, out float3 normal) {
+
+	// d.z <= z causes to show sky   d.z is material
 
 	float3 d = float3(dist, 0.);
 	d = opU(d, iPlane(ro, rd, d.xy, normal, float3(0, 1, 0), 0.), 0.2);
@@ -144,7 +146,7 @@ float3 worldhit(in float3 ro, in float3 rd, in float2 dist, out float3 normal) {
 #if RT_MOTION_TRACING
 #define PATH_LENGTH 4
 #else
-#define PATH_LENGTH 12
+#define PATH_LENGTH 9
 #endif
 
 
@@ -202,22 +204,25 @@ float4 render(in float3 ro, in float3 rd, in float4 seed) {
 #endif
 
 
-			if (type < .5) { // Added/hacked a reflection term  0 - 0.5
+			//if (type < .5) { 
+				// Added/hacked a reflection term  0 - 0.5
 
-				float F = FresnelSchlickRoughness(max(0., -dot(normal, rd)), .04, roughness);
-				if (F > seed.b) {
-					rd = modifyDirectionWithRoughness(normal, reflect(rd, normal), roughness, seed);
-				}
-				else {
-					col *= albedo;
-					rd = cosWeightedRandomHemisphereDirection(normal, seed);
-				}
-			}
-			else if (type < METAL + .5) {
+				//float F = FresnelSchlickRoughness(max(0., -dot(normal, rd)), .04, roughness);
+				//if (F > seed.b) {
 
-
+					//col *= albedo;
+					//rd = modifyDirectionWithRoughness(normal, reflect(rd, normal), roughness, seed); 
+				//}
+				//else {
+					//col *= albedo;
+					//rd = cosWeightedRandomHemisphereDirection(normal, seed);
+				//}
+			//}
+			//else 
+			if (type < METAL + .5) {
+			
 				col *= albedo;
-				rd = modifyDirectionWithRoughness(normal, reflect(rd, normal), roughness, seed);
+				rd = modifyDirectionWithRoughness(normal, reflect(rd, normal), roughness, seed);// PROBLEM IS HERE
 
 			}
 #if RT_USE_DIELECTRIC

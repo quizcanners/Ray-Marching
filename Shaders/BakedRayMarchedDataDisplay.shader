@@ -53,8 +53,7 @@
 				return o;
 			}
 
-			float4 _RayMarchingVolumeVOLUME_POSITION_OFFSET;
-
+	
 			float4 frag(v2f o) : COLOR{
 
 				/*float3 worldPos = volumeUVtoWorld(o.texcoord.xy
@@ -62,15 +61,19 @@
 					, _RayMarchingVolumeVOLUME_H_SLICES);
 					*/
 
-				float4 col = SampleVolume(_RayMarchingVolume, o.worldPos//+ o.normal.xyz
+				float4 col = SampleVolume(_RayMarchingVolume, o.worldPos 
+				+ o.normal.xyz * _RayMarchingVolumeVOLUME_POSITION_OFFSET.w
 				, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
 				, _RayMarchingVolumeVOLUME_H_SLICES);
 
+				float unFogged = min(1, col.a);
+
+				col.rgb = col.rgb * unFogged + unity_FogColor.rgb * (1-unFogged);
 
 				return col;
 			}
 			ENDCG
 		}
-		}
-				   Fallback "Legacy Shaders/Transparent/VertexLit"
 	}
+	Fallback "Diffuse"
+}

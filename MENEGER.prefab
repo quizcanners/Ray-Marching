@@ -681,6 +681,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   godModeCamera: {fileID: 0}
+  rayTracingResultMask:
+    serializedVersion: 2
+    m_Bits: 134217728
+  volumeTracingCameraMask:
+    serializedVersion: 2
+    m_Bits: 1
+  volumeTracingBaker: {fileID: 0}
+  rayTracingScreenBakingPlane: {fileID: 0}
+  rayTracingScreenOutputPlane: {fileID: 0}
   cube0: {fileID: 1659842604196899526}
   cube1: {fileID: 1659842603488480909}
   cube2: {fileID: 1659842603749555720}
@@ -695,7 +704,7 @@ MonoBehaviour:
   twoBuffers:
   - {fileID: 8400000, guid: f154d97feee8e9941af4e8cf03a66be4, type: 2}
   - {fileID: 8400000, guid: 12c21df7634ccb24288293a7eae9e699, type: 2}
-  _stopUpdatingAfter: 250
+  stopUpdatingAfter: 500
   playLerpAnimation: 0
   configs: {fileID: 11400000, guid: d3a61179dc8db2c4fa841593866d73f4, type: 2}
 --- !u!114 &1659842603502420592

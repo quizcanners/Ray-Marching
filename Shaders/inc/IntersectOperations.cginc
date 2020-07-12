@@ -100,6 +100,27 @@ void iBox( in vec3 ro, in vec3 m, in vec3 boxSize, inout vec2 nearestCast)
 
 */
 
+/*
+bool slabs(in float3 p0, in float3 p1, float3 rayOrigin, float3 raydir, inout float3 normal) {
+
+	float3 invRaydir = 1 / raydir;
+
+	float3 t1 = (p0 - rayOrigin) * invRaydir;
+	float3 t2 = (p1 - rayOrigin) * invRaydir;
+	float3 tmin = min(t1, t2);
+	float3 tmax = max(t1, t2);
+
+	if (max_component(tmin) <= min_component(tmax)) 
+	{
+		normal = -sign(raydir)*step(t1.yzx, t1.xyz)*step(t1.zxy, t1.xyz);
+		return tmin;
+	}
+	else {
+		return MAX_DIST;
+	}
+}*/
+
+
 // Box:             https://www.shadertoy.com/view/ld23DV
 float iBox(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,
 	in float3 boxSize, in float3 m) {
@@ -113,23 +134,20 @@ float iBox(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,
 	float tN = max(max(t1.x, t1.y), t1.z);
 	float tF = min(min(t2.x, t2.y), t2.z);
 
-	if (tN > tF 
-		|| tF <= 0.0 
-		//|| 
-		//tN > distBound.y 
-		//|| tN < distBound.x
-		)
+	if (tN > tF || tF <= 0.0)
 	{
 		return MAX_DIST;
 	}
 	else {
 
-		if (tN >= distBound.x && tN <= distBound.y) {
+		if (tN >= distBound.x && 
+			tN <= distBound.y) {
 			normal = -sign(rd)*step(t1.yzx, t1.xyz)*step(t1.zxy, t1.xyz);
 			return tN;
 		}
-		else if (tF >= distBound.x && tF <= distBound.y) {
-			normal = -sign(rd)*step(t1.yzx, t1.xyz)*step(t1.zxy, t1.xyz);
+		else if (tF >= distBound.x && tF <= distBound.y) 
+		{
+			normal = -sign(rd)*step(t2.xyz, t2.yzx)*step(t2.xyz, t2.zxy);
 			return tF;
 		}
 		else {
@@ -720,28 +738,32 @@ float modifiedRefract(const in float3 v, const in float3 n, const in float ni_ov
 	return isTrue;
 }
 
-float3 modifyDirectionWithRoughness(const float3 normal, const float3 n, const float roughness, inout float4 seed) {
+float3 modifyDirectionWithRoughness(in float3 normal, in float3 refl, in float roughness, in float4 seed) {
+
+	// PROBLEM IS HERE. Gets out of box sometimes
+
 	float2 r = seed.xy;//hash2(seed);
 
-	float nyBig = step(.5, n.y);
+	float nyBig = step(.5, refl.y);
 
-	float3  uu = normalize(cross(n, float3(nyBig, 1. - nyBig, 0.)));
-	float3  vv = cross(uu, n);
+	float3  uu = normalize(cross(refl, float3(nyBig, 1. - nyBig, 0.)));
+	float3  vv = cross(uu, refl);
 
 	float a = roughness * roughness;
 
-	float rz = sqrt(abs((1.0 - r.y) / clamp(1. + (a - 1.)*r.y, .00001, 1.)));
+	float rz = sqrt(abs((1.0 - seed.y) / clamp(1. + (a - 1.)*seed.y, .00001, 1.)));
 	float ra = sqrt(abs(1. - rz * rz));
-	float rx = ra * cos(6.28318530718*r.x);
-	float ry = ra * sin(6.28318530718*r.x);
-	float3  rr = float3(rx*uu + ry * vv + rz * n);
+	float preCmp = 6.28318530718*seed.x;
+	float rx = ra * cos(preCmp);
+	float ry = ra * sin(preCmp);
+	float3 rr = float3(rx*uu + ry * vv + rz * refl);
 
 	float3 ret = normalize(rr);
 
 	//float isRet = step(0.1, max(0., dot(ret,normal)));
 
 	return //ret * isRet + n * (1.-isRet); // Probably a div by zero somewhere
-		dot(ret, normal) > 0. ? ret : n;
+		dot(ret, normal) > 0.1 ? ret : refl;
 }
 
 float2 randomInUnitDisk(inout float4 seed) {

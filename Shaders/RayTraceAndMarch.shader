@@ -70,27 +70,27 @@
 
 				float aaCoef = (_ScreenParams.z - 1) * 2;
 
-					float3 rand = normalize(noise.rgb - 0.5) * noise.a* noise.a;
+				float3 rand = normalize(noise.rgb - 0.5) * noise.a* noise.a;
 
-					// AA
-					float3 rd = rayDirection + rand * aaCoef;
+				// AA
+				float3 rd = rayDirection + rand * aaCoef;
 
-					// DOF
-					#if RT_MOTION_TRACING
-						float3 ro = rayOrigin;
-					#else
-						float3 fp = rayOrigin + rd * _RayTraceDofDist;
-						float3 ro = rayOrigin + rand.gbr * _RayTraceDOF;
-						rd = normalize(fp - ro);
-					#endif
+				// DOF
+				#if RT_MOTION_TRACING
+					float3 ro = rayOrigin;
+				#else
+					float3 fp = rayOrigin + rd * _RayTraceDofDist;
+					float3 ro = rayOrigin + rand.gbr * _RayTraceDOF;
+					rd = normalize(fp - ro);
+				#endif
 
-					//	ro += _ProjectionParams.y * rayDirection;
+				//	ro += _ProjectionParams.y * rayDirection;
 
-					#if _IS_RAY_MARCHING
-						float4 col = renderSdf(ro, rd, noise);
-					#else
-						float4 col = render(ro, rd, noise);
-					#endif
+				#if _IS_RAY_MARCHING
+					float4 col = renderSdf(ro, rd, noise);
+				#else
+					float4 col = render(ro, rd, noise);
+				#endif
 
 				#if RT_DENOISING && !_IS_RAY_MARCHING
 					float2 pixSize = _RayTracing_SourceBuffer_ScreenFillAspect.zw * 4;
@@ -103,25 +103,25 @@
 					float strictness = (10 * (1.1 - _RayTraceTransparency)); 
 					float4 deNoise = 0;
 
-						#if RT_MOTION_TRACING
-							deNoise = Denoise(screenUV, 0, col.a, strictness);
-							APPLY
-						#else
-							previousFrame = tex2Dlod(_RayTracing_SourceBuffer, float4(screenUV, 0, 0)).rgb;
-							count += 1;
-						#endif
-
-						deNoise = Denoise(screenUV, pixSize * rand.rgb, col.a, strictness);
+					#if RT_MOTION_TRACING
+						deNoise = Denoise(screenUV, 0, col.a, strictness);
 						APPLY
+					#else
+						previousFrame = tex2Dlod(_RayTracing_SourceBuffer, float4(screenUV, 0, 0)).rgb;
+						count += 1;
+					#endif
 
-						deNoise = Denoise(screenUV, pixSize * rand.gbr,  col.a, strictness);
-						APPLY
+					deNoise = Denoise(screenUV, pixSize * rand.rgb, col.a, strictness);
+					APPLY
 
-						deNoise = Denoise(screenUV, pixSize * rand.brg,  col.a, strictness);
-						APPLY
+					deNoise = Denoise(screenUV, pixSize * rand.gbr,  col.a, strictness);
+					APPLY
 
-						deNoise = Denoise(screenUV, pixSize * rand.rbg, col.a, strictness);
-						APPLY
+					deNoise = Denoise(screenUV, pixSize * rand.brg,  col.a, strictness);
+					APPLY
+
+					deNoise = Denoise(screenUV, pixSize * rand.rbg, col.a, strictness);
+					APPLY
 
 					#if RT_MOTION_TRACING && !_IS_RAY_MARCHING
 						col.rgb = max(previousFrame.rgb / count * 0.75 , (col.rgb + previousFrame.rgb) / (count + 1));
@@ -136,12 +136,9 @@
 				#endif
 
 						return col;
-					}
-					ENDCG
-				}
-
-
-
+			}
+			ENDCG
 		}
+	}
 			  Fallback "Legacy Shaders/Transparent/VertexLit"
 }

@@ -114,17 +114,30 @@ float iBox(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,
 	float tF = min(min(t2.x, t2.y), t2.z);
 
 	if (tN > tF 
-		//|| tF <= 0. 
-		|| 
-		tN > distBound.y 
-		|| tN < distBound.x
+		|| tF <= 0.0 
+		//|| 
+		//tN > distBound.y 
+		//|| tN < distBound.x
 		)
 	{
 		return MAX_DIST;
 	}
 	else {
+
+		if (tN >= distBound.x && tN <= distBound.y) {
 			normal = -sign(rd)*step(t1.yzx, t1.xyz)*step(t1.zxy, t1.xyz);
 			return tN;
+		}
+		else if (tF >= distBound.x && tF <= distBound.y) {
+			normal = -sign(rd)*step(t1.yzx, t1.xyz)*step(t1.zxy, t1.xyz);
+			return tF;
+		}
+		else {
+			return MAX_DIST;
+		}
+
+			//normal = -sign(rd)*step(t1.yzx, t1.xyz)*step(t1.zxy, t1.xyz);
+			//return tN;
 	}
 }
 

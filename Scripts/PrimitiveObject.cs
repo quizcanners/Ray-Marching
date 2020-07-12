@@ -38,8 +38,8 @@ namespace RayMarching
         {
             InitializeProperties();
 
-            if (RenderingVolume)
-                RenderingVolume.SetActive(!Application.isPlaying);
+            /*if (RenderingVolume)
+                RenderingVolume.SetActive(!Application.isPlaying);*/
         }
 
         private bool _isDirty = false;
@@ -85,22 +85,20 @@ namespace RayMarching
 
             var tf = transform;
 
+            var localScaleForShader = tf.localScale * 0.5f;
+
             if (_isDirty || (Vector3.Distance(positionAndSize.GlobalValue, tf.position) +
-                             Vector3.Distance(tf.localScale, sizeAndMaterial.latestValue.XYZ())) > float.Epsilon * 10000)
+                             Vector3.Distance(localScaleForShader, sizeAndMaterial.latestValue.XYZ())) > float.Epsilon * 100000)
             {
                 _isDirty = false;
 
                 positionAndSize.GlobalValue = tf.position.ToVector4(transform.localScale.x);
-                sizeAndMaterial.GlobalValue = tf.localScale.ToVector4(_material.Value);
+                sizeAndMaterial.GlobalValue = localScaleForShader.ToVector4(_material.Value);
                 rotationValue.GlobalValue = tf.eulerAngles.ToVector4();
 
                 if (RayRenderingManager.instance)
                     RayRenderingManager.instance.SetDirty(gameObject.name);
             }
-
-
-            // float repeat = 10 + 5 * tf.localScale.x;
-            // repeatProps.GlobalValue = new Vector4(repeat, repeat*0.5f, 1f/repeat, 0);
         }
 
         LinkedLerp.TransformLocalPosition lrpPosition;

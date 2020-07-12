@@ -13,6 +13,7 @@ namespace RayMarching
     
     public class RayRenderingManager : PresentationSystemsAbstract, IPEGI, ICfg, ILinkedLerping
     {
+        public bool pauseFpsCameraUpdates;
 
         public override string ClassTag => "RtxMgmt";
 
@@ -129,32 +130,43 @@ namespace RayMarching
             {
                 var tf = MainCamera.transform;
 
-                cameraShakeDebug = (_previousCamPosition - tf.position).magnitude * 10 +
-                    Quaternion.Angle(_previousCamRotation, tf.rotation);
+                if (!pauseFpsCameraUpdates)
+                {
+                    cameraShakeDebug = (_previousCamPosition - tf.position).magnitude * 10 +
+                                       Quaternion.Angle(_previousCamRotation, tf.rotation);
 
-                _previousCamPosition = tf.position;
-                _previousCamRotation = tf.rotation;
-               
+                    _previousCamPosition = tf.position;
+                    _previousCamRotation = tf.rotation;
 
-                cameraShakeDebug = 1 - Mathf.Clamp01(cameraShakeDebug);
 
-                if (_pauseAccumulation)
-                    _stableFrames = 0;
+                    cameraShakeDebug = 1 - Mathf.Clamp01(cameraShakeDebug);
+
+                    if (_pauseAccumulation)
+                        _stableFrames = 0;
+                    else
+                        _stableFrames = _stableFrames * cameraShakeDebug + cameraShakeDebug;
+                }
                 else
-                    _stableFrames = _stableFrames * cameraShakeDebug + cameraShakeDebug;
+                    _stableFrames += 1;
+                
 
                 _RayTraceTraparency.GlobalValue = _stableFrames < 2 ? 1f : Mathf.Clamp(2f/_stableFrames, 0.001f, 0.5f);
 
                 DENOISING.Enabled = _stableFrames < 16;//(_stopUpdatingAfter * 0.25f);
 
-                MOTION_TRACING.Enabled = _stableFrames < 2;  
+                MOTION_TRACING.Enabled = _stableFrames < 2;
 
-                MainCamera.enabled = _stableFrames < _stopUpdatingAfter;
-
-                if (MainCamera.enabled)
+                if (!pauseFpsCameraUpdates)
                 {
-                    Swap();
+                    MainCamera.enabled = _stableFrames < _stopUpdatingAfter;
+
+                    if (MainCamera.enabled)
+                    {
+                        Swap();
+                    }
                 }
+                else
+                    MainCamera.enabled = false;
             }
         }
 
@@ -260,8 +272,15 @@ namespace RayMarching
 
                 return false;
             }
+            
 
             pegi.toggle(ref _pauseAccumulation, icon.Play, icon.Pause);
+
+            if (pauseFpsCameraUpdates && "Start Camera".Click())
+                pauseFpsCameraUpdates = false;
+
+            if (!pauseFpsCameraUpdates && "Pause Camera Updates".Click())
+                pauseFpsCameraUpdates = true;
 
             if (UseRayTracing)
             {

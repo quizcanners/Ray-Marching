@@ -1,4 +1,4 @@
-﻿Shader "Custom/RayBakingOfLight"
+﻿Shader "RayMarching/RayBakingOfLight"
 {
 	Properties{
 		   _MainTex("Albedo (RGB)", 2D) = "white" {}
@@ -37,8 +37,7 @@
 			};
 
 			sampler2D _MainTex;
-			float4 VOLUME_POSITION_N_SIZE_BRUSH;
-			float4 VOLUME_H_SLICES_BRUSH;
+			float4 _RayMarchingVolumeVOLUME_POSITION_OFFSET;
 
 			v2f vert(appdata_full v) {
 				v2f o;
@@ -52,10 +51,17 @@
 
 			float4 frag(v2f o) : COLOR{
 
-				float3 worldPos = volumeUVtoWorld(o.texcoord.xy, VOLUME_POSITION_N_SIZE_BRUSH, VOLUME_H_SLICES_BRUSH);
+				float3 worldPos = volumeUVtoWorld(o.texcoord.xy
+					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
+					, _RayMarchingVolumeVOLUME_H_SLICES);
+
+
+				float4 previous = SampleVolume(_MainTex
+					, worldPos + _RayMarchingVolumeVOLUME_POSITION_OFFSET.xyz
+					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE,
+					_RayMarchingVolumeVOLUME_H_SLICES);
 
 				float2 screenUV = o.texcoord.xy * ( 4 * _CosTime.y ) + _SinTime.x;
-
 
 				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(screenUV * (123.12345678)  
 					+ float2(_SinTime.w, _CosTime.w) * 32.12345612, 0, 0));
@@ -68,7 +74,17 @@
 					float4 col = render(worldPos, rayDirection, noise);
 				#endif
 
-				return col;
+				float accumulation = previous.a;
+
+				//float keepPrevious = (1 - _RayTraceTransparency)*accumulation;
+
+				col.a = accumulation + 1;
+
+				col.rgb = (col.rgb + max(0,previous.rgb) * accumulation)/ col.a;
+
+				 //saturate(1 - pow((1-accumulation),2));
+
+				return col ;
 			}
 			ENDCG
 		}

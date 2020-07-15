@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace RayMarching
+namespace NodeNotes.RayTracing
 {
     
     [ExecuteAlways]

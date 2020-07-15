@@ -9,7 +9,7 @@ using UnityEngine.UI;
 using UnityEditor;
 #endif
 
-namespace RayMarching
+namespace NodeNotes.RayTracing
 {
     
     public class RayRenderingManager : PresentationSystemsAbstract, IPEGI, ICfg, ILinkedLerping
@@ -38,8 +38,9 @@ namespace RayMarching
         public Camera MainCamera => godModeCamera ? godModeCamera.MainCam : null;
         public GameObject rayTracingScreenBakingPlane;
         public RawImage rayTracingScreenOutputPlane;
+        public GameObject rayTracingOutputGo;
 
-        public PrimitiveObject cube0, cube1, cube2, cube3, cube4, cube5, sphere0, sphere1, light0;
+        public RayTracingSceneBase sceneConfiguration;
         
         LinkedLerp.MaterialColor _sunLightColor = new LinkedLerp.MaterialColor("_RayMarchLightColor", Color.grey, 10);
         LinkedLerp.MaterialColor _skyColor = new LinkedLerp.MaterialColor("_RayMarchSkyColor", Color.grey, 10);
@@ -159,6 +160,9 @@ namespace RayMarching
             if (rayTracingScreenOutputPlane)
                 rayTracingScreenOutputPlane.gameObject.SetActive(isScreen);
 
+            if (rayTracingOutputGo)
+                rayTracingOutputGo.SetActive(isScreen);
+
             if (MainCamera)
             {
                 var tf = MainCamera.transform;
@@ -240,16 +244,9 @@ namespace RayMarching
 
             if (godModeCamera)
                 godModeCamera.Portion(ld);
-            
-            cube0.Portion(ld);
-            cube1.Portion(ld);
-            cube2.Portion(ld);
-            cube3.Portion(ld);
-            cube4.Portion(ld);
-            cube5.Portion(ld);
-            sphere0.Portion(ld);
-            sphere1.Portion(ld);
-            light0.Portion(ld);
+
+            if (sceneConfiguration)
+                sceneConfiguration.Portion(ld);
         }
 
         public void Lerp(LerpData ld, bool canSkipLerp)
@@ -270,16 +267,9 @@ namespace RayMarching
             if (godModeCamera)
                 godModeCamera.Lerp(ld, canSkipLerp);
 
-            cube0.Lerp(ld, canSkipLerp);
-            cube1.Lerp(ld, canSkipLerp);
-            cube2.Lerp(ld, canSkipLerp);
-            cube3.Lerp(ld, canSkipLerp);
-            cube4.Lerp(ld, canSkipLerp);
-            cube5.Lerp(ld, canSkipLerp);
-            sphere0.Lerp(ld, canSkipLerp);
-            sphere1.Lerp(ld, canSkipLerp);
-            light0.Lerp(ld, canSkipLerp);
-
+            if (sceneConfiguration)
+                sceneConfiguration.Lerp(ld, canSkipLerp);
+            
             if (ld.MinPortion == 1)
             {
                 lerpFinished = true;
@@ -300,6 +290,9 @@ namespace RayMarching
         public static RayRenderingManager inspected;
 
         public override bool SaveOnEdit => false;
+
+        private bool _showSavedConfigs;
+        private bool _showDependencies;
 
         public override bool Inspect()
         {
@@ -325,33 +318,41 @@ namespace RayMarching
             if ("Target".editEnum(60, ref trg).nl())
                 Target = trg;
 
-            if (Target == RayRenderingTarget.Volume)
+            if ("Dependencies".foldout(ref _showDependencies).nl())
             {
-                "VOL Camera Mask".edit_Property(()=> volumeTracingCameraMask, this).nl();
 
-                if (!volumeTracingBaker)
-                    "Volume".edit(60, ref volumeTracingBaker).nl();
+                if (Target == RayRenderingTarget.Volume)
+                {
+                    "VOL Camera Mask".edit_Property(() => volumeTracingCameraMask, this).nl();
+
+                    if (!volumeTracingBaker)
+                        "Volume".edit(60, ref volumeTracingBaker).nl();
+                }
+
+                if (Target == RayRenderingTarget.Screen)
+                {
+                    "SS Camera Mask".edit_Property(() => rayTracingResultMask, this).nl();
+                }
+
+                if (MainCamera)
+                {
+                    var depthMode = MainCamera.depthTextureMode;
+
+                    if ("Depth Mode".editEnumFlags(90, ref depthMode).nl())
+                        MainCamera.depthTextureMode = depthMode;
+                }
+
+                if (!rayTracingScreenBakingPlane)
+                    "Ray Tracing Screen Baking".edit(ref rayTracingScreenBakingPlane).nl();
+
+                if (!rayTracingScreenOutputPlane)
+                    "Ray Tracing Screen Output Plane".edit(ref rayTracingScreenOutputPlane).nl();
+
+                if (!rayTracingOutputGo)
+                    "Output".edit(ref rayTracingOutputGo).nl();
+
+                "Scene config".edit(ref sceneConfiguration).nl();
             }
-
-            if (Target == RayRenderingTarget.Screen)
-            {
-                "SS Camera Mask".edit_Property(() => rayTracingResultMask, this).nl();
-            }
-
-            if (MainCamera)
-            {
-                var depthMode = MainCamera.depthTextureMode;
-
-                if ("Depth Mode".editEnumFlags(90, ref depthMode).nl())
-                    MainCamera.depthTextureMode = depthMode;
-            }
-
-
-            if (!rayTracingScreenBakingPlane)
-                "Ray Tracing Screen Baking".edit(ref rayTracingScreenBakingPlane).nl();
-
-            if (!rayTracingScreenOutputPlane)
-                "Ray Tracing Screen Output Plane".edit(ref rayTracingScreenOutputPlane).nl();
 
             if (UseRayTracing)
             {
@@ -401,7 +402,8 @@ namespace RayMarching
                 lerpFinished = true;
             }
 
-            ConfigurationsListBase.Inspect(ref configs).changes(ref changed);
+            if ("Configs".foldout(ref _showSavedConfigs).nl())
+                ConfigurationsListBase.Inspect(ref configs).changes(ref changed);
 
             if (changed)
             {
@@ -438,7 +440,10 @@ namespace RayMarching
                 .Add("sky", _skyColor.TargetValue)
                 .Add("fog", _fogColor.TargetValue)
                 .Add("gm", godModeCamera)
-                .Add("targ", (int)Target);
+                .Add("targ", (int)Target)
+                .Add("sc", sceneConfiguration)
+                .Add("dofD", DOFdistance)
+                .Add("dofPow", DOFTargetStrength.TargetValue);
 
             if (MainCamera)
                 cody.Add("depth", (int)MainCamera.depthTextureMode);
@@ -450,18 +455,6 @@ namespace RayMarching
             if (UseRayTracing) cody
                 .Add_Bool("diEl", _rayTraceUseDielecrtic.Enabled)
                 .Add_Bool("rtCB", _rayTraceUseCheckerboard.Enabled);
-
-            cody.Add("c0", cube0)
-                .Add("c1", cube1)
-                .Add("c2", cube2)
-                .Add("c3", cube3)
-                .Add("c4", cube4)
-                .Add("c5", cube5)
-                .Add("s0", sphere0)
-                .Add("dofD", DOFdistance)
-                .Add("dofPow", DOFTargetStrength.TargetValue)
-                .Add("s1", sphere1)
-                .Add("l0", light0);
 
             return cody;
         }
@@ -481,20 +474,11 @@ namespace RayMarching
                 case "dofD": DOFdistance.Decode(data); break;
                 case "dofPow": DOFTargetStrength.TargetValue = data.ToFloat(); break;
                 case "useRT": UseRayTracing = data.ToBool(); break;
-                case "c0": cube0.Decode(data); break;
-                case "c1": cube1.Decode(data); break;
-                case "c2": cube2.Decode(data); break;
-                case "c3": cube3.Decode(data); break;
-                case "c4": cube4.Decode(data); break;
-                case "c5": cube5.Decode(data); break;
-                case "s0": sphere0.Decode(data); break;
-                case "s1": sphere1.Decode(data); break;
-                case "l0": light0.Decode(data); break;
+                case "sc": sceneConfiguration.Decode(data); break;
                 case "diEl": _rayTraceUseDielecrtic.Enabled = data.ToBool(); break;
                 case "rtCB": _rayTraceUseCheckerboard.Enabled = data.ToBool(); break;
-                default: return false;
+                default: return sceneConfiguration.Decode(tg, data);
             }
-
             return true;
         }
 

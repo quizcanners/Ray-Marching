@@ -8,7 +8,7 @@ using QuizCannersUtilities;
 using UnityEditor;
 #endif
 
-namespace RayMarching
+namespace NodeNotes.RayTracing
 {
 
     public class VolumeTracingBaker : MonoBehaviour, IPEGI
@@ -115,7 +115,7 @@ namespace RayMarching
             } 
 
             "Back Buffer:".edit(ref _texB).changes(ref changed);
-            pegi.FullWindowService.fullWindowDocumentationClickOpen("Second buffer needs to be same kind of RenderTexture as Texture");
+            pegi.FullWindowService.DocumentationClickOpen("Second buffer needs to be same kind of RenderTexture as Texture");
             pegi.nl();
             "Material".edit(ref material).nl(ref changed);
 

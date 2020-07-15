@@ -1,7 +1,7 @@
 ﻿using System;
 using QuizCannersUtilities;
 
-namespace RayMarching
+namespace NodeNotes.RayTracing
 {
     
     public class RayMarchingConfigs : ConfigurationsListGeneric<RayMarchingConfig>

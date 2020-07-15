@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace RayMarching
+namespace NodeNotes.RayTracing
 {
 
 

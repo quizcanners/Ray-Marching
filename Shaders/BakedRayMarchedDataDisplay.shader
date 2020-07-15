@@ -62,7 +62,7 @@
 					*/
 
 				float4 col = SampleVolume(_RayMarchingVolume, o.worldPos 
-				+ o.normal.xyz * _RayMarchingVolumeVOLUME_POSITION_OFFSET.w
+				//+ o.normal.xyz * _RayMarchingVolumeVOLUME_POSITION_OFFSET.w
 				, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
 				, _RayMarchingVolumeVOLUME_H_SLICES);
 

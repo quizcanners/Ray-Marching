@@ -1,4 +1,4 @@
-﻿Shader "Node Notes/Ray Trace And March"
+﻿Shader "RayTracing/Bake/To Screen"
 {
 	Properties{
 		  _MainTex("Albedo (RGB)", 2D) = "white" {}

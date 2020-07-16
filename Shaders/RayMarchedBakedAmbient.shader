@@ -1,4 +1,4 @@
-﻿Shader "RayMarching/RayMarchedBakedAmbient"
+﻿Shader "RayTracing/Marching/RayMarchedBakedAmbient"
 {
 	Properties{
 			_MainTex("Albedo (RGB)", 2D) = "white" {}

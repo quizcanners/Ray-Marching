@@ -1,4 +1,4 @@
-﻿Shader "RayMarching/RayMarching"
+﻿Shader "RayTracing/Marching/Real Time"
 {
 	Properties{
 		 _MainTex("Albedo (RGB)", 2D) = "white" {}

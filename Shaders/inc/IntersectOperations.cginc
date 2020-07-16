@@ -42,11 +42,13 @@ float iPlane(in float3 ro, in float3 rd, in float2 distBound, inout float3 norma
 	in float3 planeNormal, in float planeDist) {
 	float a = dot(rd, planeNormal);
 	float d = -(dot(ro, planeNormal) + planeDist) / a;
-	if (a > 0. || d < distBound.x || d > distBound.y) {
+	if (d < distBound.x || d > distBound.y) {
 		return MAX_DIST;
 	}
 	else {
-		normal = planeNormal;
+		
+
+		normal = (a > 0.) ? -planeNormal : planeNormal;//planeNormal;
 		return d;
 	}
 }
@@ -719,8 +721,9 @@ float3 cosWeightedRandomHemisphereDirection(const float3 n, inout float4 seed) {
 	float3  uu = normalize(cross(n, abs(n.y) > .5 ? float3(1., 0., 0.) : float3(0., 1., 0.)));
 	float3  vv = cross(uu, n);
 	float ra = sqrt(r.y);
-	float rx = ra * cos(6.28318530718*r.x);
-	float ry = ra * sin(6.28318530718*r.x);
+	float mltp = 6.28318530718*r.x;
+	float rx = ra * cos(mltp);
+	float ry = ra * sin(mltp);
 	float rz = sqrt(1. - r.y);
 	float3  rr = float3(rx*uu + ry * vv + rz * n);
 	return normalize(rr);
@@ -739,8 +742,6 @@ float modifiedRefract(const in float3 v, const in float3 n, const in float ni_ov
 }
 
 float3 modifyDirectionWithRoughness(in float3 normal, in float3 refl, in float roughness, in float4 seed) {
-
-	// PROBLEM IS HERE. Gets out of box sometimes
 
 	float2 r = seed.xy;//hash2(seed);
 
@@ -762,8 +763,10 @@ float3 modifyDirectionWithRoughness(in float3 normal, in float3 refl, in float r
 
 	//float isRet = step(0.1, max(0., dot(ret,normal)));
 
-	return //ret * isRet + n * (1.-isRet); // Probably a div by zero somewhere
-		dot(ret, normal) > 0.1 ? ret : refl;
+	return dot(ret, normal) > 0.001 ? ret : refl; //normalize(+refl * 0.5);//refl;
+	
+	//ret * isRet + n * (1.-isRet); // Probably a div by zero somewhere
+		//dot(ret, normal) > 0.1 ? ret : refl;
 }
 
 float2 randomInUnitDisk(inout float4 seed) {

@@ -1,4 +1,4 @@
-﻿Shader "RayMarching/RayMarchedReflection"
+﻿Shader "RayTracing/Marching/Reflection"
 {
 	Properties{
 		_MainTex("Albedo (RGB)", 2D) = "white" {}

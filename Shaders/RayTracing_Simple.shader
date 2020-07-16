@@ -1,4 +1,4 @@
-﻿Shader "RayTracing/RayTracing"
+﻿Shader "RayTracing/Bake/Intersection Simple"
 {
 	Properties{
 		 _MainTex("Albedo (RGB)", 2D) = "white" {}

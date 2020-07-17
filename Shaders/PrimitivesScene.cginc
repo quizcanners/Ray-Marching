@@ -39,21 +39,24 @@ uniform float4 RayMarchSphere_1_Size;
 uniform float4 RayMarchSphere_1_Mat;
 
 uniform float4 RayMarchLight_0;
-uniform float4 _RayMarchLightColor;
+uniform float4 RayMarchLight_0_Mat;
+uniform float4 RayMarchLight_0_Size;
+
 uniform float4 _RayMarchSkyColor;
+uniform float4 _RayMarchLightColor;
 
 // Scenes
 float3 getSkyColor(float3 rd) {
 	float3 col = Mix(unity_FogColor.rgb, _RayMarchSkyColor.rgb, 0.5 + 0.5*rd.y);
 	float sun = saturate(dot(normalize(float3(-.8, 1.7, 2.6)), rd));
-	col += _RayMarchLightColor.a * _RayMarchLightColor.rgb * (smoothstep(0.99, 3, sun) * 100000 + pow(sun, 32));
+	col += _RayMarchLightColor.rgb * (smoothstep(0.99, 3, sun) * 100000 + pow(sun, 32));
 	return col;
 }
 
 inline float SceneSdf(float3 position) {
 
-	float s0 = SphereDistance(position, RayMarchSphere_0);
-	float s1 = SphereDistance(position, RayMarchSphere_1); 
+	float s0 = SphereDistance(position, float4(RayMarchSphere_0.xyz, RayMarchSphere_0_Size.x));
+	float s1 = SphereDistance(position, float4(RayMarchSphere_1.xyz, RayMarchSphere_1_Size.x));
 
 	float c0 = CubeDistance(position, RayMarchCube_0, RayMarchCube_0_Size.xyz, _RayMarchSmoothness);
 	float c1 = CubeDistance(position, RayMarchCube_1, RayMarchCube_1_Size.xyz, _RayMarchSmoothness);
@@ -87,10 +90,10 @@ inline float SceneSdf(float3 position) {
 	return dist;
 }
 
-float3 opU(float3 d, float iResult, float4 newMat, inout float4 currentMat) {
+float3 opU(float3 d, float iResult, float4 newMat, inout float4 currentMat, float type) {
 	currentMat = d.y > iResult ? newMat : currentMat;
 
-	return d.y > iResult ? float3(d.x, iResult, 1) : d; // if closer make new result
+	return d.y > iResult ? float3(d.x, iResult, type) : d; // if closer make new result
 }
 
 
@@ -99,17 +102,17 @@ float3 worldhit(in float3 ro, in float3 rd, in float2 dist, out float3 normal, i
 	// d.z <= z causes to show sky   d.z is material
 
 	float3 d = float3(dist, 0.);
-	d = opU(d, iPlane(ro, rd, d.xy, normal, float3(0, 1, 0), 0.), float4(0.5,0.5,0.5,1), mat);
+	d = opU(d, iPlane(ro, rd, d.xy, normal, float3(0, 1, 0), 0.), float4(0.5,0.5,0.5,1), mat, 1);
 
 	float3 m = sign(rd) / max(abs(rd), 1e-8);
 
-	d = opU(d, iBox(ro - RayMarchCube_0.xyz, rd, d.xy, normal, RayMarchCube_0_Size.xyz, m), RayMarchCube_0_Mat, mat);
-	d = opU(d, iBox(ro - RayMarchCube_1.xyz, rd, d.xy, normal, RayMarchCube_1_Size.xyz, m), RayMarchCube_1_Mat, mat);
-	d = opU(d, iBox(ro - RayMarchCube_2.xyz, rd, d.xy, normal, RayMarchCube_2_Size.xyz, m), RayMarchCube_2_Mat, mat);
-	d = opU(d, iBox(ro - RayMarchCube_3.xyz, rd, d.xy, normal, RayMarchCube_3_Size.xyz, m), RayMarchCube_3_Mat, mat);
-	d = opU(d, iBox(ro - RayMarchCube_4.xyz, rd, d.xy, normal, RayMarchCube_4_Size.xyz, m), RayMarchCube_4_Mat, mat);
-	//d = opU(d, iBox(ro - RayMarchCube_5.xyz, rd, d.xy, normal, RayMarchCube_5_Size.xyz, m), RayMarchCube_5_Size.w);
-	d = opU(d, iGoursat(ro - RayMarchCube_5.xyz, rd, d.xy, normal, RayMarchCube_5.w, RayMarchCube_5.w * 1.25), RayMarchCube_5_Mat, mat);
+	d = opU(d, iBox(ro - RayMarchCube_0.xyz, rd, d.xy, normal, RayMarchCube_0_Size.xyz, m), RayMarchCube_0_Mat, mat, RayMarchCube_0.w);
+	d = opU(d, iBox(ro - RayMarchCube_1.xyz, rd, d.xy, normal, RayMarchCube_1_Size.xyz, m), RayMarchCube_1_Mat, mat, RayMarchCube_1.w);
+	d = opU(d, iBox(ro - RayMarchCube_2.xyz, rd, d.xy, normal, RayMarchCube_2_Size.xyz, m), RayMarchCube_2_Mat, mat, RayMarchCube_2.w);
+	d = opU(d, iBox(ro - RayMarchCube_3.xyz, rd, d.xy, normal, RayMarchCube_3_Size.xyz, m), RayMarchCube_3_Mat, mat, RayMarchCube_3.w);
+	d = opU(d, iBox(ro - RayMarchCube_4.xyz, rd, d.xy, normal, RayMarchCube_4_Size.xyz, m), RayMarchCube_4_Mat, mat, RayMarchCube_4.w);
+	d = opU(d, iBox(ro - RayMarchCube_5.xyz, rd, d.xy, normal, RayMarchCube_5_Size.xyz, m), RayMarchCube_4_Mat, mat, RayMarchCube_5.w);
+	//d = opU(d, iGoursat(ro - RayMarchCube_5.xyz, rd, d.xy, normal, RayMarchCube_5_Size.x, RayMarchCube_5.w * 1.25), RayMarchCube_5_Mat, mat, RayMarchCube_5.w);
 
 	/*float3 tmpNorm;
 	float3 tmp1 = opU(d, iBox(rotateY(ro - RayMarchCube_4.xyz, RayMarchCube_4_Rot.y), rotateY(rd, RayMarchCube_4_Rot.y), d.xy, tmpNorm, RayMarchCube_4_Size.rgb, m), 16.);
@@ -130,8 +133,8 @@ float3 worldhit(in float3 ro, in float3 rd, in float2 dist, out float3 normal, i
 	d = opU(d, iRoundedCone(ro - float3(-1, .200, -2), rd, d.xy, normal,	float3(0, .3, 0), float3(0, 0, 0), .1, .2),			13.);
 	d = opU(d, iMesh(ro - float3(2, .090, 1), rd, d.xy, normal),																14.);*/
 
-	d = opU(d, iSphere(ro - RayMarchSphere_0.xyz, rd, d.xy, normal, RayMarchSphere_0.w), RayMarchSphere_0_Mat, mat);
-	d = opU(d, iSphere(ro - RayMarchSphere_1.xyz, rd, d.xy, normal, RayMarchSphere_1.w), RayMarchSphere_1_Mat, mat);
+	d = opU(d, iSphere(ro - RayMarchSphere_0.xyz, rd, d.xy, normal, RayMarchSphere_0_Size.x), RayMarchSphere_0_Mat, mat, RayMarchSphere_0.w);
+	d = opU(d, iSphere(ro - RayMarchSphere_1.xyz, rd, d.xy, normal, RayMarchSphere_1_Size.x), RayMarchSphere_1_Mat, mat, RayMarchSphere_1.w);
 	//d = opU(d, iSphere4(ro - RayMarchSphere_1.xyz, rd, d.xy, normal, RayMarchSphere_1.w), RayMarchSphere_1_Size.w);
 
 
@@ -197,7 +200,7 @@ float4 render(in float3 ro, in float3 rd, in float4 seed) {
 		float3 res = worldhit(ro, rd, float2(.0001, MAX_DIST_EDGE), normal, mat);
 		roughness = mat.a;
 		albedo = mat.rgb;
-		//type = res.z;
+		type = res.z;
 		// res.x =
 		// res.y = dist
 		// res.z = material
@@ -216,26 +219,27 @@ float4 render(in float3 ro, in float3 rd, in float4 seed) {
 #endif
 
 
-			/*if (type < .5) { 
+			if (type < 2.5) { 
 
 				float F = FresnelSchlickRoughness(max(0., -dot(normal, rd)), .04, roughness);
 				if (F > seed.b) {
-
+					// Reflect part
 					col *= albedo;
 					rd = modifyDirectionWithRoughness(normal, reflect(rd, normal), roughness, seed); 
 				}
 				else {
+					// Diffuse part
 					col *= albedo;
 					rd = cosWeightedRandomHemisphereDirection(normal, seed);
 				}
 			}
-			else 
-			if (type < METAL + .5) {*/
+			/*else 
+			if (type < METAL + .5) {
 			
 				col *= albedo;
 				rd = modifyDirectionWithRoughness(normal, reflect(rd, normal), roughness, seed);
 
-		/*	}
+			}
 #if RT_USE_DIELECTRIC
 			else if (type < DIELECTRIC + .5) { // DIELECTRIC? glass
 
@@ -276,12 +280,12 @@ float4 render(in float3 ro, in float3 rd, in float4 seed) {
 					;
 				rd = modifyDirectionWithRoughness(-normalOut, rd, roughness, seed);
 			}
-#endif
+#endif */
 			else
 			{
 				return float4(col * albedo * 4, distance);
 			}
-			*/
+			
 		}
 		else {
 
@@ -391,10 +395,10 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	float3 normal = EstimateNormal(ro);
 
-	float4 bake = SampleVolume(_RayMarchingVolume
+	/*float4 bake = SampleVolume(_RayMarchingVolume
 		, ro,
 		_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
-		_RayMarchingVolumeVOLUME_H_SLICES);
+		_RayMarchingVolumeVOLUME_H_SLICES);*/
 
 	float deDott = max(0, dot(-rd, normal));
 
@@ -408,7 +412,7 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	float3 lightDir = normalize(toCenterVec);
 
-	float lightRange = RayMarchLight_0.w + 1;
+	float lightRange = RayMarchLight_0_Size.x + 1;
 	float deLightRange = 1 / lightRange;
 
 	float lightBrightness = max(0, lightRange - toCenter) * deLightRange;
@@ -429,9 +433,15 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	float toview = dot(normal, rd);
 
-	//return toview;
+	float fresnel = smoothstep(0, 1, 1 + toview);
 
-	float3 reflected = -normalize(rd - 2 * (toview)*normal); // Returns world normal
+
+
+	float3 reflected = -normalize(rd - 2 * (toview)*normal 
+#if !RT_MOTION_TRACING
+		+ (seed - 0.5) * 0.7 * pow(1- fresnel, 2)
+#endif
+	); // Returns world normal
 
 	//return float4(reflected, 1);
 
@@ -445,7 +455,8 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	//reflectedSky = reflectedSky * deDott + 0.5 * dott;
 
-	float lightRelected = pow(max(0, dot(-reflected, lightDir)), 1 + bake.a * 128);
+	float lightRelected = pow(max(0, dot(-reflected, lightDir)), 1 //+ bake.a * 128
+	);
 
 
 	float3 reflectedNormal = EstimateNormal(reflectionPos);
@@ -454,10 +465,10 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	//	return reflectedDott;
 
-	float4 bakeReflected = SampleVolume(_qcPp_DestBuffer//_RayMarchingVolume
+	/*float4 bakeReflected = SampleVolume(_qcPp_DestBuffer
 		, reflectionPos,
 		_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
-		_RayMarchingVolumeVOLUME_H_SLICES);
+		_RayMarchingVolumeVOLUME_H_SLICES);*/
 
 	float3 toCenterVecRefl = lightSource - reflectionPos;
 
@@ -467,13 +478,9 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	float lightAttenRef = max(0, dot(lightDirRef, reflectedNormal));
 
-	//return lightAttenRef;
-
 	float reflectedShadow = 0;
 
 	precision = 1 + precision * max(0, 1 - reflectedDistance / _MaxRayMarchDistance) * 0.5f;
-
-	//return precision/ _maxRayMarchSteps;
 
 	if (lightRange > toCenterRefl)
 		reflectedShadow = Softshadow(reflectionPos, lightDirRef, 2,
@@ -487,10 +494,7 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	shadow *= lightAtten;
 
-	//return lightAtten;
-
-	col.rgb = bake.rgb* (_RayMarchLightColor.rgb * 2 * shadow *
-		lightBrightness);
+	col.rgb = RayMarchLight_0_Mat.rgb * shadow * lightBrightness;
 
 	float reflectedFog = max(0, 1 - reflectedDistance / _MaxRayMarchDistance);
 
@@ -502,19 +506,23 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	lightBrightnessReflected *= reflAmount;
 
-	float3 reflCol = (_RayMarchLightColor.rgb * reflectedShadow * lightAttenRef *
-		lightBrightnessReflected *
-		bakeReflected.rgb);
+	float3 reflCol = (RayMarchLight_0_Mat.rgb * reflectedShadow * lightAttenRef *
+		lightBrightnessReflected //* bakeReflected.rgb
+		);
 
 	//return shadow;
 
 	//float3 getSkyColor(reflectedNormal);
 
-	col.rgb += (1 + dott) * 0.5 *  (
-		reflCol * (1 - reflectedSky) +
-		_RayMarchSkyColor.rgb * reflectedSky +
-		lightRelected * 64 * shadow
-		) * unity_FogColor.rgb * bake.a;
+	//return col;
+
+	
+
+	col.rgb = col.rgb * (1 - fresnel) + fresnel * (1 + dott) *  
+		(reflCol * (1 - reflectedSky) +
+		_RayMarchSkyColor.rgb * reflectedSky + 
+		lightRelected * shadow
+		);// *unity_FogColor.rgb;// *bake.a;
 
 
 	col.rgb = col.rgb * deFog + _RayMarchSkyColor.rgb *(1 - deFog);

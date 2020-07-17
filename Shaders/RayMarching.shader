@@ -115,7 +115,7 @@
 
 					float3 lightDir = normalize(toCenterVec);
 
-					float lightRange = RayMarchLight_0.w + 1;
+					float lightRange = RayMarchLight_0_Size.x + 1;
 					float deLightRange = 1 / lightRange;
 
 					float lightBrightness = max(0, lightRange - toCenter) * deLightRange;
@@ -194,7 +194,7 @@
 
 					//return lightAtten;
 
-					col.rgb = bake.rgb* (_RayMarchLightColor.rgb * 2 *  shadow * 
+					col.rgb = bake.rgb* (RayMarchLight_0_Mat.rgb * 2 *  shadow *
 						lightBrightness);
 
 					float reflectedFog = max(0, 1 - reflectedDistance / _MaxRayMarchDistance);
@@ -207,7 +207,7 @@
 
 					lightBrightnessReflected *= reflAmount;
 
-					float3 reflCol = (_RayMarchLightColor.rgb * reflectedShadow * lightAttenRef * 
+					float3 reflCol = (RayMarchLight_0_Mat.rgb * reflectedShadow * lightAttenRef *
 						lightBrightnessReflected *
 						bakeReflected.rgb );
 

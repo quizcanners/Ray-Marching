@@ -5,6 +5,7 @@ using QuizCannersUtilities;
 using UnityEngine;
 using NodeNotes_Visual;
 using UnityEngine.UI;
+using static NodeNotes.NodeNotesAssetGroup;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -42,10 +43,10 @@ namespace NodeNotes.RayTracing
 
         public RayTracingSceneBase sceneConfiguration;
         
+
         LinkedLerp.MaterialColor _sunLightColor = new LinkedLerp.MaterialColor("_RayMarchLightColor", Color.grey, 10);
         LinkedLerp.MaterialColor _skyColor = new LinkedLerp.MaterialColor("_RayMarchSkyColor", Color.grey, 10);
         LinkedLerp.ColorValue _fogColor = new LinkedLerp.ColorValue("Fog", speed: 10);
-
 
         private bool UseRayTracing
         {

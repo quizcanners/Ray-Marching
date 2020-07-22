@@ -19,7 +19,7 @@ namespace NodeNotes.RayTracing
 
         public static RayRenderingManager instance;
 
-        public enum RayRenderingTarget { Disabled = 0, Screen = 1, Volume = 2}
+        public enum RayRenderingTarget { Disabled = 0, RayIntersection = 1, RayMarching = 2, Volume = 3 }
         private RayRenderingTarget _target;
         public RayRenderingTarget Target
         {
@@ -27,11 +27,13 @@ namespace NodeNotes.RayTracing
             set
             {
                 _target = value;
+                _usingRayMarching.Enabled = value == RayRenderingTarget.RayMarching;
             }
         }
 
-        [Header("Common")]
+        public bool TargetIsScreenBuffer => Target == RayRenderingTarget.RayIntersection || Target == RayRenderingTarget.RayMarching;
 
+        [Header("Common")]
         public GodMode godModeCamera;
         public LayerMask rayTracingResultMask;
         public LayerMask volumeTracingCameraMask;
@@ -47,12 +49,6 @@ namespace NodeNotes.RayTracing
         LinkedLerp.MaterialColor _sunLightColor = new LinkedLerp.MaterialColor("_RayMarchLightColor", Color.grey, 10);
         LinkedLerp.MaterialColor _skyColor = new LinkedLerp.MaterialColor("_RayMarchSkyColor", Color.grey, 10);
         LinkedLerp.ColorValue _fogColor = new LinkedLerp.ColorValue("Fog", speed: 10);
-
-        private bool UseRayTracing
-        {
-            get { return !_usingRayMarching.Enabled; }
-            set { _usingRayMarching.Enabled = !value; }
-        }
         
         ShaderProperty.ShaderKeyword _usingRayMarching = new ShaderProperty.ShaderKeyword("_IS_RAY_MARCHING");
 
@@ -153,7 +149,7 @@ namespace NodeNotes.RayTracing
                 volumeTracingBaker.bakingEnabled = Target == RayRenderingTarget.Volume;
             }
 
-            var isScreen = Target == RayRenderingTarget.Screen;
+            var isScreen = TargetIsScreenBuffer;
 
             if (rayTracingScreenBakingPlane)
                 rayTracingScreenBakingPlane.SetActive(isScreen);
@@ -168,7 +164,7 @@ namespace NodeNotes.RayTracing
             {
                 var tf = MainCamera.transform;
 
-                if (Target == RayRenderingTarget.Screen)
+                if (isScreen)
                 {
                     cameraShakeDebug = (_previousCamPosition - tf.position).magnitude * 10 +
                                        Quaternion.Angle(_previousCamRotation, tf.rotation);
@@ -202,7 +198,7 @@ namespace NodeNotes.RayTracing
                         volumeTracingBaker.SetBakeDirty();
                 }
 
-                if (Target == RayRenderingTarget.Screen)
+                if (isScreen)
                 {
                     MainCamera.cullingMask = rayTracingResultMask ;
 
@@ -255,8 +251,10 @@ namespace NodeNotes.RayTracing
             if (lerpFinished)
                 return;
 
-            _rayMarchSmoothness.Lerp(ld, canSkipLerp || UseRayTracing);
-            _rayMarchShadowSoftness.Lerp(ld, canSkipLerp || UseRayTracing);
+            var isMarching = Target == RayRenderingTarget.RayMarching;
+
+            _rayMarchSmoothness.Lerp(ld, canSkipLerp || !isMarching);
+            _rayMarchShadowSoftness.Lerp(ld, canSkipLerp || !isMarching);
             _sunLightColor.Lerp(ld, canSkipLerp);
             _skyColor.Lerp(ld, canSkipLerp);
             _fogColor.Lerp(ld, canSkipLerp);
@@ -330,7 +328,7 @@ namespace NodeNotes.RayTracing
                         "Volume".edit(60, ref volumeTracingBaker).nl();
                 }
 
-                if (Target == RayRenderingTarget.Screen)
+                if (TargetIsScreenBuffer)
                 {
                     "SS Camera Mask".edit_Property(() => rayTracingResultMask, this).nl();
                 }
@@ -355,21 +353,11 @@ namespace NodeNotes.RayTracing
                 "Scene config".edit(ref sceneConfiguration).nl();
             }
 
-            if (UseRayTracing)
+         
+            if (Target == RayRenderingTarget.RayMarching)
             {
-                "RAY-TRACING [frms: {0} | stability: {1}]".F((int)_stableFrames, cameraShakeDebug).write(PEGI_Styles.ListLabel);
-                if (icon.PreviewShader.Click("Switch to Ray-Marching").nl())
-                    _usingRayMarching.Enabled = true;
-            }
-            else
-            {
-                "RAY-MARCHING".write(PEGI_Styles.ListLabel);
-                if (icon.OriginalShader.Click("Switch to Ray-Tacing").nl())
-                    UseRayTracing = true;
-            }
-
-            if (_usingRayMarching.Enabled)
-            {
+                "RAY-MARCHING".nl(PEGI_Styles.ListLabel);
+                
                 "Max Steps".edit(ref _maxSteps, 1, 400).nl(ref changed);
 
                 "Max Distance".edit(ref _maxDistance, 1, 50000).nl(ref changed);
@@ -384,6 +372,8 @@ namespace NodeNotes.RayTracing
             {
                 _rayTraceUseDielecrtic.Inspect().nl(ref changed);
                 _rayTraceUseCheckerboard.Inspect().nl(ref changed);
+                "RAY-INTERSECTION [frms: {0} | stability: {1}]".F((int)_stableFrames, cameraShakeDebug).nl(PEGI_Styles.ListLabel);
+
             }
 
             "DOF".nl();
@@ -436,7 +426,6 @@ namespace NodeNotes.RayTracing
         public override CfgEncoder Encode()
         {
             var cody = new CfgEncoder()
-                .Add_Bool("useRT", UseRayTracing)
                 .Add("col", _sunLightColor.TargetValue)
                 .Add("sky", _skyColor.TargetValue)
                 .Add("fog", _fogColor.TargetValue)
@@ -453,7 +442,7 @@ namespace NodeNotes.RayTracing
                 .Add("sm", smoothness)
                 .Add("shSo", shadowSoftness);
                     
-            if (UseRayTracing) cody
+            if (Target != RayRenderingTarget.RayMarching) cody
                 .Add_Bool("diEl", _rayTraceUseDielecrtic.Enabled)
                 .Add_Bool("rtCB", _rayTraceUseCheckerboard.Enabled);
 
@@ -474,7 +463,6 @@ namespace NodeNotes.RayTracing
                 case "depth": MainCamera.depthTextureMode = (DepthTextureMode)data.ToInt(); break;
                 case "dofD": DOFdistance.Decode(data); break;
                 case "dofPow": DOFTargetStrength.TargetValue = data.ToFloat(); break;
-                case "useRT": UseRayTracing = data.ToBool(); break;
                 case "sc": sceneConfiguration.Decode(data); break;
                 case "diEl": _rayTraceUseDielecrtic.Enabled = data.ToBool(); break;
                 case "rtCB": _rayTraceUseCheckerboard.Enabled = data.ToBool(); break;

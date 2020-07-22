@@ -59,7 +59,7 @@
 	
 			float4 frag(v2f o) : COLOR{
 
-
+				float scale = _RayMarchingVolumeVOLUME_POSITION_OFFSET.w;
 
 				/*float3 worldPos = volumeUVtoWorld(o.texcoord.xy
 					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
@@ -79,15 +79,35 @@
 
 				//	clip(tex.a - 0.1);
 
-				float4 col = SampleVolume(_RayMarchingVolume, o.worldPos 
-				+ o.normal.xyz * _RayMarchingVolumeVOLUME_POSITION_OFFSET.w//*(1 + noise.b * 8)
+				float4 normalAndDist = SdfNormalAndDistance(o.worldPos); //o.normal.xyz *
+
+			    float internal = 1 - saturate(-normalAndDist.w * scale);
+
+				//return   internal;
+
+				//float difference = dot(normalAndDist.rgb, o.normal.xyz) - internal;
+
+				//return difference;
+				//float internal = saturate(-normalAndDist.w);
+
+				//float useSdf = min(1, internal * scale * 5999);
+
+				float4 light = SampleVolume(_RayMarchingVolume, o.worldPos
+					// + (useSdf * normalAndDist.rgb * internal + o.normal.xyz * (1-useSdf)) *
+					+ o.normal.xyz *scale
 				, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
 				, _RayMarchingVolumeVOLUME_H_SLICES);
+
+				//return light;
+
+				float4 col = light;//(light + unity_FogColor *internal);
+				//col = max(col, float4(0.1, 0.1, 0.1, 0));
+				//return useSdf;
 
 				float unFogged = min(1, col.a);
 
 			
-				col.rgb = tex.rgb * col.rgb * unFogged + unity_FogColor.rgb * (1-unFogged);
+				col.rgb = (tex.rgb * col.rgb * unFogged + unity_FogColor.rgb * (1 - unFogged)) *internal;
 				
 				//return tex;
 

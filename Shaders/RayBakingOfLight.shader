@@ -93,12 +93,12 @@
 
 				previous = (previous + previous2 + previous3 + previous4) * 0.25f;
 				#endif*/
-
+				/*
 				#if _IS_RAY_MARCHING
 					float4 col = renderSdf(worldPos, rayDirection, noise);
-				#else
+				#else */
 					float4 col = render(worldPos, rayDirection, noise);
-				#endif
+				//#endif
 
 				float accumulation = previous.a * (1 - _RayTraceTransparency);
 

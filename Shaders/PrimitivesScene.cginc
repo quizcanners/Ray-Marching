@@ -58,12 +58,14 @@ inline float SceneSdf(float3 position) {
 	float s0 = SphereDistance(position, float4(RayMarchSphere_0.xyz, RayMarchSphere_0_Size.x));
 	float s1 = SphereDistance(position, float4(RayMarchSphere_1.xyz, RayMarchSphere_1_Size.x));
 
-	float c0 = CubeDistance(position, RayMarchCube_0, RayMarchCube_0_Size.xyz, _RayMarchSmoothness);
-	float c1 = CubeDistance(position, RayMarchCube_1, RayMarchCube_1_Size.xyz, _RayMarchSmoothness);
-	float c2 = CubeDistance(position, RayMarchCube_2, RayMarchCube_2_Size.xyz, _RayMarchSmoothness);
-	float c3 = CubeDistance(position, RayMarchCube_3, RayMarchCube_3_Size.xyz, _RayMarchSmoothness);
-	float c4 = CubeDistance(position, RayMarchCube_4, RayMarchCube_4_Size.xyz, _RayMarchSmoothness);
-	float c5 = CubeDistance(position, RayMarchCube_5, RayMarchCube_5_Size.xyz, _RayMarchSmoothness);
+	float edges = _RayMarchingVolumeVOLUME_POSITION_OFFSET.w*0.1;
+
+	float c0 = CubeDistance(position, RayMarchCube_0, RayMarchCube_0_Size.xyz, edges);
+	float c1 = CubeDistance(position, RayMarchCube_1, RayMarchCube_1_Size.xyz, edges);
+	float c2 = CubeDistance(position, RayMarchCube_2, RayMarchCube_2_Size.xyz, edges);
+	float c3 = CubeDistance(position, RayMarchCube_3, RayMarchCube_3_Size.xyz, edges);
+	float c4 = CubeDistance(position, RayMarchCube_4, RayMarchCube_4_Size.xyz, edges);
+	float c5 = CubeDistance(position, RayMarchCube_5, RayMarchCube_5_Size.xyz, edges);
 
 	float plane = Plane(position);
 	//c0 = abs(c0) - 1;
@@ -225,12 +227,21 @@ float4 render(in float3 ro, in float3 rd, in float4 seed) {
 				if (F > seed.b) {
 					// Reflect part
 					col *= albedo;
+#if RT_MOTION_TRACING
+					rd = reflect(rd, normal);
+#else 
 					rd = modifyDirectionWithRoughness(normal, reflect(rd, normal), roughness, seed); 
+#endif
 				}
 				else {
 					// Diffuse part
 					col *= albedo;
+
+#if RT_MOTION_TRACING
+					rd = reflect(rd, normal);
+#else 
 					rd = cosWeightedRandomHemisphereDirection(normal, seed);
+#endif
 				}
 			}
 			/*else 
@@ -360,11 +371,33 @@ inline float3 EstimateNormal(float3 pos) {
 
 	float EPSILON = 0.01f;
 
+	float center = SceneSdf(float3(pos.x, pos.y, pos.z));
+
 	return normalize(float3(
+		center - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z)),
+		center - SceneSdf(float3(pos.x, pos.y - EPSILON, pos.z)),
+		center - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON))
+		));
+
+	/*return normalize(float3(
 		SceneSdf(float3(pos.x + EPSILON, pos.y, pos.z)) - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z)),
 		SceneSdf(float3(pos.x, pos.y + EPSILON, pos.z)) - SceneSdf(float3(pos.x, pos.y - EPSILON, pos.z)),
 		SceneSdf(float3(pos.x, pos.y, pos.z + EPSILON)) - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON))
-		));
+		));*/
+}
+
+
+inline float4 SdfNormalAndDistance(float3 pos) {
+
+	float EPSILON = 0.01f;
+
+	float center = SceneSdf(float3(pos.x, pos.y, pos.z));
+
+	return float4(normalize(float3(
+		center - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z)),
+		center - SceneSdf(float3(pos.x, pos.y - EPSILON, pos.z)),
+		center - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON))
+		)), center);
 }
 
 inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {

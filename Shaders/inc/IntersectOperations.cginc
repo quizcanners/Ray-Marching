@@ -767,6 +767,7 @@ float3 modifyDirectionWithRoughness(in float3 normal, in float3 refl, in float r
 	
 	//ret * isRet + n * (1.-isRet); // Probably a div by zero somewhere
 		//dot(ret, normal) > 0.1 ? ret : refl;
+
 }
 
 float2 randomInUnitDisk(inout float4 seed) {

@@ -10,9 +10,6 @@ uniform float _RayTraceTransparency;
 
 uniform float4 _RayTracing_TargetBuffer_ScreenFillAspect;
 
-
-
-
 uniform sampler2D _RayMarchingVolume;
 uniform sampler2D _qcPp_DestBuffer;
 uniform float4 _RayMarchingVolumeVOLUME_POSITION_N_SIZE;
@@ -24,7 +21,12 @@ float _maxRayMarchSteps;
 float _RayMarchSmoothness;
 float _RayMarchShadowSoftness;
 
-
+float3 hash33(float3 p3)
+{
+	p3 = (p3 * float3(.1031, .11369, .13787)) % 1;
+	p3 += dot(p3, p3.yxz + 19.19);
+	return -1.0 + 2.0 * ((float3((p3.x + p3.y) * p3.z, (p3.x + p3.z) * p3.y, (p3.y + p3.z) * p3.x)) % 1);
+}
 
 float gpuIndepentHash(float p) {
 	p = (p * 0.1031) % 1;
@@ -40,3 +42,4 @@ float3 Pallete(in float t, in float3 a, in float3 b, in float3 c, in float3 d) {
 float checkerBoard(float2 p) {
 	return abs((floor(p.x) + floor(p.y)) % 2);
 }
+

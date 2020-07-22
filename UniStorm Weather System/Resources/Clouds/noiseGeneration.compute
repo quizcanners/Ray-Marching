@@ -1,0 +1,187 @@
+﻿// Base Noise Texture
+#pragma kernel CSBaseNoiseMain
+uniform RWTexture2D<float4> _Base;
+uniform Texture2D<float4> _CPUBase;
+uniform float _TextureDim;
+uniform uint _Seed;
+
+uint rng_state;
+
+SamplerState sampler_point_repeat;
+
+// Detail Noise Texture
+#pragma kernel CSDetailNoiseMain
+uniform RWTexture3D<float4> _Details;
+
+// Noise functions
+// Hash without Sine by DaveHoskins 
+//
+// https://www.shadertoy.com/view/4djSRW
+
+float hash12(float2 p) {
+    p = 50.0f * frac(p * 0.3183099f);
+    return frac(p.x * p.y * (p.x + p.y));
+}
+
+float hash13(float3 p3) {
+    p3 = frac(p3 * 1031.1031f);
+    p3 += dot(p3, p3.yzx + 19.19f);
+    return frac((p3.x + p3.y) * p3.z);
+}
+
+float3 hash33(float3 p3) {
+    p3 = frac(p3 * float3(0.1031f, 0.1030f, 0.0973f));
+    p3 += dot(p3, p3.yxz + 19.19);
+    return frac((p3.xxy + p3.yxx) * p3.zyx);
+}
+
+uint rand_lcg()
+{
+    // LCG values from Numerical Recipes
+    rng_state = 1664525 * _Seed + 1013904223;
+    return rng_state;
+}
+
+uint rand_xorshift()
+{
+    // Xorshift algorithm from George Marsaglia's paper
+    rng_state ^= (rng_state << 13);
+    rng_state ^= (rng_state >> 17);
+    rng_state ^= (rng_state << 5);
+    return rng_state;
+}
+
+inline float rand() // 0 to 1
+{
+    return float(rand_xorshift()) * (1.0 / 4294967296.0);
+}
+
+float valueHash(float3 p3) {
+    p3 = frac(p3 * 0.1031f);
+    p3 += dot(p3, p3.yzx + 19.19f);
+    return frac((p3.x + p3.y) * p3.z);
+}
+
+//
+// Noise functions used for cloud shapes
+//
+float valueNoise(in float3 x, float tile) {
+    float3 p = floor(x);
+    float3 f = frac(x);
+    f = f * f * (3.0f - 2.0f * f);
+
+    return lerp(lerp(lerp(valueHash(fmod(p + float3(0, 0, 0), tile)),
+        valueHash(fmod(p + float3(1, 0, 0), tile)), f.x),
+        lerp(valueHash(fmod(p + float3(0, 1, 0), tile)),
+            valueHash(fmod(p + float3(1, 1, 0), tile)), f.x), f.y),
+        lerp(lerp(valueHash(fmod(p + float3(0, 0, 1), tile)),
+            valueHash(fmod(p + float3(1, 0, 1), tile)), f.x),
+            lerp(valueHash(fmod(p + float3(0, 1, 1), tile)),
+                valueHash(fmod(p + float3(1, 1, 1), tile)), f.x), f.y), f.z);
+}
+
+float voronoi(float3 x, float tile) {
+    float3 p = floor(x);
+    float3 f = frac(x);
+
+    //float k = 1.0 + 63.0*pow(0, 4.0);
+    float k = 1.0f;
+
+    float va = 0.0;
+    float wt = 0.0;
+    for (int k2 = -2; k2 <= 2; k2++)
+        for (int j = -2; j <= 2; j++)
+            for (int i = -2; i <= 2; i++)
+            {
+                float3 g = float3(float(i), float(j), float(k2));
+                float3 o = hash33(fmod(p + g, tile));
+                float3 r = g - f + o.xyz;
+                float d = dot(r, r);
+                float ww = pow(1.0 - smoothstep(0.0, 1.414, sqrt(d)), k);
+                va += o.z*ww;
+                wt += ww;
+            }
+
+    return va / wt;
+}
+
+float tilableVoronoi(float3 p, const int octaves, float tile) {
+    float f = 1.0f;
+    float a = 1.0f;
+    float c = 0.0f;
+    float w = 0.0f;
+
+    if (tile > 0.0f) f = tile;
+
+    for (int i = 0; i < octaves; i++) {
+        c += a * voronoi(p * f, f);
+        f *= 2.0f;
+        w += a;
+        a *= 0.5f;
+    }
+
+    return c / w;
+}
+
+float tilableFbm(float3 p, const int octaves, float tile) { 
+    float f = 1.0f;
+    float a = 1.0f;
+    float c = 0.0f;
+    float w = 0.0f;
+
+    if (tile > 0.0f) f = tile;
+
+    for (int i = 0; i < octaves; i++) { 
+        c += a * valueNoise(p * f, f);
+        f *= 2.0f;
+        w += a;
+        a *= 0.5f;
+    } 
+
+    return c / w;
+}
+
+
+//Generates base cloud shape
+[numthreads(8,8,1)]
+void CSBaseNoiseMain (uint3 id : SV_DispatchThreadID)
+{
+    float2 vUV = float2(id.x, id.y) / _TextureDim;
+    float bias = (0.5f / _TextureDim);
+    float3 coord = frac(float3(vUV + float2(0.2f, 0.62f), 0.5f));
+
+    float4 result = 1.0f;
+
+    float mfbm = 0.9f;// 0.9f;
+    float mvor = 0.7f;// 0.7f;
+
+	/*
+    result.r = lerp(1.0f, tilableFbm(coord, 7, 4.0f), mfbm) *
+        lerp(1.0f, tilableVoronoi(coord, 8, 9.0f), mvor);
+    result.g = 0.625f * tilableVoronoi(coord + 0.0f, 3, 15.0f) +
+        0.250f * tilableVoronoi(coord + 0.0f, 3, 19.0f) +
+        0.125f * tilableVoronoi(coord + 0.0f, 3, 23.0f);
+    result.b = 1.0f - tilableVoronoi(coord + 0.5f, 6, 9.0f);
+	*/
+
+    rand_lcg();
+
+    float fbm = tilableFbm(coord + rand() * 314.15f, 7, 4.0f);
+    float4 mainTex = _CPUBase.SampleLevel(sampler_point_repeat, vUV + bias, 0);
+    _Base[id.xy] = float4(lerp(1.0f, fbm, mfbm) * lerp(1.0f, mainTex.r, mvor), mainTex.g, mainTex.b, mainTex.a);
+}
+
+//Generates cloud noise
+[numthreads(8, 8, 8)]
+void CSDetailNoiseMain(uint3 id : SV_DispatchThreadID)
+{
+    float3 coord = float3(id.x, id.y, id.z) / _TextureDim;
+
+    float r = tilableVoronoi(coord, 16, 3.0f);
+    float g = tilableVoronoi(coord, 4, 8.0f);
+    float b = tilableVoronoi(coord, 4, 16.0f);
+    
+    float c = max(0.0f, 1.0f - (r + g * 0.5f + b * 0.25f) / 1.75f);
+
+    _Details[id.xyz] = float4(c, c, c, c);
+}

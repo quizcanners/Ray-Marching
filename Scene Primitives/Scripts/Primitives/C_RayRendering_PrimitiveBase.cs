@@ -1,0 +1,55 @@
+using QuizCanners.Utils;
+using UnityEngine;
+using static QuizCanners.RayTracing.QcRTX;
+
+namespace QuizCanners.RayTracing
+{
+    [DisallowMultipleComponent]
+    [ExecuteInEditMode]
+    public abstract class C_RayRendering_PrimitiveBase : MonoBehaviour
+    {
+        [SerializeField] protected MeshRenderer _rendy;
+
+        public PrimitiveMaterialType Material;
+
+        public Bounds GetBoundingBox() => _rendy.bounds;
+
+        public Vector4 SHD_PositionAndMaterial => transform.position.ToVector4((int)Material + 0.1f);
+        public virtual Vector4 SHD_Rotation
+        {
+            get
+            {
+                var rot = transform.rotation;
+                if (GetShape() == Shape.Capsule)
+                    rot *= Quaternion.Euler(-35, 0, 45);
+
+                return new Vector4(-rot.x, -rot.y, -rot.z, rot.w);
+            }
+        }
+        public Vector4 SHD_Extents => GetExtents().ToVector4();
+        public abstract Vector4 SHD_ColorAndRoughness { get; }
+
+        protected abstract Shape GetShape();
+
+        public Vector3 GetExtents()
+        {
+            var scale = transform.localScale;
+
+            return GetShape() switch
+            {
+                Shape.SubtractiveCube => scale * 0.5f,
+                Shape.Capsule => new Vector3(Mathf.Min(scale.x,scale.z) * 0.5f, scale.y * 0.25f, Mathf.Min(scale.x, scale.z) * 0.5f),
+                Shape.Cube => scale * 0.5f,
+                Shape.Sphere => scale.x * Vector3.one,
+                _ => scale,
+            };
+        }
+
+        protected virtual void OnEnable()
+        {
+            if (!_rendy)
+                _rendy = GetComponent<MeshRenderer>();
+        }
+
+    }
+}

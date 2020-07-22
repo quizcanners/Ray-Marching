@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 261fc1252906e6a4cb51ade6bfe12cb9
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - noiseCompute: {fileID: 7200000, guid: 76cf5a2e36bc1544f9022e09a1deaba2, type: 3}
+  - baseNoisePreview: {instanceID: 0}
+  - skyMaterial: {instanceID: 0}
+  - sun: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

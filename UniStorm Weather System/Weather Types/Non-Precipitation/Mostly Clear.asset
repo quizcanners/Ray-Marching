@@ -1,0 +1,116 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4ec900128fbff24683f8f2aac8c2192, type: 3}
+  m_Name: Mostly Clear
+  m_EditorClassIdentifier: 
+  WeatherTypeName: Mostly Clear
+  CloudProfileComponent: {fileID: 11400000, guid: 2abfa647742d6174bacc9b765f51f9c3,
+    type: 2}
+  SunIntensity: 1
+  CloudShadowIntensity: 0.75
+  MoonIntensity: 1
+  UseAuroras: 1
+  AuroraIntensity: 0.4
+  AuroraOuterColor: {r: 0, g: 1, b: 1, a: 1}
+  AuroraInnerColor: {r: 0, g: 1, b: 0, a: 1}
+  MinimumFogLevel: 300
+  MaximumFogLevel: 600
+  FogDensity: 0.0014
+  FogLightFalloff: 0.65
+  FogHeight: 0.75
+  CameraFogHeight: 0.85
+  OverrideFogColor: 1
+  OverrideCameraFogHeight: 1
+  FogColor:
+    serializedVersion: 2
+    key0: {r: 0.09892311, g: 0.14482148, b: 0.1792453, a: 1}
+    key1: {r: 0.09892311, g: 0.14482148, b: 0.1792453, a: 1}
+    key2: {r: 0.31255403, g: 0.33055198, b: 0.3455882, a: 0}
+    key3: {r: 0.5513084, g: 0.62561595, b: 0.72794116, a: 0}
+    key4: {r: 0.5513084, g: 0.62561595, b: 0.72794116, a: 0}
+    key5: {r: 0.31255403, g: 0.33055198, b: 0.3455882, a: 0}
+    key6: {r: 0.09892311, g: 0.14482148, b: 0.1792453, a: 0}
+    key7: {r: 0.074092194, g: 0.117913395, b: 0.14150941, a: 0}
+    ctime0: 0
+    ctime1: 16515
+    ctime2: 19398
+    ctime3: 22282
+    ctime4: 46373
+    ctime5: 49630
+    ctime6: 52888
+    ctime7: 65535
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_NumColorKeys: 8
+    m_NumAlphaKeys: 2
+  WindSpeedLevel: 0.85
+  WindBendingLevel: 0.2
+  WindIntensity: 0.18
+  WeatherEffect: {fileID: 0}
+  ParticleEffectAmount: 200
+  ParticleEffectVector: {x: 0, y: 28, z: 0}
+  AdditionalWeatherEffect: {fileID: 0}
+  AdditionalParticleEffectAmount: 200
+  AdditionalParticleEffectVector: {x: 0, y: 28, z: 0}
+  WeatherVolume: 1
+  WeatherSound: {fileID: 0}
+  PrecipitationWeatherType: 1
+  UseWeatherSound: 1
+  UseWeatherEffect: 1
+  UseAdditionalWeatherEffect: 1
+  SpecialWeatherType: 1
+  Season: 0
+  CloudHeight: 1000
+  CloudLevel: 1
+  TemperatureType: 2
+  ShaderControl: 2
+  OverrideCloudColor: 1
+  CloudColor:
+    serializedVersion: 2
+    key0: {r: 0.090512626, g: 0.13249429, b: 0.16981131, a: 1}
+    key1: {r: 0.090512626, g: 0.13249429, b: 0.16981131, a: 1}
+    key2: {r: 0.36548442, g: 0.434658, b: 0.47794116, a: 0}
+    key3: {r: 0.59185773, g: 0.6303355, b: 0.6544118, a: 0}
+    key4: {r: 0.59185773, g: 0.6303355, b: 0.6544118, a: 0}
+    key5: {r: 0.36548442, g: 0.434658, b: 0.47794116, a: 0}
+    key6: {r: 0.090512626, g: 0.13249429, b: 0.16981131, a: 0}
+    key7: {r: 0.090512626, g: 0.13249429, b: 0.16981131, a: 0}
+    ctime0: 0
+    ctime1: 16515
+    ctime2: 19430
+    ctime3: 22282
+    ctime4: 46373
+    ctime5: 49630
+    ctime6: 52505
+    ctime7: 65535
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_NumColorKeys: 8
+    m_NumAlphaKeys: 2
+  UseLightning: 1
+  CustomizeWeatherIcon: 0
+  WaitForCloudLevel: 1
+  WeatherIcon: {fileID: 2800000, guid: 821f36104644f734bbc4f8c2d78c7ca6, type: 3}

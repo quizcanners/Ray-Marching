@@ -40,30 +40,37 @@ float dot2(in float3 v) { return dot(v, v); }
 // Plane 
 float iPlane(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,
 	in float3 planeNormal, in float planeDist) {
+	
 	float a = dot(rd, planeNormal);
 	float d = -(dot(ro, planeNormal) + planeDist) / a;
+
 	if (d < distBound.x || d > distBound.y) {
+		
 		return MAX_DIST;
 	}
 	else {
 		
 
-		normal = (a > 0.) ? -planeNormal : planeNormal;//planeNormal;
+		normal = planeNormal;////(a > 0.) ? -planeNormal : planeNormal;//Now will only work from above;
 		return d;
 	}
 }
 
 
 // Sphere:          https://www.shadertoy.com/view/4d2XWV
-float iSphere(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,	float sphereRadius) {
+float iSphere(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,	float sphereRadius) 
+{
+
 	float b = dot(ro, rd);
 	float c = dot(ro, ro) - sphereRadius * sphereRadius;
 	float h = b * b - c;
 
-	if (h < 0.) {
+	if (h < 0.)
+	{
 		return MAX_DIST;
 	}
-	else {
+	else 
+	{
 		h = sqrt(h);
 		float d1 = -b - h;
 		float d2 = -b + h;
@@ -71,7 +78,8 @@ float iSphere(in float3 ro, in float3 rd, in float2 distBound, inout float3 norm
 			normal = normalize(ro + rd * d1);
 			return d1;
 		}
-		else if (d2 >= distBound.x && d2 <= distBound.y) {
+		else 
+			if (d2 >= distBound.x && d2 <= distBound.y) {
 			normal = normalize(ro + rd * d2);
 			return d2;
 		}
@@ -123,9 +131,32 @@ bool slabs(in float3 p0, in float3 p1, float3 rayOrigin, float3 raydir, inout fl
 }*/
 
 
+
 // Box:             https://www.shadertoy.com/view/ld23DV
-float iBox(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,
-	in float3 boxSize, in float3 m) {
+float iBoxTrigger(in float3 ro, in float3 rd, in float2 distBound, in float3 boxSize, in float3 m) {
+
+	float3 n = m * ro;
+	float3 k = abs(m) * boxSize;
+
+	float3 t1 = -n - k;
+	float3 t2 = -n + k;
+
+	float tN = max(max(t1.x, t1.y), t1.z);
+	float tF = min(min(t2.x, t2.y), t2.z);
+
+	if (tN > tF || tF <= 0.0)
+	{
+		return MAX_DIST;
+	}
+	else 
+	{
+			return tF;
+	}
+}
+
+
+// Box:             https://www.shadertoy.com/view/ld23DV
+float iBox(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal, in float3 boxSize, in float3 m) {
 
 	float3 n = m * ro;
 	float3 k = abs(m)*boxSize;
@@ -155,11 +186,144 @@ float iBox(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,
 		else {
 			return MAX_DIST;
 		}
-
-			//normal = -sign(rd)*step(t1.yzx, t1.xyz)*step(t1.zxy, t1.xyz);
-			//return tN;
 	}
 }
+
+bool IsHitBox(in float3 ro, in float3 rd, in float3 boxSize, in float3 m)  
+{
+
+	float3 n = m * ro;
+	float3 k = abs(m)*boxSize;
+
+	float3 t1 = -n - k;
+	float3 t2 = -n + k;
+
+	float tN = max(max(t1.x, t1.y), t1.z);
+	float tF = min(min(t2.x, t2.y), t2.z);
+
+	return tN < tF && tF > 0.0;
+}
+
+
+float3 Rotate (in float3 vec, in float4 q)
+{
+	float3 crossA = cross(q.xyz, vec) + q.w * vec;
+	vec += 2 * cross(q.xyz, crossA);
+	
+	return vec;
+}
+
+// TODO: Add simple box
+
+
+float iBoxRot(in float3 ro, in float3 rd, in float4 q, in float2 distBound, inout float3 normal, in float3 boxSize) 
+{
+	//#define ROTATE(q,val) val += 2.0 * cross(q.xyz, cross(q.xyz, val) + q.w * val); // Can create black dots when directions match
+	//float3 orRd = rd;
+
+	rd = Rotate(rd, q);
+	ro = Rotate(ro, q);
+
+
+	float3 absRd = abs(rd) + 0.000001f;
+
+	float3 signRd = rd / absRd;
+
+	float3 m = signRd / (absRd);
+
+	/*float3 signRd = sign(rd);
+	float3 m = signRd / max(abs(rd), 1e-8);*/
+
+
+
+	float3 n = m * ro;
+
+	float3 k = abs(m) * boxSize;
+
+	float3 t1 = -n - k;
+	float3 t2 = -n + k;
+
+	float tN = max(max(t1.x, t1.y), t1.z);
+	float tF = min(min(t2.x, t2.y), t2.z);
+
+	if (tN > tF || tF <= 0.0)
+	{
+		return MAX_DIST;
+	}
+	else {
+
+		if (tN >= distBound.x &&
+			tN <= distBound.y) {
+			normal = -signRd * step(t1.yzx, t1.xyz) * step(t1.zxy, t1.xyz);
+			normal = Rotate(normal, float4(-q.x,-q.y,-q.z, q.w));
+			return tN;
+		}
+		else if (tF >= distBound.x && tF <= distBound.y)
+		{
+			normal = -signRd * step(t2.xyz, t2.yzx) * step(t2.xyz, t2.zxy);
+			normal = Rotate(normal, float4(-q.x, -q.y, -q.z, q.w));
+			return tF;
+		}
+		else {
+			return MAX_DIST;
+		}
+	}
+}
+
+float iCapsuleRot(in float3 ro, in float3 rd, in float4 q, in float2 distBound, inout float3 normal,
+	in float len, in float r) 
+	{
+
+	rd = Rotate(rd, q);
+	ro = Rotate(ro, q);
+
+	float3  ba = 2 * len; 
+	float3  oa = ro + len;
+
+	float baba = len * len * 12;
+	float bard = dot(ba, rd);
+	float baoa = dot(ba, oa);
+	float rdoa = dot(rd, oa);
+	float oaoa = dot(oa, oa);
+
+	float r2 = r*r;
+
+	float a = baba - bard * bard;
+	float b = baba * rdoa - baoa * bard;
+	float c = baba * oaoa - baoa * baoa - r2 * baba;
+	float h = b * b - a * c;
+	if (h >= 0.) {
+
+		float t = (-b - sqrt(h)) / a;
+		float d = MAX_DIST;
+
+		float y = baoa + t * bard;
+
+		// body
+		if (y > 0. && y < baba) {
+			d = t;
+		}
+		else {
+			// caps
+			float3 oc = (y <= 0.) ? oa : ro - len;
+			b = dot(rd, oc);
+			c = dot(oc, oc) - r2;
+			h = b * b - c;
+			if (h > 0.0) {
+				d = - b - sqrt(h);
+			}
+		}
+		if (d >= distBound.x && d <= distBound.y) {
+			float3  pa2 = ro + rd * d + len;
+			float h = clamp(dot(pa2, ba) / baba , 0.0, 1.0);
+			normal = (pa2 - h * ba) / r;
+			normal = Rotate(normal, float4(-q.x,-q.y,-q.z, q.w));
+			return d;
+		}
+	}
+	return MAX_DIST;
+}
+
 
 // Capped Cylinder: https://www.shadertoy.com/view/4lcSRn
 float iCylinder(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,
@@ -716,7 +880,20 @@ float FresnelSchlickRoughness(float cosTheta, float F0, float roughness) {
 	return F0 + (max((1. - roughness), F0) - F0) * pow(abs(1. - cosTheta), 5.0);
 }
 
-float3 cosWeightedRandomHemisphereDirection(const float3 n, inout float4 seed) {
+float3 cosWeightedRandomHemisphereDirection(float3 n, inout float4 seed)
+{
+
+	/*float xt = seed.x * 2 * 3.14159265359; //expand to 0 to 2PI
+	float yt = sqrt(1.01 - seed.y);
+
+	float3 refl;
+
+	refl.x = cos(xt) * yt;
+	refl.y = sqrt(seed.y);
+	refl.z = sin(xt) * yt;
+
+	return refl;*/
+
 	float2 r = seed.xy;//hash2(seed);
 	float3  uu = normalize(cross(n, abs(n.y) > .5 ? float3(1., 0., 0.) : float3(0., 1., 0.)));
 	float3  vv = cross(uu, n);
@@ -729,7 +906,7 @@ float3 cosWeightedRandomHemisphereDirection(const float3 n, inout float4 seed) {
 	return normalize(rr);
 }
 
-float modifiedRefract(const in float3 v, const in float3 n, const in float ni_over_nt, inout float3 refracted) {
+float modifiedRefract(in float3 v, in float3 n, in float ni_over_nt, inout float3 refracted) {
 	float dt = dot(v, n);
 	float discriminant = 1. - ni_over_nt * ni_over_nt*(1. - dt * dt);
 
@@ -743,7 +920,7 @@ float modifiedRefract(const in float3 v, const in float3 n, const in float ni_ov
 
 float3 modifyDirectionWithRoughness(in float3 normal, in float3 refl, in float roughness, in float4 seed) {
 
-	float2 r = seed.xy;//hash2(seed);
+	float2 r = seed.wx;//hash2(seed);
 
 	float nyBig = step(.5, refl.y);
 
@@ -759,14 +936,17 @@ float3 modifyDirectionWithRoughness(in float3 normal, in float3 refl, in float r
 	float ry = ra * sin(preCmp);
 	float3 rr = float3(rx*uu + ry * vv + rz * refl);
 
-	float3 ret = normalize(rr);
+	float3 ret = normalize(rr + (seed.xyz-0.5) *0.1);
 
 	//float isRet = step(0.1, max(0., dot(ret,normal)));
 
-	return dot(ret, normal) > 0.001 ? ret : refl; //normalize(+refl * 0.5);//refl;
+	return //dot(ret, normal) > 0.001 ? ret : 
+		normalize(refl + ret);  // Having gloss layer
+				//normalize(+refl * 0.5);//refl;
 	
 	//ret * isRet + n * (1.-isRet); // Probably a div by zero somewhere
 		//dot(ret, normal) > 0.1 ? ret : refl;
+
 }
 
 float2 randomInUnitDisk(inout float4 seed) {
@@ -780,7 +960,7 @@ float2 randomInUnitDisk(inout float4 seed) {
 // Scene description
 //
 
-float3 rotateY(const in float3 p, const in float t) {
+float3 rotateY(in float3 p, in float t) {
 	float co = cos(t);
 	float si = sin(t);
 	float2 xz = float2(co * p.x - si * p.z, si * p.x + co * p.z);

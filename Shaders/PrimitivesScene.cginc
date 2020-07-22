@@ -1,33 +1,60 @@
 #include "Assets/Ray-Marching/Shaders/inc/IntersectOperations.cginc"
 #include "Assets/Ray-Marching/Shaders/inc/RayMathHelpers.cginc"
 #include "Assets/Ray-Marching/Shaders/inc/SDFoperations.cginc"
-#include "Assets/Tools/Playtime Painter/Shaders/quizcanners_cg.cginc"
+#include "Assets/The-Fire-Below/Common/Shaders/quizcanners_cg.cginc"
+
+#include "UnityCG.cginc"
+#include "UnityLightingCommon.cginc" 
+#include "Lighting.cginc"
+#include "AutoLight.cginc"
+
+
+//static const float GAMMA_TO_LINEAR = 2.2;
+//static const float LINEAR_TO_GAMMA = 1 / GAMMA_TO_LINEAR;
 
 // CUBES
-uniform float4 RayMarchCube_0;
-uniform float4 RayMarchCube_0_Size;
-uniform float4 RayMarchCube_0_Mat;
 
-uniform float4 RayMarchCube_1;
-uniform float4 RayMarchCube_1_Size;
-uniform float4 RayMarchCube_1_Mat;
+#define ARRAY_SIZE 10
+#define ARRAY_BOX_COUNT 2
+//1e10
 
-uniform float4 RayMarchCube_2;
-uniform float4 RayMarchCube_2_Size;
-uniform float4 RayMarchCube_2_Mat;
 
-uniform float4 RayMarchCube_3;
-uniform float4 RayMarchCube_3_Size;
-uniform float4 RayMarchCube_3_Mat;
+uniform float4 RAY_FLOOR_Mat;
 
-uniform float4 RayMarchCube_4;
-uniform float4 RayMarchCube_4_Size;
-uniform float4 RayMarchCube_4_Rot;
-uniform float4 RayMarchCube_4_Mat;
+uniform float4 RayMarchCube[ARRAY_SIZE];
+uniform float4 RayMarchCube_Size[ARRAY_SIZE];
+uniform float4 RayMarchCube_Mat[ARRAY_SIZE];
+uniform float4 RayMarchCube_Rot[ARRAY_SIZE];
 
-uniform float4 RayMarchCube_5;
-uniform float4 RayMarchCube_5_Size;
-uniform float4 RayMarchCube_5_Mat;
+uniform float4 RayMarchCube_BoundPos[ARRAY_SIZE];
+uniform float4 RayMarchCube_BoundSize[ARRAY_SIZE];
+
+// Dynamics
+
+#define DYNAMIC_ARRAY_SIZE 6
+
+uniform float4 DYNAMIC_PRIM[DYNAMIC_ARRAY_SIZE];
+uniform float4 DYNAMIC_PRIM_Size[DYNAMIC_ARRAY_SIZE];
+uniform float4 DYNAMIC_PRIM_Mat[DYNAMIC_ARRAY_SIZE];
+uniform float4 DYNAMIC_PRIM_Rot[DYNAMIC_ARRAY_SIZE];
+
+uniform float4 DYNAMIC_PRIM_BoundPos;
+uniform float4 DYNAMIC_PRIM_BoundSize;
+
+uniform int DYNAMIC_PRIM_COUNT;
+
+// SUBTRACTIVE
+uniform float4 RayMarchSubtractiveCube_0;
+uniform float4 RayMarchSubtractiveCube_0_Size;
+uniform float4 RayMarchSubtractiveCube_0_Mat;
+
+uniform float4 RayMarchSubtractiveCube_1;
+uniform float4 RayMarchSubtractiveCube_1_Size;
+uniform float4 RayMarchSubtractiveCube_1_Mat;
+
+uniform float4 RayMarchSubtractiveCube_2;
+uniform float4 RayMarchSubtractiveCube_2_Size;
+uniform float4 RayMarchSubtractiveCube_2_Mat;
 
 //Spheres
 uniform float4 RayMarchSphere_0;
@@ -38,115 +65,215 @@ uniform float4 RayMarchSphere_1;
 uniform float4 RayMarchSphere_1_Size;
 uniform float4 RayMarchSphere_1_Mat;
 
+// Ambient Light
 uniform float4 RayMarchLight_0;
 uniform float4 RayMarchLight_0_Mat;
 uniform float4 RayMarchLight_0_Size;
 
 uniform float4 _RayMarchSkyColor;
-uniform float4 _RayMarchLightColor;
+uniform float4 _RayMarthMinLight;
+
+
+
+#define MAX_VOLUME_ALPHA 10500//1e10
+#define MATCH_RAY_TRACED_SUN_COEFFICIENT 0.5
+#define MATCH_RAY_TRACED_SKY_COEFFICIENT 0.5
+#define MATCH_RAY_TRACED_SUN_LIGH_GLOSS 0.2
+
+
+float getShadowAttenuation(float3 worldPos)
+{
+#if defined(SHADOWS_CUBE)
+	{
+		unityShadowCoord3 shadowCoord = worldPos - _LightPositionRange.xyz;
+		float result = UnitySampleShadowmap(shadowCoord);
+		return result;
+	}
+#elif defined(SHADOWS_SCREEN)
+	{
+#ifdef UNITY_NO_SCREENSPACE_SHADOWS
+		unityShadowCoord4 shadowCoord = mul(unity_WorldToShadow[0], worldPos);
+#else
+		unityShadowCoord4 shadowCoord = ComputeScreenPos(mul(UNITY_MATRIX_VP, float4(worldPos, 1.0)));
+#endif
+		float result = unitySampleShadow(shadowCoord);
+		return result;
+	}
+#elif defined(SHADOWS_DEPTH) && defined(SPOT)
+	{
+		unityShadowCoord4 shadowCoord = mul(unity_WorldToShadow[0], float4(worldPos, 1.0));
+		float result = UnitySampleShadowmap(shadowCoord);
+		return result;
+	}
+#else
+	return 1.0;
+#endif  
+}
 
 // Scenes
-float3 getSkyColor(float3 rd) {
-	float3 col = Mix(unity_FogColor.rgb, _RayMarchSkyColor.rgb, 0.5 + 0.5*rd.y);
-	float sun = saturate(dot(normalize(float3(-.8, 1.7, 2.6)), rd));
-	col += _RayMarchLightColor.rgb * (smoothstep(0.99, 3, sun) * 100000 + pow(sun, 32));
+float3 getSkyColor(float3 rd) 
+{
+	float3 col = Mix(unity_FogColor.rgb, _RayMarchSkyColor.rgb, smoothstep(0,0.13, rd.y));// 0.5 + 0.5 * rd.y);
+
+	// _qc_AMBIENT_SIMULATION will use incorrec values to speed up baking
+	#if defined(_qc_AMBIENT_SIMULATION)
+		
+		float sun = saturate(dot(_WorldSpaceLightPos0.xyz, rd));
+		col.rgb += _LightColor0.rgb * (smoothstep(0.995 - 0.01, 3, sun) * 1000000 + pow(sun, 8));
+	//	col *= smoothstep(-0.025, 0, rd.y);
+	#else
+
+		float sun =  smoothstep(1,0, dot(_WorldSpaceLightPos0.xyz, rd));
+		col.rgb += _LightColor0.rgb * (1 / (0.01 + sun*3000));// (smoothstep(0.995 - 0.01, 3, sun) * 1000000 + pow(sun, 8));
+
+	//	float3 skyColor = lerp(unity_FogColor.rgb, mat.rgb, smoothstep(0,0.23, ray.y));
+
+	#endif
+
+	col *= smoothstep(-0.025, 0, rd.y);
+
 	return col;
 }
 
-inline float SceneSdf(float3 position) {
 
-	float s0 = SphereDistance(position, float4(RayMarchSphere_0.xyz, RayMarchSphere_0_Size.x));
-	float s1 = SphereDistance(position, float4(RayMarchSphere_1.xyz, RayMarchSphere_1_Size.x));
+inline float SceneSdf_Dynamic(float3 position, float smoothness, float edges)
+{
+	float dist = 9999;
 
-	float c0 = CubeDistance(position, RayMarchCube_0, RayMarchCube_0_Size.xyz, _RayMarchSmoothness);
-	float c1 = CubeDistance(position, RayMarchCube_1, RayMarchCube_1_Size.xyz, _RayMarchSmoothness);
-	float c2 = CubeDistance(position, RayMarchCube_2, RayMarchCube_2_Size.xyz, _RayMarchSmoothness);
-	float c3 = CubeDistance(position, RayMarchCube_3, RayMarchCube_3_Size.xyz, _RayMarchSmoothness);
-	float c4 = CubeDistance(position, RayMarchCube_4, RayMarchCube_4_Size.xyz, _RayMarchSmoothness);
-	float c5 = CubeDistance(position, RayMarchCube_5, RayMarchCube_5_Size.xyz, _RayMarchSmoothness);
-
-	float plane = Plane(position);
-	//c0 = abs(c0) - 1;
-
-
-	float //dist = min(plane, s0);
+	for (int i = 0; i < DYNAMIC_PRIM_COUNT; i++) 
+	{
+		float cDst =
+		//CubeDistanceRot(position, DYNAMIC_PRIM_Rot[i] ,DYNAMIC_PRIM[i], DYNAMIC_PRIM_Size[i].xyz, edges);
+		CapsuleDistanceRot(position, DYNAMIC_PRIM_Rot[i] ,DYNAMIC_PRIM[i], DYNAMIC_PRIM_Size[i].xyz);
 		
-     dist = min(s0, c0);
-
-	//dist =	min(dist, s1);
-
-	dist = min(dist, c1);
-	dist = min(dist, c2);
-	dist = min(dist, c3);
-	dist = min(dist, c4);
-	dist = min(dist, c5);
-
-	
-
-	dist = CubicSmin(dist, plane, _RayMarchSmoothness);
-
-	dist = OpSmoothSubtraction(dist, s1, _RayMarchSmoothness);
+		dist = CubicSmin(dist, cDst, edges);
+	}
 
 	return dist;
 }
 
-float3 opU(float3 d, float iResult, float4 newMat, inout float4 currentMat, float type) {
-	currentMat = d.y > iResult ? newMat : currentMat;
 
+inline float SceneSdf(float3 position, float smoothness) 
+{
+	float edges = _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w * 0.5 * smoothness;
+
+	float s0 = SphereDistance(position, float4(RayMarchSphere_0.xyz, RayMarchSphere_0_Size.x));
+	float s1 = SphereDistance(position, float4(RayMarchSphere_1.xyz, RayMarchSphere_1_Size.x));
+
+	float dist = CubicSmin(s0, s1, edges);
+
+	#define ADD(d) dist = CubicSmin(dist, d, edges)
+
+	for (int i = 0; i < ARRAY_SIZE; i++) 
+	{
+		ADD(CubeDistanceRot(position, RayMarchCube_Rot[i] ,RayMarchCube[i], RayMarchCube_Size[i].xyz, edges));
+	}
+
+	#if defined(RAYMARCH_DYNAMICS)
+	ADD(SceneSdf_Dynamic(position, smoothness, edges));
+	#endif
+
+	float sub0 = CubeDistance(position, RayMarchSubtractiveCube_0, RayMarchSubtractiveCube_0_Size.xyz, edges);
+	float sub1 = CubeDistance(position, RayMarchSubtractiveCube_1, RayMarchSubtractiveCube_1_Size.xyz, edges); 
+	float sub2 = CubeDistance(position, RayMarchSubtractiveCube_2, RayMarchSubtractiveCube_2_Size.xyz, edges);
+
+	#if !defined(IGNORE_FLOOR)
+	float plane = Plane(position);
+
+	ADD(plane);
+	#endif
+
+	dist = OpSmoothSubtraction(dist, sub0, edges);
+	dist = OpSmoothSubtraction(dist, sub1, edges);
+	dist = OpSmoothSubtraction(dist, sub2, edges);
+
+	return dist;
+}
+
+inline float SceneSdf(float3 position)
+{
+	return SceneSdf(position, _RayMarchSmoothness);
+}
+
+float3 opU(float3 d, float iResult, float4 newMat, inout float4 currentMat, float type) 
+{
+	currentMat = d.y > iResult ? newMat : currentMat;
 	return d.y > iResult ? float3(d.x, iResult, type) : d; // if closer make new result
 }
 
 
-float3 worldhit(in float3 ro, in float3 rd, in float2 dist, out float3 normal, inout float4 mat) {
+#define TRACE_BOUNDS(pos, size) IsHitBox(ro - pos.xyz, rd, size.xyz, m)
+#define TRACE_BOX(posNmat,rot, size,objmat) d = opU(d, iBox(ro - posNmat.xyz, rd, d.xy, normal, size.xyz, m), objmat, mat, posNmat.w)
+#define TRACE_BOX_ROT(posNmat, rot, size,objmat) d = opU(d, iBoxRot(ro - posNmat.xyz, rd, rot, d.xy, normal, size.xyz), objmat, mat, posNmat.w)
+#define TRACE_CAPSULE_ROT(posNmat, rot, size,objmat) d = opU(d, iCapsuleRot(ro - posNmat.xyz, rd, rot, d.xy, normal, size.y, size.x), objmat, mat, posNmat.w)
 
+//float iCapsuleRot(in float3 ro, in float3 rd, in float4 q, in float2 distBound, inout float3 normal,
+	//in float3 pa, in float3 pb, in float r) 
+
+
+void WorldHit_Dynamic(float3 ro, in float3 rd, inout float3 d, inout float3 normal, inout float4 mat, in float3 m) 
+{
+	if (TRACE_BOUNDS(DYNAMIC_PRIM_BoundPos, DYNAMIC_PRIM_BoundSize))
+	{
+		for (int i=0; i< DYNAMIC_PRIM_COUNT; i++)
+			TRACE_CAPSULE_ROT(DYNAMIC_PRIM[i], DYNAMIC_PRIM_Rot[i], DYNAMIC_PRIM_Size[i], DYNAMIC_PRIM_Mat[i]);
+	}
+}
+
+
+float3 worldhit(float3 ro, in float3 rd, in float2 dist, out float3 normal, inout float4 mat) {
+
+	ro += rd * 0.01;
 	// d.z <= z causes to show sky   d.z is material
-
 	float3 d = float3(dist, 0.);
-	d = opU(d, iPlane(ro, rd, d.xy, normal, float3(0, 1, 0), 0.), float4(0.5,0.5,0.5,1), mat, 1);
+	const float floorRoughness = 0.99;
+	const float floorMaterial = 0.5;
+	//const float3 FLOOR_COLOR = float3(0.01, 0.5, 0.01);
+
+	#if !defined(IGNORE_FLOOR)
+
+	d = opU(d, iPlane(ro, rd, d.xy, normal, float3(0, 1, 0), 0.), RAY_FLOOR_Mat, mat, floorMaterial);
+
+	#endif
 
 	float3 m = sign(rd) / max(abs(rd), 1e-8);
 
-	d = opU(d, iBox(ro - RayMarchCube_0.xyz, rd, d.xy, normal, RayMarchCube_0_Size.xyz, m), RayMarchCube_0_Mat, mat, RayMarchCube_0.w);
-	d = opU(d, iBox(ro - RayMarchCube_1.xyz, rd, d.xy, normal, RayMarchCube_1_Size.xyz, m), RayMarchCube_1_Mat, mat, RayMarchCube_1.w);
-	d = opU(d, iBox(ro - RayMarchCube_2.xyz, rd, d.xy, normal, RayMarchCube_2_Size.xyz, m), RayMarchCube_2_Mat, mat, RayMarchCube_2.w);
-	d = opU(d, iBox(ro - RayMarchCube_3.xyz, rd, d.xy, normal, RayMarchCube_3_Size.xyz, m), RayMarchCube_3_Mat, mat, RayMarchCube_3.w);
-	d = opU(d, iBox(ro - RayMarchCube_4.xyz, rd, d.xy, normal, RayMarchCube_4_Size.xyz, m), RayMarchCube_4_Mat, mat, RayMarchCube_4.w);
-	d = opU(d, iBox(ro - RayMarchCube_5.xyz, rd, d.xy, normal, RayMarchCube_5_Size.xyz, m), RayMarchCube_4_Mat, mat, RayMarchCube_5.w);
-	//d = opU(d, iGoursat(ro - RayMarchCube_5.xyz, rd, d.xy, normal, RayMarchCube_5_Size.x, RayMarchCube_5.w * 1.25), RayMarchCube_5_Mat, mat, RayMarchCube_5.w);
 
-	/*float3 tmpNorm;
-	float3 tmp1 = opU(d, iBox(rotateY(ro - RayMarchCube_4.xyz, RayMarchCube_4_Rot.y), rotateY(rd, RayMarchCube_4_Rot.y), d.xy, tmpNorm, RayMarchCube_4_Size.rgb, m), 16.);
-	if (tmp1.y < d.y) {
-		d = tmp1;
-		normal = rotateY(tmpNorm, -RayMarchCube_4_Rot.y);
-	}*/
 
-	//d = opU(d, iTriangle(ro, rd, d.xy, normal, float3(5, 5, 5), float3 (0, 0, 0), float3(5,0,5)), 2.12);
-
-	/*d = opU(d, iCylinder(ro - RayMarchCube_2.xyz, rd, d.xy, normal,	 float3(2.1, .1, -2), float3(1.9, .5, -1.9), .08),			4.);
-	d = opU(d, iCylinder(ro - RayMarchCube_3.xyz, rd, d.xy, normal,	float3(0, 0, 0), float3(0, .4, 0), .1),						5.);
-	d = opU(d, iTorus(ro - RayMarchCube_4.xyz, rd, d.xy, normal, float2(.2, .05)),												6.);
-	d = opU(d, iCapsule(ro - RayMarchCube_5.xyz, rd, d.xy, normal, float3(-.1, .1, -.1), float3(.2, .4, .2), .1),				7.);
-
-	d = opU(d, iEllipsoid(ro - float3(-1, .300, 0), rd, d.xy, normal,	float3(.2, .25, .05)),									11.);
-	d = opU(d, iRoundedCone(ro - float3(2, .200, -1), rd, d.xy, normal,		float3(.1, 0, 0), float3(-.1, .3, .1), 0.15, 0.05), 12.);
-	d = opU(d, iRoundedCone(ro - float3(-1, .200, -2), rd, d.xy, normal,	float3(0, .3, 0), float3(0, 0, 0), .1, .2),			13.);
-	d = opU(d, iMesh(ro - float3(2, .090, 1), rd, d.xy, normal),																14.);*/
+	if (TRACE_BOUNDS(RayMarchCube_BoundPos[0], RayMarchCube_BoundSize[0]))
+	{
+		for (int i=0; i< ARRAY_SIZE; i++)
+			TRACE_BOX_ROT(RayMarchCube[i], RayMarchCube_Rot[i], RayMarchCube_Size[i], RayMarchCube_Mat[i]);
+	}
 
 	d = opU(d, iSphere(ro - RayMarchSphere_0.xyz, rd, d.xy, normal, RayMarchSphere_0_Size.x), RayMarchSphere_0_Mat, mat, RayMarchSphere_0.w);
 	d = opU(d, iSphere(ro - RayMarchSphere_1.xyz, rd, d.xy, normal, RayMarchSphere_1_Size.x), RayMarchSphere_1_Mat, mat, RayMarchSphere_1.w);
-	//d = opU(d, iSphere4(ro - RayMarchSphere_1.xyz, rd, d.xy, normal, RayMarchSphere_1.w), RayMarchSphere_1_Size.w);
 
+	d = opU(d, iBox(ro - RayMarchSubtractiveCube_0.xyz, rd, d.xy, normal, RayMarchSubtractiveCube_0_Size.xyz, m), RayMarchSubtractiveCube_0_Mat, mat, RayMarchSubtractiveCube_0.w);
+	d = opU(d, iBox(ro - RayMarchSubtractiveCube_1.xyz, rd, d.xy, normal, RayMarchSubtractiveCube_1_Size.xyz, m), RayMarchSubtractiveCube_1_Mat, mat, RayMarchSubtractiveCube_1.w);
+	d = opU(d, iBox(ro - RayMarchSubtractiveCube_2.xyz, rd, d.xy, normal, RayMarchSubtractiveCube_2_Size.xyz, m), RayMarchSubtractiveCube_2_Mat, mat, RayMarchSubtractiveCube_2.w);
 
-	/*tmp1 = opU(d, iBox(rotateY(ro - GlassCube_0.rgb, 0.78539816339), rotateY(rd, 0.78539816339), d.xy, tmp0, GlassCube_0.w * float3(.1, .2, .1)), GlassCube_0_Size.w);
-	if (tmp1.y < d.y) {
-		d = tmp1;
-		normal = rotateY(tmp0, -0.78539816339);
-	}*/
+	#if defined(RENDER_DYNAMICS)
 
-	//d = opU(d, iCone(ro - float3(2, .200, 0), rd, d.xy, normal, float3(.1, 0, 0), float3(-.1, .3, .1), .15, .05), 8.);
+	WorldHit_Dynamic(ro, rd, d, normal, mat, m);
+
+	#endif
 
 	return d;
+}
+
+
+float worldhitSubtractive(float3 ro, in float3 rd, in float2 dist) 
+{
+	float3 d = float3(dist, 0.);
+
+	float3 m = sign(rd) / max(abs(rd), 1e-8);
+
+	float distance = iBoxTrigger(ro - RayMarchSubtractiveCube_0.xyz, rd, d.xy, RayMarchSubtractiveCube_0_Size.xyz, m);
+	distance = min(distance, iBoxTrigger(ro - RayMarchSubtractiveCube_1.xyz, rd, d.xy, RayMarchSubtractiveCube_1_Size.xyz, m));
+	distance = min(distance, iBoxTrigger(ro - RayMarchSubtractiveCube_2.xyz, rd, d.xy, RayMarchSubtractiveCube_2_Size.xyz, m));
+
+	return distance;
 }
 
 
@@ -154,37 +281,43 @@ float3 worldhit(in float3 ro, in float3 rd, in float2 dist, out float3 normal, i
 
 
 #if RT_MOTION_TRACING
-#define PATH_LENGTH 4
+#define PATH_LENGTH 6
 #else
-#define PATH_LENGTH 9
+#define PATH_LENGTH 8
 #endif
 
 
 #define LAMBERTIAN 0.
 #define METAL 1.
 #define DIELECTRIC 2.
-#define EMISSIVE 3.
-/*
-void getMaterialProperties(in float3 pos, in float mat, out float3 albedo, out float type, out float roughness) {
+#define GLASS 3.
+#define EMISSIVE 4.
+#define SUBTRACTIVE 5.
 
-#if RT_USE_CHECKERBOARD
-	if (mat < 1.5) {
-		albedo = 0.25 + 0.25*checkerBoard(pos.xz * 5.0);
-		roughness = 0.75 * albedo.x - 0.15;
-		type = METAL;
-	}
-	else
-#endif
+float3 modifyDirectionWithRoughnessFast(in float3 normal, in float3 refl, in float roughness, in float4 seed) {
 
-	{
-		albedo = Pallete(mat*0.59996323 + 0.5, 0.5, 0.5, 1, float3(0, 0.1, 0.2));
-		type = floor(gpuIndepentHash(mat) * 4.);
-		roughness = (1. - type * .475) * gpuIndepentHash(mat);
-	}
+	float2 r = seed.wx;//hash2(seed);
+
+	float nyBig = step(.5, refl.y);
+
+	float3  uu = normalize(cross(refl, float3(nyBig, 1. - nyBig, 0.)));
+	float3  vv = cross(uu, refl);
+
+	float a = roughness * roughness;
+
+	float rz = sqrt(abs((1.0 - seed.y) / clamp(1. + (a - 1.) * seed.y, .00001, 1.)));
+	float ra = sqrt(abs(1. - rz * rz));
+	float preCmp = 6.28318530718 * seed.x;
+	float rx = ra * cos(preCmp);
+	float ry = ra * sin(preCmp);
+	float3 rr = float3(rx * uu + ry * vv + rz * refl);
+
+	return normalize(rr + (seed.xyz - 0.5) * 0.1);
 }
-*/
 
-float4 render(in float3 ro, in float3 rd, in float4 seed) {
+float4 render(in float3 ro, in float3 rd, in float4 seed) 
+{
+	const float MIN_DIST = 0.0001;
 
 	float3 albedo, normal;
 	float3 col = 1;
@@ -193,11 +326,11 @@ float4 render(in float3 ro, in float3 rd, in float4 seed) {
 	float isFirst = 1;
 	float distance = MAX_DIST_EDGE;
 
-	for (int i = 0; i < PATH_LENGTH; ++i) {
-
+	for (int i = 0; i < PATH_LENGTH; ++i) 
+	{
 		float4 mat = 0;
 
-		float3 res = worldhit(ro, rd, float2(.0001, MAX_DIST_EDGE), normal, mat);
+		float3 res = worldhit(ro, rd, float2(MIN_DIST, MAX_DIST_EDGE), normal, mat);
 		roughness = mat.a;
 		albedo = mat.rgb;
 		type = res.z;
@@ -205,11 +338,11 @@ float4 render(in float3 ro, in float3 rd, in float4 seed) {
 		// res.y = dist
 		// res.z = material
 
-		if (res.z > 0.) {
+		if (res.z > 0.) 
+		{
 			ro += rd * res.y;
 
-			//getMaterialProperties(ro, res.z, albedo, type, roughness);
-
+			
 #if RT_DENOISING
 			distance = isFirst > 0.5 ?
 				res.y +
@@ -218,33 +351,19 @@ float4 render(in float3 ro, in float3 rd, in float4 seed) {
 			isFirst = 0;
 #endif
 
-
-			if (type < 2.5) { 
-
-				float F = FresnelSchlickRoughness(max(0., -dot(normal, rd)), .04, roughness);
-				if (F > seed.b) {
-					// Reflect part
-					col *= albedo;
-					rd = modifyDirectionWithRoughness(normal, reflect(rd, normal), roughness, seed); 
-				}
-				else {
-					// Diffuse part
+			if (type < LAMBERTIAN + 0.5) 
+			{ 
 					col *= albedo;
 					rd = cosWeightedRandomHemisphereDirection(normal, seed);
-				}
 			}
-			/*else 
-			if (type < METAL + .5) {
-			
+			else
+			if (type < METAL + 0.5) { // MEtal
 				col *= albedo;
 				rd = modifyDirectionWithRoughness(normal, reflect(rd, normal), roughness, seed);
-
 			}
-#if RT_USE_DIELECTRIC
-			else if (type < DIELECTRIC + .5) { // DIELECTRIC? glass
-
-
-
+//#if RT_USE_DIELECTRIC
+			else if (type < GLASS + 0.5) //DIELECTRIC + GLASS
+			{ 
 				float3 normalOut;
 				float3 refracted = 0;
 				float ni_over_nt, cosine, reflectProb = 1.;
@@ -255,40 +374,37 @@ float4 render(in float3 ro, in float3 rd, in float4 seed) {
 					ni_over_nt = 1.4;
 					cosine = theDot;
 					cosine = sqrt(max(0.001, 1. - (1.4*1.4) - (1.4*1.4)*cosine*cosine));
-
-					//r0 = (1. - 1.4) / (1. + 1.4);
 				}
 				else {
 					normalOut = normal;
 					ni_over_nt = 1. / 1.4;
 					cosine = -theDot;
-
-					//r0 = (1. - 1. / 1.4) / (1. + 1. / 1.4);
 				}
 
 				float modRf = modifiedRefract(rd, normalOut, ni_over_nt, refracted);
 
 				float r0 = (1. - ni_over_nt) / (1. + ni_over_nt);
-				reflectProb = FresnelSchlickRoughness(cosine, r0*r0, roughness) * modRf + reflectProb * (1. - modRf);
+				reflectProb = 
+					lerp(reflectProb, FresnelSchlickRoughness(cosine, r0 * r0, roughness), modRf);
 
-				rd = (seed.b) <=
-					reflectProb
-					?
-					reflect(rd, normal)
-					:
-					refracted
-					;
-				rd = modifyDirectionWithRoughness(-normalOut, rd, roughness, seed);
+				rd = (seed.b) <= reflectProb ? reflect(rd, normal) : refracted;
+				rd = modifyDirectionWithRoughnessFast(-normalOut, rd, roughness, seed);
 			}
-#endif */
-			else
+			else if (type < EMISSIVE + 1) // EMISSIVE
 			{
 				return float4(col * albedo * 4, distance);
+			} else // Subtractive
+			{
+				ro += 0.001 * rd;
+				float dist = worldhitSubtractive(ro, rd, float2(MIN_DIST, MAX_DIST_EDGE));
+				if (dist < MAX_DIST)
+				{
+					ro += (dist + 0.001) * rd;
+				}
 			}
-			
 		}
 		else {
-
+		
 			float3 skyCol = getSkyColor(rd);
 
 			//float fog = smoothstep(5, 100, length(ro - _WorldSpaceCameraPos.xyz));
@@ -298,19 +414,21 @@ float4 render(in float3 ro, in float3 rd, in float4 seed) {
 			return float4(col * skyCol, distance);
 		}
 	}
+
 	return 0;
 }
 
 // ****************** SDF
 
 
-inline float Softshadow(float3 start, float3 direction, float mint, float maxt, float k, float maxSteps)
+inline float Softshadow(float3 start, float3 direction, float mint, float k, float maxSteps)
 {
 	float res = 1.0;
 	float ph = 1e20;
 
+	float distance = mint;
 
-	for (float distance = mint; distance < maxt; )
+	for (int i = 0; i < maxSteps; i++)
 	{
 		float dist = SceneSdf(start + direction * distance);
 
@@ -330,6 +448,23 @@ inline float Softshadow(float3 start, float3 direction, float mint, float maxt, 
 	}
 	return res;
 }
+
+inline float Softshadow2(float3 start, float3 direction, float mint, float maxt, float k, int maxSteps)
+{
+	float t = mint;
+	float res = 1.0;
+	for (int i = 0; i < maxSteps; i++)
+	{
+		float h = SceneSdf(start + t * direction);
+		res = min(res, h / (k * t));
+		t += clamp(h, 0.005, 0.50);
+		if (res<-1.0 || t>maxt) break;
+	}
+	res = max(res, -1.0); // clamp to [-1,1]
+
+	return 0.25 * (1.0 + res) * (1.0 + res) * (2.0 - res); // smoothstep
+}
+
 
 inline float Reflection(float3 start, float3 direction, float mint, float k, out float totalDist, out float3 pos, float maxSteps)
 {
@@ -356,15 +491,83 @@ inline float Reflection(float3 start, float3 direction, float mint, float k, out
 	return  closest / mint;
 }
 
-inline float3 EstimateNormal(float3 pos) {
+inline float4 NormalAndDistance(float3 pos) {
 
 	float EPSILON = 0.01f;
 
-	return normalize(float3(
-		SceneSdf(float3(pos.x + EPSILON, pos.y, pos.z)) - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z)),
-		SceneSdf(float3(pos.x, pos.y + EPSILON, pos.z)) - SceneSdf(float3(pos.x, pos.y - EPSILON, pos.z)),
-		SceneSdf(float3(pos.x, pos.y, pos.z + EPSILON)) - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON))
+	float center = SceneSdf(float3(pos.x, pos.y, pos.z));
+
+	float3 normal = normalize(float3(
+		center - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z)),
+		center - SceneSdf(float3(pos.x, pos.y - EPSILON, pos.z)),
+		center - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON))
 		));
+
+	return float4(normal, max(0,center));
+}
+
+inline float3 EstimateNormal(float3 pos, float smoothness) {
+
+	float EPSILON = 0.01f;
+
+	float center = SceneSdf(float3(pos.x, pos.y, pos.z), smoothness);
+
+	return normalize(float3(
+		center - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z), smoothness),
+		center - SceneSdf(float3(pos.x, pos.y - EPSILON, pos.z), smoothness),
+		center - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON), smoothness)
+		));
+}
+inline float3 EstimateNormal(float3 pos) 
+{
+	return EstimateNormal(pos, _RayMarchSmoothness);
+}
+
+
+inline float4 SdfNormalAndDistance(float3 pos, float smoothness) {
+
+	float EPSILON = 0.01f;
+
+	float center = SceneSdf(float3(pos.x, pos.y, pos.z), smoothness);
+
+	return float4(normalize(float3(
+		center - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z), smoothness),
+		center - SceneSdf(float3(pos.x, pos.y - EPSILON, pos.z), smoothness),
+		center - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON), smoothness)
+		)), center);
+}
+
+inline float4 SdfNormalAndDistance(float3 pos)
+{
+	//_RayMarchSmoothness
+	return SdfNormalAndDistance(pos, _RayMarchSmoothness);
+}
+
+inline float4 renderSdfProgression(in float3 ro, in float3 rd, float pixelScale)
+{
+	float totalDistance = 0;
+	float dist = 0;
+
+	for (int i = 0; i < 100; i++) {
+
+		dist = SceneSdf(ro);
+
+		float rng = pixelScale * totalDistance;
+
+		if (dist < rng || dist > 9999)
+		{
+			i = 999;
+		}
+		else 
+		{
+			//dist -= rng;
+
+			ro += dist * rd ;
+			totalDistance += dist;
+		}
+	}
+
+	return float4(EstimateNormal(ro), totalDistance);
 }
 
 inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
@@ -388,17 +591,13 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 		totalDistance += dist;
 
-		if (dist < 0.01) {
+		if (dist < 0.01) 
+		{
 			i = 999;
 		}
 	}
 
 	float3 normal = EstimateNormal(ro);
-
-	/*float4 bake = SampleVolume(_RayMarchingVolume
-		, ro,
-		_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
-		_RayMarchingVolumeVOLUME_H_SLICES);*/
 
 	float deDott = max(0, dot(-rd, normal));
 
@@ -415,60 +614,37 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 	float lightRange = RayMarchLight_0_Size.x + 1;
 	float deLightRange = 1 / lightRange;
 
-	float lightBrightness = max(0, lightRange - toCenter) * deLightRange;
+	float lightBrightness = lightRange / (1 + toCenter); // max(0, lightRange - toCenter) * deLightRange;
 
 	float deFog = saturate(1 - totalDistance / _MaxRayMarchDistance);
 	deFog *= deFog;
 
 	float precision = 1 + deFog * deFog * max_steps;
 
-	float shadow = 0;
-
-	if (lightRange > toCenter)
-		shadow = Softshadow(ro, lightDir, 5, toCenter, _RayMarchShadowSoftness, precision);
-
-	//return float4(normal,1);
-
-	//return shadow;
+	float shadow = Softshadow(ro, lightDir, 5, _RayMarchShadowSoftness, precision);
 
 	float toview = dot(normal, rd);
 
-	float fresnel = smoothstep(0, 1, 1 + toview);
-
-
+	float fresnel = smoothstep(-1, 1, 1 + toview);
 
 	float3 reflected = -normalize(rd - 2 * (toview)*normal 
 #if !RT_MOTION_TRACING
-		+ (seed - 0.5) * 0.7 * pow(1- fresnel, 2)
+		+ (seed - 0.5) * 0.3 * pow(1 - fresnel, 2)
 #endif
-	); // Returns world normal
-
-	//return float4(reflected, 1);
+	); 
 
 	float reflectedDistance;
 
 	float3 reflectionPos;
 
-	// Reflection MARCHING
-	float reflectedSky = Reflection(ro, -reflected, 0.1, 1,
-		reflectedDistance, reflectionPos, precision);
+	float reflectedSky = Reflection(ro, -reflected, 0.1, 1,	reflectedDistance, reflectionPos, precision);
 
-	//reflectedSky = reflectedSky * deDott + 0.5 * dott;
 
-	float lightRelected = pow(max(0, dot(-reflected, lightDir)), 1 //+ bake.a * 128
-	);
-
+	float lightRelected = smoothstep(0, 1 , dot(-reflected, lightDir));
 
 	float3 reflectedNormal = EstimateNormal(reflectionPos);
 
 	float reflectedDott = max(0, dot(reflected, reflectedNormal));
-
-	//	return reflectedDott;
-
-	/*float4 bakeReflected = SampleVolume(_qcPp_DestBuffer
-		, reflectionPos,
-		_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
-		_RayMarchingVolumeVOLUME_H_SLICES);*/
 
 	float3 toCenterVecRefl = lightSource - reflectionPos;
 
@@ -484,15 +660,12 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	if (lightRange > toCenterRefl)
 		reflectedShadow = Softshadow(reflectionPos, lightDirRef, 2,
-			toCenterRefl, _RayMarchShadowSoftness, precision);
-
-	float lightAtten = max(0, dot(lightDir, normal));
+			_RayMarchShadowSoftness, precision);
 
 	float4 col = 1;
 
 	float lightBrightnessReflected = max(0, lightRange - toCenterRefl) *deLightRange;
 
-	shadow *= lightAtten;
 
 	col.rgb = RayMarchLight_0_Mat.rgb * shadow * lightBrightness;
 
@@ -506,26 +679,21 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	lightBrightnessReflected *= reflAmount;
 
-	float3 reflCol = (RayMarchLight_0_Mat.rgb * reflectedShadow * lightAttenRef *
-		lightBrightnessReflected //* bakeReflected.rgb
-		);
-
-	//return shadow;
-
-	//float3 getSkyColor(reflectedNormal);
-
-	//return col;
+	float3 reflCol = (RayMarchLight_0_Mat.rgb * reflectedShadow * lightAttenRef * (lightBrightnessReflected + 1));
 
 	
-
-	col.rgb = col.rgb * (1 - fresnel) + fresnel * (1 + dott) *  
+	float3 fresnelReflection = //(1 + dott * 0.5)
+		//*
 		(reflCol * (1 - reflectedSky) +
-		_RayMarchSkyColor.rgb * reflectedSky + 
-		lightRelected * shadow
-		);// *unity_FogColor.rgb;// *bake.a;
+			_RayMarchSkyColor.rgb * reflectedSky +
+			lightRelected * shadow
+			);
 
 
-	col.rgb = col.rgb * deFog + _RayMarchSkyColor.rgb *(1 - deFog);
+	col.rgb = lerp(col.rgb, fresnelReflection, fresnel);
+
+
+	col.rgb = lerp(_RayMarchSkyColor.rgb, col.rgb, deFog);
 	
 	return 	max(0, col);
 

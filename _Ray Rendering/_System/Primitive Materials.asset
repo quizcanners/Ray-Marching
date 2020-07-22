@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2460e2c89c71414eb43a295881a660b, type: 3}
+  m_Name: Primitive Materials
+  m_EditorClassIdentifier: 
+  defaultMaterial:
+    MatType: 0
+    Color: {r: 0.5754717, g: 0.41531682, b: 0.41531682, a: 1}
+    Roughtness: 0.5
+  allLinks:
+  - Material: {fileID: 2100000, guid: 36d95293ea10e30428a0e25e39c24444, type: 2}
+    Primitive:
+      MatType: 0
+      Color: {r: 0.59607846, g: 0.2973902, b: 0.086274505, a: 1}
+      Roughtness: 0.369
+  - Material: {fileID: 2100000, guid: fd3afe9d7f46dcd4fb5e7f9d0dc023c0, type: 2}
+    Primitive:
+      MatType: 4
+      Color: {r: 0.92712545, g: 1, b: 0, a: 1}
+      Roughtness: 0.5
+  - Material: {fileID: 2100000, guid: 13b868ee9cdba7541a2e8c8732ddb4ad, type: 2}
+    Primitive:
+      MatType: 4
+      Color: {r: 0.96575665, g: 1, b: 0, a: 1}
+      Roughtness: 0.5
+  - Material: {fileID: 2100000, guid: 8fa91a82bc4e3924da791b9c3a4bb78b, type: 2}
+    Primitive:
+      MatType: 0
+      Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+      Roughtness: 0.356
+  - Material: {fileID: 2100000, guid: 9c150166150c15a4da9bd75a6da16f04, type: 2}
+    Primitive:
+      MatType: 0
+      Color: {r: 0.41509432, g: 0.41509432, b: 0.41509432, a: 1}
+      Roughtness: 0.442
+  - Material: {fileID: 2100000, guid: bb133ed7d7e51ec4d8b943d90f2f5064, type: 2}
+    Primitive:
+      MatType: 0
+      Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+      Roughtness: 0.5
+  - Material: {fileID: 2100000, guid: 527d75070f6f4154fa632569c9417f18, type: 2}
+    Primitive:
+      MatType: 0
+      Color: {r: 0.574815, g: 0.9339623, b: 0.3039783, a: 1}
+      Roughtness: 0.5
+  - Material: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+    Primitive:
+      MatType: 0
+      Color: {r: 0.22312212, g: 0.3470572, b: 0.4339623, a: 1}
+      Roughtness: 0.5
+  - Material: {fileID: 2100000, guid: 51a18256b76561b4a8eff6181b7e6945, type: 2}
+    Primitive:
+      MatType: 0
+      Color: {r: 0.3432716, g: 0.5471698, b: 0.39207476, a: 1}
+      Roughtness: 0.5
+  - Material: {fileID: 2100000, guid: ad91aefcae01cb1488ce076d30fba76c, type: 2}
+    Primitive:
+      MatType: 0
+      Color: {r: 0.11903704, g: 0.23584908, b: 0.16767663, a: 1}
+      Roughtness: 0.5
+  _linksMeta:
+    inspectedElement_Internal: 0
+    listSectionStartIndex: 0

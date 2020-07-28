@@ -115,8 +115,7 @@ MonoBehaviour:
     _value: 2.16
   color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   roughtness: 0.5
-  emmissive: 0
-  type: 0
+  matType: 1
 --- !u!33 &5486103575090036902
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -140,6 +139,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -164,6 +164,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!65 &3971465651131541378
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -230,8 +231,7 @@ MonoBehaviour:
     _value: 2.16
   color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   roughtness: 0.5
-  emmissive: 0
-  type: 0
+  matType: 1
 --- !u!33 &7032278018541762481
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -255,6 +255,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -279,6 +280,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!65 &3761407153598877544
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -343,8 +345,7 @@ MonoBehaviour:
     _value: 1.4247451
   color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   roughtness: 0.5
-  emmissive: 0
-  type: 0
+  matType: 1
 --- !u!1 &1435692029743229662
 GameObject:
   m_ObjectHideFlags: 0
@@ -398,8 +399,7 @@ MonoBehaviour:
     _value: 2.16
   color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   roughtness: 0.5
-  emmissive: 0
-  type: 0
+  matType: 1
 --- !u!33 &5132457568716037569
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -423,6 +423,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -447,6 +448,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!65 &6465839026102088501
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -514,8 +516,7 @@ MonoBehaviour:
     _value: 2.16
   color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   roughtness: 0.5
-  emmissive: 0
-  type: 0
+  matType: 1
 --- !u!33 &3511082172173672290
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -539,6 +540,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -563,6 +565,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!65 &5032693267780625403
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -632,6 +635,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -656,6 +660,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &3511082173699917752
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -725,6 +730,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -749,6 +755,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &3511082173915430238
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -815,8 +822,7 @@ MonoBehaviour:
     _value: 2.16
   color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   roughtness: 0.5
-  emmissive: 0
-  type: 0
+  matType: 1
 --- !u!33 &805628910593482300
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -840,6 +846,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -864,6 +871,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!65 &8043976480797349451
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -930,8 +938,7 @@ MonoBehaviour:
     _value: 2.16
   color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   roughtness: 0.5
-  emmissive: 0
-  type: 0
+  matType: 1
 --- !u!33 &4026754653704855780
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -955,6 +962,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -979,6 +987,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!65 &3814114672758312687
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1048,6 +1057,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -1072,6 +1082,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &2793942711106656525
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1112,7 +1123,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6191475113504627319}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.01, z: 0}
+  m_LocalPosition: {x: 0, y: 0.11, z: 0}
   m_LocalScale: {x: 50, y: 1, z: 50}
   m_Children: []
   m_Father: {fileID: 6179333341917497476}
@@ -1141,6 +1152,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -1165,6 +1177,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!64 &7250226201206154694
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -1231,8 +1244,7 @@ MonoBehaviour:
     _value: 1.2
   color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   roughtness: 0.5
-  emmissive: 0
-  type: 0
+  matType: 1
 --- !u!1 &6764038384532647947
 GameObject:
   m_ObjectHideFlags: 0
@@ -1284,8 +1296,7 @@ MonoBehaviour:
     _value: 1.4247451
   color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   roughtness: 0.5
-  emmissive: 0
-  type: 0
+  matType: 1
 --- !u!1001 &5690040595621572261
 PrefabInstance:
   m_ObjectHideFlags: 0

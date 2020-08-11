@@ -1,7 +1,7 @@
 #include "Assets/Ray-Marching/Shaders/inc/IntersectOperations.cginc"
 #include "Assets/Ray-Marching/Shaders/inc/RayMathHelpers.cginc"
 #include "Assets/Ray-Marching/Shaders/inc/SDFoperations.cginc"
-#include "Assets/Tools/Playtime Painter/Shaders/quizcanners_built_in.cginc"
+#include "Assets/Playtime Painter/Shaders/quizcanners_built_in.cginc"
 
 // CUBES
 uniform float4 RayMarchCube_0;

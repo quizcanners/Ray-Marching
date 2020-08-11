@@ -19,6 +19,8 @@ namespace NodeNotes.RayTracing
 
         public static RayRenderingManager instance;
 
+        public RayTracedSceneManager sceneManager = new RayTracedSceneManager();
+
         public enum RayRenderingTarget { Disabled = 0, RayIntersection = 1, RayMarching = 2, Volume = 3 }
         private RayRenderingTarget _target;
         public RayRenderingTarget Target
@@ -292,6 +294,7 @@ namespace NodeNotes.RayTracing
 
         private bool _showSavedConfigs;
         private bool _showDependencies;
+        private int _inspectedStuff = -1;
 
         public override bool Inspect()
         {
@@ -299,8 +302,9 @@ namespace NodeNotes.RayTracing
 
             inspected = this;
 
-            pegi.toggleDefaultInspector(this);
-
+            if (_inspectedStuff == -1)
+                pegi.toggleDefaultInspector(this);
+            
             if (!MainCamera)
             {
                 "God Mode".edit(ref godModeCamera);
@@ -317,7 +321,10 @@ namespace NodeNotes.RayTracing
             if ("Target".editEnum(60, ref trg).nl())
                 Target = trg;
 
-            if ("Dependencies".foldout(ref _showDependencies).nl())
+            if ("Scene".enter(ref _inspectedStuff, 0).nl())
+                sceneManager.Nested_Inspect().nl();
+
+            if ("Dependencies".enter(ref _inspectedStuff, 1).nl())
             {
 
                 if (Target == RayRenderingTarget.Volume)
@@ -353,48 +360,52 @@ namespace NodeNotes.RayTracing
                 "Scene config".edit(ref sceneConfiguration).nl();
             }
 
-         
-            if (Target == RayRenderingTarget.RayMarching)
+            if ("Light".enter(ref _inspectedStuff, 2).nl())
             {
-                "RAY-MARCHING".nl(PEGI_Styles.ListLabel);
-                
-                "Max Steps".edit(ref _maxSteps, 1, 400).nl(ref changed);
 
-                "Max Distance".edit(ref _maxDistance, 1, 50000).nl(ref changed);
+                if (Target == RayRenderingTarget.RayMarching)
+                {
+                    "RAY-MARCHING".nl(PEGI_Styles.ListLabel);
 
-                "Smoothness:".nl();
-                smoothness.Inspect().nl(ref changed);
+                    "Max Steps".edit(ref _maxSteps, 1, 400).nl(ref changed);
 
-                "Shadow Softness".nl();
-                shadowSoftness.Inspect().nl(ref changed);
+                    "Max Distance".edit(ref _maxDistance, 1, 50000).nl(ref changed);
+
+                    "Smoothness:".nl();
+                    smoothness.Inspect().nl(ref changed);
+
+                    "Shadow Softness".nl();
+                    shadowSoftness.Inspect().nl(ref changed);
+                }
+                else
+                {
+                    _rayTraceUseDielecrtic.Inspect().nl(ref changed);
+                    _rayTraceUseCheckerboard.Inspect().nl(ref changed);
+                    "RAY-INTERSECTION [frms: {0} | stability: {1}]".F((int) _stableFrames, cameraShakeDebug)
+                        .nl(PEGI_Styles.ListLabel);
+
+                }
+
+                "DOF".nl();
+                DOFdistance.Inspect().nl(ref changed);
+                var targ = DOFTargetStrength.TargetValue;
+                if ("DOF Strength".edit(90, ref targ, 0.0001f, 3f).nl(ref changed))
+                    DOFTargetStrength.TargetValue = targ;
+
+                "Light Color".edit(ref _sunLightColor.targetValue).nl(ref changed);
+                "Sky Color".edit(ref _skyColor.targetValue).nl(ref changed);
+                "Fog Color".edit(ref _fogColor.targetValue).nl(ref changed);
+
+                if (changed)
+                {
+                    lerpFinished = false;
+                    this.SkipLerp(lerpData);
+                    lerpFinished = true;
+                }
+
+                if ("Configs".foldout(ref _showSavedConfigs).nl())
+                    ConfigurationsListBase.Inspect(ref configs).changes(ref changed);
             }
-            else
-            {
-                _rayTraceUseDielecrtic.Inspect().nl(ref changed);
-                _rayTraceUseCheckerboard.Inspect().nl(ref changed);
-                "RAY-INTERSECTION [frms: {0} | stability: {1}]".F((int)_stableFrames, cameraShakeDebug).nl(PEGI_Styles.ListLabel);
-
-            }
-
-            "DOF".nl();
-            DOFdistance.Inspect().nl(ref changed);
-            var targ = DOFTargetStrength.TargetValue;
-            if ("DOF Strength".edit(90, ref targ, 0.0001f, 3f).nl(ref changed))
-                DOFTargetStrength.TargetValue = targ;
-
-            "Light Color".edit(ref _sunLightColor.targetValue).nl(ref changed);
-            "Sky Color".edit(ref _skyColor.targetValue).nl(ref changed);
-            "Fog Color".edit(ref _fogColor.targetValue).nl(ref changed);
-            
-            if (changed)
-            {
-                lerpFinished = false;
-                this.SkipLerp(lerpData);
-                lerpFinished = true;
-            }
-
-            if ("Configs".foldout(ref _showSavedConfigs).nl())
-                ConfigurationsListBase.Inspect(ref configs).changes(ref changed);
 
             if (changed)
             {

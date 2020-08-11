@@ -717,7 +717,19 @@ float FresnelSchlickRoughness(float cosTheta, float F0, float roughness) {
 }
 
 float3 cosWeightedRandomHemisphereDirection(const float3 n, inout float4 seed) {
-	float2 r = seed.xy;//hash2(seed);
+
+	float xt = seed.x * 2 * 3.14159265359; //expand to 0 to 2PI
+	float yt = sqrt(1.0 - seed.y);
+
+	float3 refl;
+
+	refl.x = cos(xt) * yt;
+	refl.y = sqrt(seed.y);
+	refl.z = sin(xt) * yt;
+
+	return refl;
+
+	/*float2 r = seed.xy;//hash2(seed);
 	float3  uu = normalize(cross(n, abs(n.y) > .5 ? float3(1., 0., 0.) : float3(0., 1., 0.)));
 	float3  vv = cross(uu, n);
 	float ra = sqrt(r.y);
@@ -726,7 +738,7 @@ float3 cosWeightedRandomHemisphereDirection(const float3 n, inout float4 seed) {
 	float ry = ra * sin(mltp);
 	float rz = sqrt(1. - r.y);
 	float3  rr = float3(rx*uu + ry * vv + rz * n);
-	return normalize(rr);
+	return normalize(rr);*/
 }
 
 float modifiedRefract(const in float3 v, const in float3 n, const in float ni_over_nt, inout float3 refracted) {

@@ -1,7 +1,7 @@
 ﻿Shader "RayTracing/Marching/RayMarchedBakedAmbient"
 {
 	Properties{
-			_MainTex("Albedo (RGB)", 2D) = "white" {}
+		_MainTex("Albedo (RGB)", 2D) = "white" {}
 	}
 
 	SubShader{
@@ -38,10 +38,7 @@
 				float2 texcoord :	TEXCOORD3;
 			};
 
-
 			sampler2D _MainTex;
-
-
 
 			v2f vert(appdata_full v) {
 				v2f o;

@@ -56,12 +56,14 @@
 					, _RayMarchingVolumeVOLUME_H_SLICES);
 
 
-			float3 offsetPos = worldPos + _RayMarchingVolumeVOLUME_POSITION_OFFSET.xyz;
+				float3 offsetPos = worldPos + _RayMarchingVolumeVOLUME_POSITION_OFFSET.xyz;
 
 				float4 previous = SampleVolume(_MainTex
 					, offsetPos
 					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE,
 					_RayMarchingVolumeVOLUME_H_SLICES);
+
+				clip(1500 - previous.a);
 
 				float2 screenUV = o.texcoord.xy * (4 * _CosTime.y) + _SinTime.x;
 

@@ -24,7 +24,6 @@
 
 			#include "PrimitivesScene.cginc"
 
-
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma multi_compile __ RT_USE_DIELECTRIC
@@ -62,7 +61,6 @@
 				float3 rayDirection = -normalize(o.viewDir.xyz);
 				float3 rayOrigin = _WorldSpaceCameraPos.xyz; // +_ProjectionParams.y * rayDirection;
 
-
 				float2 screenUV = o.screenPos.xy / o.screenPos.w;
 
 				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(screenUV * (123.12345678) // - _RayTraceTransparency * 12)  
@@ -84,15 +82,14 @@
 					rd = normalize(fp - ro);
 				#endif
 
-				//	ro += _ProjectionParams.y * rayDirection;
-
-				#if _IS_RAY_MARCHING
-					float4 col = renderSdf(ro, rd, noise);
-				#else
-					float4 col = render(ro, rd, noise);
-				#endif
-
 				#if RT_DENOISING && !_IS_RAY_MARCHING
+
+					#if _IS_RAY_MARCHING
+										float4 col = renderSdf(ro, rd, noise);
+					#else
+										float4 col = render(ro, rd, noise);
+					#endif
+
 					float2 pixSize = _RayTracing_SourceBuffer_ScreenFillAspect.zw * 4;
 
 					float count = 0;
@@ -131,6 +128,12 @@
 					#endif
 
 				#else
+					#if _IS_RAY_MARCHING
+						float4 col = renderSdf(ro, rd, noise);
+					#else
+						float4 col = render(ro, rd, noise);
+					#endif
+
 						float4 previousFrame = tex2Dlod(_RayTracing_SourceBuffer, float4(screenUV, 0, 0));
 						col.rgb = col.rgb * _RayTraceTransparency + max(0, previousFrame.rgb) * (1 - _RayTraceTransparency);
 				#endif

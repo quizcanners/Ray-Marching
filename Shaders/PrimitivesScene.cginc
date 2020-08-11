@@ -156,7 +156,7 @@ float3 worldhit(in float3 ro, in float3 rd, in float2 dist, out float3 normal, i
 
 
 #if RT_MOTION_TRACING
-#define PATH_LENGTH 4
+#define PATH_LENGTH 6
 #else
 #define PATH_LENGTH 9
 #endif

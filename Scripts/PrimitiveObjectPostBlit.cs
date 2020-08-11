@@ -10,8 +10,7 @@ namespace NodeNotes.RayTracing
     {
 
         public string prefabKey;
-
-
+        
         public static List<PrimitiveObjectPostBlit> allCurrentObjects = new List<PrimitiveObjectPostBlit>();
 
         void OnEnable() => allCurrentObjects.Add(this);
@@ -27,6 +26,8 @@ namespace NodeNotes.RayTracing
 
             pegi.toggleDefaultInspector(this).nl();
 
+            "Prefab".select(ref prefabKey, Shortcuts.Assets.GetRayTracedObjectsKeys()).nl();
+
             return changed;
         }
 
@@ -38,7 +39,8 @@ namespace NodeNotes.RayTracing
         {
             var cody = new CfgEncoder()
                 .Add("pos", transform.localPosition)
-                .Add("size", transform.localScale);
+                .Add("size", transform.localScale)
+                .Add_String("pf", prefabKey);
             
             return cody;
         }
@@ -49,6 +51,7 @@ namespace NodeNotes.RayTracing
             {
                 case "pos": transform.localPosition = data.ToVector3(); break;
                 case "size": transform.localScale = data.ToVector3(); break;
+                case "pf": prefabKey = data; break;
                 default: return false;
             }
 

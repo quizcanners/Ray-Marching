@@ -1,6 +1,5 @@
 ﻿using System;
 using PlayerAndEditorGUI;
-using PlaytimePainter.Examples;
 using QuizCannersUtilities;
 using UnityEngine;
 using NodeNotes_Visual;

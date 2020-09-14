@@ -201,11 +201,11 @@ namespace NodeNotes.RayTracing
 
                 if (isScreen)
                 {
-                    MainCamera.cullingMask = rayTracingResultMask ;
+                    MainCamera.cullingMask = rayTracingResultMask;
 
                     MainCamera.clearFlags = CameraClearFlags.Nothing;
-                    
-                    MainCamera.enabled = !baked;
+
+                    MainCamera.enabled = true;//!baked;
 
                     if (MainCamera.enabled)
                     {

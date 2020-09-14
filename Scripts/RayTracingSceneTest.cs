@@ -16,7 +16,7 @@ namespace NodeNotes.RayTracing
         {
             switch (tg)
             {
-                case "b": base.Decode(data); break;
+                case "b": data.DecodeInto(base.Decode); break;
                 case "c0": cube0.Decode(data); break;
                 case "c1": cube1.Decode(data); break;
                 case "c2": cube2.Decode(data); break;

@@ -22,10 +22,10 @@ namespace NodeNotes.RayTracing
 
         #region Encode & Decode
 
-        public virtual void Decode(string data) => new CfgDecoder(data).DecodeTagsFor(this);
+        public virtual void Decode(string tg, CfgData data)
+        {
+        }
 
-        public virtual bool Decode(string tg, string data) => false;
-        
         public virtual CfgEncoder Encode() => new CfgEncoder();
 
         #endregion

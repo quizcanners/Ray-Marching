@@ -12,11 +12,11 @@ namespace NodeNotes.RayTracing
         
         #region Encode & Decode
         
-        public override bool Decode(string tg, string data)
+        public override void Decode(string tg, CfgData data)
         {
             switch (tg)
             {
-                case "b": data.DecodeInto(base.Decode); break;
+                case "b": data.Decode(base.Decode); break;
                 case "c0": cube0.Decode(data); break;
                 case "c1": cube1.Decode(data); break;
                 case "c2": cube2.Decode(data); break;
@@ -26,9 +26,7 @@ namespace NodeNotes.RayTracing
                 case "s0": sphere0.Decode(data); break;
                 case "s1": sphere1.Decode(data); break;
                 case "l0": light0.Decode(data); break;
-                default: return false;
             }
-            return true;
         }
 
         public override CfgEncoder Encode() => new CfgEncoder()

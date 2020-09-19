@@ -45,21 +45,15 @@ namespace NodeNotes.RayTracing
             return cody;
         }
 
-        public bool Decode(string tg, string data)
+        public void Decode(string tg, CfgData data)
         {
             switch (tg)
             {
                 case "pos": transform.localPosition = data.ToVector3(); break;
                 case "size": transform.localScale = data.ToVector3(); break;
-                case "pf": prefabKey = data; break;
-                default: return false;
+                case "pf": prefabKey = data.ToString(); break;
             }
-
-            return true;
         }
-
-        public void Decode(string data) =>
-            new CfgDecoder(data).DecodeTagsFor(this);
         
 
         #endregion

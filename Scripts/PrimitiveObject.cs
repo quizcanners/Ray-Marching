@@ -9,7 +9,7 @@ namespace NodeNotes.RayTracing
 {
     
     [ExecuteAlways]
-    public class PrimitiveObject : MonoBehaviour, IPEGI, ICfg, ILinkedLerping
+    public class PrimitiveObject : MonoBehaviour, IPEGI, ICfgCustom, ILinkedLerping
     {
 
         public string variableName;
@@ -163,7 +163,7 @@ namespace NodeNotes.RayTracing
             return cody;
         }
         
-        public bool Decode(string tg, string data)
+        public void Decode(string tg, CfgData data)
         {
             switch (tg)
             {
@@ -173,21 +173,23 @@ namespace NodeNotes.RayTracing
                 case "t": matType = (MaterialType)data.ToInt(); break;
                 case "col": color = data.ToColor(); break;
                 case "gl": roughtness = data.ToFloat(); break;
-                default: return false;
             }
-
-            return true;
         }
 
-        public void Decode(string data)
+        public void Decode(CfgData data)
         {
             _isLerping = true;
             if (lrpPosition == null)
             {
-                lrpPosition = new LinkedLerp.TransformLocalPosition(transform, 100);
-                lrpPosition.lerpMode = LinkedLerp.LerpSpeedMode.Unlimited;
-                lrpScale = new LinkedLerp.TransformLocalScale(transform, 100);
-                lrpScale.lerpMode = LinkedLerp.LerpSpeedMode.Unlimited;
+                lrpPosition = new LinkedLerp.TransformLocalPosition(transform, 100)
+                {
+                    lerpMode = LinkedLerp.LerpSpeedMode.Unlimited
+                };
+
+                lrpScale = new LinkedLerp.TransformLocalScale(transform, 100)
+                {
+                    lerpMode = LinkedLerp.LerpSpeedMode.Unlimited
+                };
             }
             
             new CfgDecoder(data).DecodeTagsFor(this);

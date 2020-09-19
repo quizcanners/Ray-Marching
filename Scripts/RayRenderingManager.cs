@@ -12,7 +12,7 @@ using UnityEditor;
 namespace NodeNotes.RayTracing
 {
     
-    public class RayRenderingManager : PresentationSystemsAbstract, IPEGI, ICfg, ILinkedLerping
+    public class RayRenderingManager : PresentationSystemsAbstract, ICfgCustom, IPEGI, ILinkedLerping
     {
         public override string ClassTag => "RtxMgmt";
 
@@ -292,7 +292,7 @@ namespace NodeNotes.RayTracing
         public override bool SaveOnEdit => false;
 
         private bool _showSavedConfigs;
-        private bool _showDependencies;
+        protected bool _showDependencies;
         private int _inspectedStuff = -1;
 
         public override bool Inspect()
@@ -459,7 +459,7 @@ namespace NodeNotes.RayTracing
             return cody;
         }
 
-        public override bool Decode(string tg, string data)
+        public override void Decode(string tg, CfgData data)
         {
             switch (tg)
             {
@@ -470,18 +470,17 @@ namespace NodeNotes.RayTracing
                 case "fog": _fogColor.TargetValue = data.ToColor(); break;
                 case "gm": godModeCamera.Decode(data); break;
                 case "targ": Target = (RayRenderingTarget)data.ToInt(); break;
-                case "depth": MainCamera.depthTextureMode = (DepthTextureMode)data.ToInt(); break;
+                case "depth": MainCamera.depthTextureMode = (DepthTextureMode)data.ToInt(0); break;
                 case "dofD": DOFdistance.Decode(data); break;
                 case "dofPow": DOFTargetStrength.TargetValue = data.ToFloat(); break;
-                case "sc": sceneConfiguration.Decode(data); break;
+                case "sc": sceneConfiguration.DecodeFull(data); break;
                 case "diEl": _rayTraceUseDielecrtic.Enabled = data.ToBool(); break;
                 case "rtCB": _rayTraceUseCheckerboard.Enabled = data.ToBool(); break;
-                default: return sceneConfiguration.Decode(tg, data);
+                default: sceneConfiguration.Decode(tg, data); break;
             }
-            return true;
         }
 
-        public override void Decode(string data)
+        public void Decode(CfgData data)
         {
             new CfgDecoder(data).DecodeTagsFor(this);
             playLerpAnimation = true;

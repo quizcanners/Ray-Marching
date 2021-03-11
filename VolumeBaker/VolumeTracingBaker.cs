@@ -115,7 +115,7 @@ namespace NodeNotes.RayTracing
             } 
 
             "Back Buffer:".edit(ref _texB).changes(ref changed);
-            pegi.FullWindowService.DocumentationClickOpen("Second buffer needs to be same kind of RenderTexture as Texture");
+            pegi.FullWindow.DocumentationClickOpen("Second buffer needs to be same kind of RenderTexture as Texture");
             pegi.nl();
             "Material".edit(ref material).nl(ref changed);
 

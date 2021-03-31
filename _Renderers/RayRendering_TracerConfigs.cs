@@ -1,15 +1,17 @@
-﻿using System;
-using QuizCannersUtilities;
+﻿using QuizCanners.CfgDecode;
+using System;
+using UnityEngine;
 
-namespace NodeNotes.RayTracing
+namespace QuizCanners.RayTracing
 {
-    
-    public class RayMarchingConfigs : ConfigurationsListGeneric<RayMarchingConfig>
+    [CreateAssetMenu(fileName = FILE_NAME, menuName = "Quiz Canners/Ray Renderer/" + FILE_NAME)]
+    public class RayRendering_TracerConfigs : ConfigurationsListGeneric<RendererConfig>
     {
+        public const string FILE_NAME = "Ray Renderer Tracer Config";
     }
 
     [Serializable]
-    public class RayMarchingConfig : Configuration
+    public class RendererConfig : Configuration
     {
 
         public static Configuration ActiveConfig;

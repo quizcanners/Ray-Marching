@@ -1,24 +1,12 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using PlayerAndEditorGUI;
-using QuizCannersUtilities;
+﻿using QuizCanners.CfgDecode;
+using QuizCanners.Lerp;
 using UnityEngine;
 
-namespace NodeNotes.RayTracing
+namespace QuizCanners.RayTracing
 {
 
-    public abstract class RayTracingSceneBase : MonoBehaviour, IPEGI, ILinkedLerping, ICfg
+    public abstract class RayTracingSceneBase : MonoBehaviour, ILinkedLerping, ICfg
     {
-        #region Inspector
-
-        public bool Inspect()
-        {
-            var changed = false;
-
-            return changed;
-        }
-
-        #endregion
 
         #region Encode & Decode
 

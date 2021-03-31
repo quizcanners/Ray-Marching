@@ -1,14 +1,12 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using PlayerAndEditorGUI;
-using PlaytimePainter;
+﻿using PlaytimePainter;
 using UnityEngine;
-using QuizCannersUtilities;
+using QuizCanners.Utils;
+using QuizCanners.Inspect;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace NodeNotes.RayTracing
+namespace QuizCanners.RayTracing
 {
 
     public class VolumeTracingBaker : MonoBehaviour, IPEGI
@@ -87,24 +85,23 @@ namespace NodeNotes.RayTracing
             }
         }
 
-        public bool Inspect()
+        public void Inspect()
         {
-            var changed = false;
 
             pegi.toggleDefaultInspector(this);
 
-            "Bake {0}".F(framesToBake).toggleIcon(ref bakingEnabled).changes(ref changed);
+            "Bake {0}".F(framesToBake).toggleIcon(ref bakingEnabled);
 
             if (framesToBake < 1 && "Reset Baking".Click())
                 SetBakeDirty();
 
             pegi.nl();
 
-            "Volume".edit(ref volume).changes(ref changed);
+            "Volume".edit(ref volume);
             if (!volume && icon.Search.Click())
                 volume = GetComponent<VolumeTexture>();
             pegi.nl();
-            "Texture:".edit(ref _texA).nl(ref changed);
+            "Texture:".edit(ref _texA).nl();
 
             if (!_texA && volume && volume.Texture)
             {
@@ -114,15 +111,14 @@ namespace NodeNotes.RayTracing
                     _texA = volume.Texture as RenderTexture;
             } 
 
-            "Back Buffer:".edit(ref _texB).changes(ref changed);
+            "Back Buffer:".edit(ref _texB);
             pegi.FullWindow.DocumentationClickOpen("Second buffer needs to be same kind of RenderTexture as Texture");
             pegi.nl();
-            "Material".edit(ref material).nl(ref changed);
+            "Material".edit(ref material).nl();
 
             if ("Render".Click().nl())
                 Paint();
 
-            return changed;
         }
 
     }

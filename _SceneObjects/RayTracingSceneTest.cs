@@ -1,10 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using PlayerAndEditorGUI;
-using QuizCannersUtilities;
-using UnityEngine;
+﻿
 
-namespace NodeNotes.RayTracing
+using QuizCanners.CfgDecode;
+using QuizCanners.Lerp;
+
+namespace QuizCanners.RayTracing
 {
     public class RayTracingSceneTest : RayTracingSceneBase
     {

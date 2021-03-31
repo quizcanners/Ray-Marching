@@ -1,11 +1,13 @@
-﻿using PlayerAndEditorGUI;
-using QuizCannersUtilities;
-using UnityEngine;
+﻿using UnityEngine;
+using QuizCanners.Inspect;
+using QuizCanners.CfgDecode;
+using QuizCanners.Lerp;
+using QuizCanners.Utils;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace NodeNotes.RayTracing
+namespace QuizCanners.RayTracing
 {
     
     [ExecuteAlways]
@@ -57,33 +59,42 @@ namespace NodeNotes.RayTracing
 
         #region Inspector
 
-        public bool Inspect()
+        public void Inspect()
         {
-            var changed = false;
+         
 
             pegi.toggleDefaultInspector(this).nl();
 
-            if ("Name".editDelayed(ref variableName).nl(ref changed))
+            if ("Name".editDelayed(ref variableName).nl())
                 InitializeProperties();
-            
-            if (_size.Inspect().nl(ref changed))
+
+            var changed = pegi.ChangeTrackStart();
+
+            _size.Inspect();
+
+            if (changed)
+            {
                 transform.localScale = Vector3.one * _size.Value;
+            }
 
-            "Color".edit(ref color).nl(ref changed); // = Color.gray;
-            "Roughness".edit(ref roughtness, 0, 1).nl(ref changed);
 
-            "Surface".editEnum(ref matType).nl(ref changed);
+            "Color".edit(ref color).nl(); // = Color.gray;
+            "Roughness".edit(ref roughtness, 0, 1).nl();
 
-            if (changed && RayRenderingManager.instance)
-                RayRenderingManager.instance.SetDirty("Inspector");
+            "Surface".editEnum(ref matType).nl();
+
+          
+               
 
             if (!RayRenderingManager.instance)
                 "No manager Singleton".writeWarning();
 
             if (changed)
+            {
                 _isDirty = true;
-
-            return changed;
+                if (RayRenderingManager.instance)
+                    RayRenderingManager.instance.SetDirty("Inspector");
+            }
         }
 
         #endregion

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace NodeNotes.RayTracing
+namespace QuizCanners.RayTracing
 {
 
 

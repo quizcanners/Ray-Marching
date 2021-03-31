@@ -1,10 +1,9 @@
-﻿using PlayerAndEditorGUI;
-using QuizCannersUtilities;
-using System.Collections;
+﻿using QuizCanners.CfgDecode;
+using QuizCanners.Inspect;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace NodeNotes.RayTracing
+namespace QuizCanners.RayTracing
 {
     public class PrimitiveObjectPostBlit : MonoBehaviour, IPEGI, ICfg
     {
@@ -20,15 +19,10 @@ namespace NodeNotes.RayTracing
         
         #region Inspector
 
-        public bool Inspect()
+        public void Inspect()
         {
-            var changed = false;
 
             pegi.toggleDefaultInspector(this).nl();
-
-            "Prefab".select(ref prefabKey, Shortcuts.Assets.GetRayTracedObjectsKeys()).nl();
-
-            return changed;
         }
 
         #endregion

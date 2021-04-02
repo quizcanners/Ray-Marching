@@ -4,24 +4,23 @@ using QuizCanners.Lerp;
 using QuizCanners.Prototype;
 using QuizCanners.Utils;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace QuizCanners.RayTracing
 {
 
     [Serializable]
-    public class RayRandering_SceneManager : IPEGI, ILinkedLerping, ICfg, ICfgCustom
+    public class RayRandering_SceneManager : IPEGI, ILinkedLerping, ICfgCustom
     {
         [SerializeField] public GodMode godModeCamera;
         [SerializeField] public RayTracingSceneBase sceneElements;
         [SerializeField] public RayRendering_SceneConfigs configs;
         [SerializeField] public GameObject rayTraceResult;
         [SerializeField] public RawImage accumulatedResult;
-        private List<PrimitiveObjectPostBlit> All => PrimitiveObjectPostBlit.allCurrentObjects;
 
-        public float StableFrames = 0;
+        public float StableFrames;
         private Vector3 _previousCamPosition = Vector3.zero;
         private Quaternion _previousCamRotation = Quaternion.identity;
         public float CameraShakeDebug;
@@ -45,7 +44,7 @@ namespace QuizCanners.RayTracing
             {
                 case "se": sceneElements.DecodeFull(data); break;
                 case "gm": godModeCamera.Decode(data); break;
-                case "depth": MainCamera.depthTextureMode = (DepthTextureMode)data.ToInt(0); break;
+                case "depth": MainCamera.depthTextureMode = (DepthTextureMode)data.ToInt(); break;
             }    
         }
 
@@ -69,7 +68,7 @@ namespace QuizCanners.RayTracing
             if (godModeCamera)
                 godModeCamera.Lerp(ld, canSkipLerp);
 
-            if (ld.MinPortion == 1)
+            if (ld.Done)
             {
                 if (godModeCamera && godModeCamera.mode != GodMode.Mode.FPS)
                     godModeCamera.mode = GodMode.Mode.FPS;
@@ -98,11 +97,13 @@ namespace QuizCanners.RayTracing
 
                 if (isScreen)
                 {
-                    CameraShakeDebug = (_previousCamPosition - tf.position).magnitude * 10 +
-                                       Quaternion.Angle(_previousCamRotation, tf.rotation);
+                    var position = tf.position;
+                    var rotation = tf.rotation;
+                    CameraShakeDebug = (_previousCamPosition - position).magnitude * 10 +
+                                       Quaternion.Angle(_previousCamRotation, rotation);
 
-                    _previousCamPosition = tf.position;
-                    _previousCamRotation = tf.rotation;
+                    _previousCamPosition = position;
+                    _previousCamRotation = rotation;
 
                     CameraShakeDebug = 1 - Mathf.Clamp01(CameraShakeDebug);
 
@@ -158,7 +159,7 @@ namespace QuizCanners.RayTracing
                 "God Mode".edit(ref godModeCamera);
 
                 if (icon.Search.Click().nl())
-                    godModeCamera = GameObject.FindObjectOfType<GodMode>();
+                    godModeCamera = Object.FindObjectOfType<GodMode>();
 
                 return;
             }

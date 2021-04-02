@@ -15,7 +15,7 @@ namespace QuizCanners.RayTracing
 
         public RenderTexture _texA;
         public RenderTexture _texB;
-        bool targetIsA;
+        private bool targetIsA;
         public RenderTexture Target => targetIsA ? _texA : _texB;
         public RenderTexture Source => targetIsA ? _texB : _texA;
 
@@ -50,8 +50,8 @@ namespace QuizCanners.RayTracing
             }
         }
 
-        Vector3 _previous = Vector3.zero;
-        Vector4 _previousDiff = Vector3.zero;
+        private Vector3 _previous = Vector3.zero;
+        private Vector4 _previousDiff = Vector3.zero;
 
         public void SetBakeDirty() => framesToBake = 300;
 

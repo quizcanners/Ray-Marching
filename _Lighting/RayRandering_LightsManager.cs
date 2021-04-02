@@ -7,14 +7,14 @@ using UnityEngine;
 namespace QuizCanners.RayTracing
 {
     [Serializable]
-    public class RayRandering_LightsManager : IPEGI, ILinkedLerping, ICfg, ICfgCustom
+    public class RayRandering_LightsManager : IPEGI, ILinkedLerping, ICfgCustom
     {
         [SerializeField] private RayRendering_LightConfigs configs;
 
 
-        LinkedLerp.MaterialColor _sunLightColor = new LinkedLerp.MaterialColor("_RayMarchLightColor", Color.grey, 10);
-        LinkedLerp.MaterialColor _skyColor = new LinkedLerp.MaterialColor("_RayMarchSkyColor", Color.grey, 10);
-        LinkedLerp.ColorValue _fogColor = new LinkedLerp.ColorValue("Fog", speed: 10);
+        private LinkedLerp.MaterialColor _sunLightColor = new LinkedLerp.MaterialColor("_RayMarchLightColor", Color.grey, 10);
+        private LinkedLerp.MaterialColor _skyColor = new LinkedLerp.MaterialColor("_RayMarchSkyColor", Color.grey, 10);
+        private LinkedLerp.ColorValue _fogColor = new LinkedLerp.ColorValue("Fog", speed: 10);
 
         protected RayRenderingManager Mgmt => RayRenderingManager.instance;
 

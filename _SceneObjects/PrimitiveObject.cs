@@ -37,7 +37,7 @@ namespace QuizCanners.RayTracing
             colorAndRoughness.GlobalValue = color.Alpha(roughtness);
         }
 
-        void InitializeProperties()
+        private void InitializeProperties()
         {
             if (positionAndMat == null)
             {
@@ -46,8 +46,8 @@ namespace QuizCanners.RayTracing
                 colorAndRoughness = new ShaderProperty.VectorValue(variableName + "_Mat");
             }
         }
-        
-        void OnEnable()
+
+        private void OnEnable()
         {
             InitializeProperties();
 
@@ -55,7 +55,7 @@ namespace QuizCanners.RayTracing
                 RenderingVolume.SetActive(!Application.isPlaying);*/
         }
 
-        private bool _isDirty = false;
+        private bool _isDirty;
 
         #region Inspector
 
@@ -105,7 +105,7 @@ namespace QuizCanners.RayTracing
 
 
         // Update is called once per frame
-        void Update()
+        private void Update()
         {
 
             var tf = transform;
@@ -123,8 +123,8 @@ namespace QuizCanners.RayTracing
             }
         }
 
-        LinkedLerp.TransformLocalPosition lrpPosition;
-        LinkedLerp.TransformLocalScale lrpScale;
+        private LinkedLerp.TransformLocalPosition lrpPosition;
+        private LinkedLerp.TransformLocalScale lrpScale;
 
         private bool _isLerping;
 
@@ -143,7 +143,7 @@ namespace QuizCanners.RayTracing
             {
                 lrpPosition.Lerp(ld);
                 lrpScale.Lerp(ld);
-                if (ld.MinPortion == 1)
+                if (ld.Done)
                     _isLerping = false;
             }
         }
@@ -192,12 +192,13 @@ namespace QuizCanners.RayTracing
             _isLerping = true;
             if (lrpPosition == null)
             {
-                lrpPosition = new LinkedLerp.TransformLocalPosition(transform, 100)
+                var transform1 = transform;
+                lrpPosition = new LinkedLerp.TransformLocalPosition(transform1, 100)
                 {
                     lerpMode = LinkedLerp.LerpSpeedMode.Unlimited
                 };
 
-                lrpScale = new LinkedLerp.TransformLocalScale(transform, 100)
+                lrpScale = new LinkedLerp.TransformLocalScale(transform1, 100)
                 {
                     lerpMode = LinkedLerp.LerpSpeedMode.Unlimited
                 };

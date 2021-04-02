@@ -1,7 +1,5 @@
 ﻿using System;
 using UnityEngine;
-using NodeNotes_Visual;
-using UnityEngine.UI;
 using QuizCanners.CfgDecode;
 using QuizCanners.Inspect;
 using QuizCanners.Lerp;
@@ -47,29 +45,28 @@ namespace QuizCanners.RayTracing
         [SerializeField] protected int stopUpdatingAfter = 500;
 
 
-        ShaderProperty.ShaderKeyword _usingRayMarching = new ShaderProperty.ShaderKeyword("_IS_RAY_MARCHING");
+        private ShaderProperty.ShaderKeyword _usingRayMarching = new ShaderProperty.ShaderKeyword("_IS_RAY_MARCHING");
 
-        [Header("Ray-Marthing")]
-        ShaderProperty.FloatValue _maxStepsInShader = new ShaderProperty.FloatValue("_maxRayMarchSteps");
+        [Header("Ray-Marthing")] private ShaderProperty.FloatValue _maxStepsInShader = new ShaderProperty.FloatValue("_maxRayMarchSteps");
         [SerializeField] private float _maxSteps = 50;
 
-        ShaderProperty.FloatValue _maxDistanceInShader = new ShaderProperty.FloatValue("_MaxRayMarchDistance");
+        private ShaderProperty.FloatValue _maxDistanceInShader = new ShaderProperty.FloatValue("_MaxRayMarchDistance");
         [SerializeField] private float _maxDistance = 10000;
 
-        LinkedLerp.MaterialFloat _rayMarchSmoothness = new LinkedLerp.MaterialFloat("_RayMarchSmoothness", 1, 30);
-        LinkedLerp.MaterialFloat _rayMarchShadowSoftness = new LinkedLerp.MaterialFloat("_RayMarchShadowSoftness", 1, 30);
+        private LinkedLerp.MaterialFloat _rayMarchSmoothness = new LinkedLerp.MaterialFloat("_RayMarchSmoothness", 1, 30);
+        private LinkedLerp.MaterialFloat _rayMarchShadowSoftness = new LinkedLerp.MaterialFloat("_RayMarchShadowSoftness", 1, 30);
 
         [NonSerialized] private QcUtils.DynamicRangeFloat smoothness = new QcUtils.DynamicRangeFloat(0.01f, 10, 1);
         [NonSerialized] private QcUtils.DynamicRangeFloat shadowSoftness = new QcUtils.DynamicRangeFloat(0.01f, 10, 1);
 
         [Header("Ray-Tracing")]
         [NonSerialized] private QcUtils.DynamicRangeFloat DOFdistance = new QcUtils.DynamicRangeFloat(min: 0.01f, max: 50, value: 1);
-        [NonSerialized] LinkedLerp.MaterialFloat _RayTraceDepthOfField = new LinkedLerp.MaterialFloat("_RayTraceDofDist", startingValue: 1f, startingSpeed: 100f); // x - distance 
+        [NonSerialized] private LinkedLerp.MaterialFloat _RayTraceDepthOfField = new LinkedLerp.MaterialFloat("_RayTraceDofDist", startingValue: 1f, startingSpeed: 100f); // x - distance 
         
         [NonSerialized] private LinkedLerp.MaterialFloat DOFTargetStrength = new LinkedLerp.MaterialFloat("_RayTraceDOF", startingValue: 0.0001f, startingSpeed: 10);
-        
-        ShaderProperty.ShaderKeyword _rayTraceUseDielecrtic = new ShaderProperty.ShaderKeyword("RT_USE_DIELECTRIC");
-        ShaderProperty.ShaderKeyword _rayTraceUseCheckerboard = new ShaderProperty.ShaderKeyword("RT_USE_CHECKERBOARD");
+
+        private ShaderProperty.ShaderKeyword _rayTraceUseDielecrtic = new ShaderProperty.ShaderKeyword("RT_USE_DIELECTRIC");
+        private ShaderProperty.ShaderKeyword _rayTraceUseCheckerboard = new ShaderProperty.ShaderKeyword("RT_USE_CHECKERBOARD");
 
         private bool firstIsSourceBuffer;
         public RenderTexture[] twoBuffers;
@@ -109,7 +106,7 @@ namespace QuizCanners.RayTracing
             _setDirtyReason = reason;
         }
 
-        void UpdateShaderVariables()
+        private void UpdateShaderVariables()
         {
             _maxStepsInShader.GlobalValue = _maxSteps;
             _maxDistanceInShader.GlobalValue = _maxDistance;
@@ -163,7 +160,7 @@ namespace QuizCanners.RayTracing
             lerpFinished = false;
         }
 
-        LerpData lerpData = new LerpData();
+        private LerpData lerpData = new LerpData();
         
         public void Portion(LerpData ld)
         {
@@ -203,7 +200,7 @@ namespace QuizCanners.RayTracing
 
             SceneManager.Lerp(ld, canSkipLerp);
             
-            if (ld.MinPortion == 1)
+            if (ld.Done)
             {
                 lerpFinished = true;
                 playLerpAnimation = false;

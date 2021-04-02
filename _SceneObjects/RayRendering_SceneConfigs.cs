@@ -1,7 +1,5 @@
 using QuizCanners.CfgDecode;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace QuizCanners.RayTracing

@@ -12,9 +12,9 @@ namespace QuizCanners.RayTracing
         
         public static List<PrimitiveObjectPostBlit> allCurrentObjects = new List<PrimitiveObjectPostBlit>();
 
-        void OnEnable() => allCurrentObjects.Add(this);
-        
-        void OnDisable() => allCurrentObjects.Remove(this);
+        private void OnEnable() => allCurrentObjects.Add(this);
+
+        private void OnDisable() => allCurrentObjects.Remove(this);
         
         
         #region Inspector

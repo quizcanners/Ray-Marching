@@ -40,10 +40,18 @@ namespace QuizCanners.RayTracing
 
         public void Inspect()
         {
-            "Light Color".edit(ref _sunLightColor.targetValue).nl();
-            "Sky Color".edit(ref _skyColor.targetValue).nl();
-            "Fog Color".edit(ref _fogColor.targetValue).nl();
-
+            var col = _sunLightColor.TargetValue;
+            if ("Light Color".edit(ref col).nl())
+                _sunLightColor.TargetValue = col;
+            
+            col = _skyColor.TargetValue;
+            if ("Sky Color".edit(ref col).nl())
+                _skyColor.TargetValue = col;
+            
+            col = _fogColor.TargetValue;
+            if ("Fog Color".edit(ref col).nl())
+                _fogColor.TargetValue = col;
+            
             ConfigurationsListBase.Inspect(ref configs);
         }
 

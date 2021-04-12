@@ -124,8 +124,7 @@ namespace QuizCanners.RayTracing
     }
 
 #if UNITY_EDITOR
-    [CustomEditor(typeof(VolumeTracingBaker))]
-    public class VolumeTracingBakerDrawer : PEGI_Inspector_Mono<VolumeTracingBaker>
+    [CustomEditor(typeof(VolumeTracingBaker))] internal class VolumeTracingBakerDrawer : PEGI_Inspector_Mono<VolumeTracingBaker>
     {
     }
 #endif

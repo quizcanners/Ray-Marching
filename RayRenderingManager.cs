@@ -234,7 +234,7 @@ namespace QuizCanners.RayTracing
             if ("Target".editEnum(60, ref trg).nl())
                 Target = trg;
 
-            if ("Tracer".enter(ref _inspectedStuff, 0).nl())
+            if ("Tracer".IsEntered(ref _inspectedStuff, 0).nl())
             {
 
                 if (Target == RayRenderingTarget.RayMarching)
@@ -277,13 +277,13 @@ namespace QuizCanners.RayTracing
                 ConfigurationsListBase.Inspect(ref configs);
             }
 
-            if ("Lights".enter(ref _inspectedStuff, 1).nl())
+            if ("Lights".IsEntered(ref _inspectedStuff, 1).nl())
                 LightsManager.Nested_Inspect().nl();
 
-            if ("Scene".enter(ref _inspectedStuff, 2).nl())
+            if ("Scene".IsEntered(ref _inspectedStuff, 2).nl())
                 SceneManager.Nested_Inspect().nl();
 
-            if ("Dependencies".enter(ref _inspectedStuff, 4).nl())
+            if ("Dependencies".IsEntered(ref _inspectedStuff, 4).nl())
             {
 
                 if (!volumeTracingBaker)

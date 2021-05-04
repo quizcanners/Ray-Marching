@@ -75,7 +75,7 @@
 				float2 screenUV = o.screenPos.xy / o.screenPos.w;
 
 
-				float3 noise = tex2Dlod(_Global_Noise_Lookup, float4(screenUV * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0));
+				//float3 noise = tex2Dlod(_Global_Noise_Lookup, float4(screenUV * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0));
 
 				//	clip(tex.a - 0.1);
 
@@ -94,7 +94,7 @@
 
 				float4 light = SampleVolume(_RayMarchingVolume, o.worldPos
 					// + (useSdf * normalAndDist.rgb * internal + o.normal.xyz * (1-useSdf)) *
-					+ o.normal.xyz *scale
+					//+ o.normal.xyz *scale
 				, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
 				, _RayMarchingVolumeVOLUME_H_SLICES);
 

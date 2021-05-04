@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   setForGlobal: 1
   hSlices: 8
-  size: 0.1
+  size: 1
   _texture: {fileID: 0}
   materials: []
   _painter: {fileID: 0}

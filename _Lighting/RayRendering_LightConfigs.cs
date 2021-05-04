@@ -6,7 +6,7 @@ using UnityEngine;
 namespace QuizCanners.RayTracing
 {
     [CreateAssetMenu(fileName = FILE_NAME, menuName = "Quiz Canners/Ray Renderer/"+FILE_NAME)]
-    public class RayRendering_LightConfigs : ConfigurationsListGeneric<LightConfig>
+    public class RayRendering_LightConfigs : ConfigurationsSO_Generic<LightConfig>
     {
         public const string FILE_NAME = "Ray Renderer Light Config";
     }
@@ -23,7 +23,7 @@ namespace QuizCanners.RayTracing
             set
             {
                 ActiveConfig = value;
-                RayRenderingManager.inspected.LightsManager.Decode(data);
+                RayRenderingManager.inspected.LightsManager.Decode(ActiveConfig.data);
             }
 
         }

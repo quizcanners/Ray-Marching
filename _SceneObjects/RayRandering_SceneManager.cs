@@ -12,7 +12,7 @@ namespace QuizCanners.RayTracing
 {
 
     [Serializable]
-    public class RayRandering_SceneManager : IPEGI, ILinkedLerping, ICfgCustom
+    public class RayRandering_SceneManager : IPEGI, ILinkedLerping, ICfgCustom, IPEGI_ListInspect
     {
         [SerializeField] public GodMode godModeCamera;
         [SerializeField] public RayTracingSceneBase sceneElements;
@@ -28,7 +28,10 @@ namespace QuizCanners.RayTracing
         public Camera MainCamera => godModeCamera ? godModeCamera.MainCam : null;
         protected RayRenderingManager Mgmt => RayRenderingManager.instance;
 
-    
+        public void SetDirty()
+        {
+            StableFrames = 0;
+        }
 
         public void Swap(RenderTexture tex) 
         {
@@ -38,58 +41,9 @@ namespace QuizCanners.RayTracing
                 accumulatedResult.texture = tex;
         }
 
-        public void Decode(string key, CfgData data)
-        {
-            switch (key) 
-            {
-                case "se": sceneElements.DecodeFull(data); break;
-                case "gm": godModeCamera.Decode(data); break;
-                case "depth": MainCamera.depthTextureMode = (DepthTextureMode)data.ToInt(); break;
-            }    
-        }
-
-        public CfgEncoder Encode()
-        {
-            var cody = new CfgEncoder()
-                .Add("se", sceneElements)
-                .Add("gm", godModeCamera);
-
-            if (MainCamera)
-                cody.Add("depth", (int)MainCamera.depthTextureMode);
-
-            return cody;
-        }
-  
-        public void Lerp(LerpData ld, bool canSkipLerp)
-        {
-            if (sceneElements)
-                sceneElements.Lerp(ld, canSkipLerp);
-
-            if (godModeCamera)
-                godModeCamera.Lerp(ld, canSkipLerp);
-
-            if (ld.Done)
-            {
-                if (godModeCamera && godModeCamera.mode != GodMode.Mode.FPS)
-                    godModeCamera.mode = GodMode.Mode.FPS;
-            }
-        }
-
-        public void Portion(LerpData ld)
-        {
-            if (sceneElements)
-                sceneElements.Portion(ld);
-
-            if (godModeCamera)
-                godModeCamera.Portion(ld);
-        }
-
         public void ManagedUpdate() 
         {
             var isScreen = Mgmt.TargetIsScreenBuffer;
-
-
-
 
             if (MainCamera)
             {
@@ -147,13 +101,83 @@ namespace QuizCanners.RayTracing
 
         }
 
-        public void SetDirty() 
+        #region Linked Lerp
+        public void Lerp(LerpData ld, bool canSkipLerp)
         {
-            StableFrames = 0;
+            if (sceneElements)
+                sceneElements.Lerp(ld, canSkipLerp);
+
+            if (godModeCamera)
+                godModeCamera.Lerp(ld, canSkipLerp);
+
+            if (ld.Done)
+            {
+                if (godModeCamera && godModeCamera.mode != GodMode.Mode.FPS)
+                    godModeCamera.mode = GodMode.Mode.FPS;
+            }
+        }
+
+        public void Portion(LerpData ld)
+        {
+            if (sceneElements)
+                sceneElements.Portion(ld);
+
+            if (godModeCamera)
+                godModeCamera.Portion(ld);
+        }
+        #endregion
+
+        #region Encode & Decode
+        public void Decode(string key, CfgData data)
+        {
+            switch (key)
+            {
+                case "se": sceneElements.DecodeFull(data); break;
+                case "gm": godModeCamera.Decode(data); break;
+                case "depth": MainCamera.depthTextureMode = (DepthTextureMode)data.ToInt(); break;
+            }
+        }
+
+        public CfgEncoder Encode()
+        {
+            var cody = new CfgEncoder()
+                .Add("se", sceneElements)
+                .Add("gm", godModeCamera);
+
+            if (MainCamera)
+                cody.Add("depth", (int)MainCamera.depthTextureMode);
+
+            return cody;
+        }
+
+        public void Decode(CfgData data)
+        {
+            new CfgDecoder(data).DecodeTagsFor(this);
+
+            if (godModeCamera)
+                godModeCamera.mode = GodMode.Mode.LERP;
+
+            Mgmt.RequestLerps();
+        }
+        #endregion
+
+        #region Inspector
+
+        public void InspectInList(int ind, ref int edited)
+        {
+            if (icon.Enter.Click() || "Scene".ClickLabel())
+                edited = ind;
+
+            if (!configs)
+                "CFG".edit(60, ref configs);
+            else
+                configs.InspectShortcut();
         }
 
         public void Inspect()
         {
+            pegi.nl();
+
             if (!MainCamera)
             {
                 "God Mode".edit(ref godModeCamera);
@@ -192,20 +216,10 @@ namespace QuizCanners.RayTracing
             if (godModeCamera && godModeCamera.mode == GodMode.Mode.STATIC && "Edit Camera".Click().nl())
                 godModeCamera.mode = GodMode.Mode.FPS;
 
-            ConfigurationsListBase.Inspect(ref configs);
-
-           
-
+            ConfigurationsSO_Base.Inspect(ref configs);
         }
 
-        public void Decode(CfgData data)
-        {
-            new CfgDecoder(data).DecodeTagsFor(this);
 
-            if (godModeCamera)
-                godModeCamera.mode = GodMode.Mode.LERP;
-
-            Mgmt.RequestLerps();
-        }
+        #endregion
     }
 }

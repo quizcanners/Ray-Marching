@@ -17,12 +17,11 @@ namespace QuizCanners.RayTracing
         public static RayRenderingManager instance;
         [SerializeField] private RayRendering_TracerConfigs configs;
 
-
         public RayRandering_SceneManager SceneManager = new RayRandering_SceneManager();
 
         public RayRandering_LightsManager LightsManager = new RayRandering_LightsManager();
 
-        private RayRenderingTarget _target;
+        [SerializeField] private RayRenderingTarget _target;
         public RayRenderingTarget Target
         {
             get { return _target; }
@@ -78,7 +77,6 @@ namespace QuizCanners.RayTracing
         private readonly ShaderProperty.ShaderKeyword DENOISING = new ShaderProperty.ShaderKeyword("RT_DENOISING");
         private readonly ShaderProperty.TextureValue PathTracingSourceBuffer = new ShaderProperty.TextureValue("_RayTracing_SourceBuffer", set_ScreenFillAspect: true);
         private readonly ShaderProperty.TextureValue PathTracingTargetBuffer = new ShaderProperty.TextureValue("_RayTracing_TargetBuffer", set_ScreenFillAspect: true);
-
 
         public void Swap()
         {
@@ -209,116 +207,6 @@ namespace QuizCanners.RayTracing
 
         #endregion
 
-        #region Inspector
-      
-
-        private string _setDirtyReason;
-
-        public static RayRenderingManager inspected;
-
-        protected bool _showDependencies;
-        private int _inspectedStuff = -1;
-
-        public void Inspect()
-        {
-            var changed = pegi.ChangeTrackStart();
-
-            inspected = this;
-
-            pegi.toggleDefaultInspector(this);
-            
-          
-            pegi.toggle(ref PauseAccumulation, icon.Play, icon.Pause);
-
-            var trg = Target;
-            if ("Target".editEnum(60, ref trg).nl())
-                Target = trg;
-
-            if ("Tracer".IsEntered(ref _inspectedStuff, 0).nl())
-            {
-
-                if (Target == RayRenderingTarget.RayMarching)
-                {
-                    "RAY-MARCHING".nl(PEGI_Styles.ListLabel);
-
-                    "Max Steps".edit(ref _maxSteps, 1, 400).nl();
-
-                    "Max Distance".edit(ref _maxDistance, 1, 50000).nl();
-
-                    "Smoothness:".nl();
-                    pegi.Nested_Inspect(ref smoothness); //.Inspect();
-                    pegi.nl();
-
-                    "Shadow Softness".nl();
-                    pegi.Nested_Inspect(ref shadowSoftness).nl();
-                }
-                else
-                {
-                    _rayTraceUseDielecrtic.Nested_Inspect().nl();
-                    _rayTraceUseCheckerboard.Nested_Inspect().nl();
-                    "RAY-INTERSECTION [frms: {0} | stability: {1}]".F((int)SceneManager.StableFrames, SceneManager.CameraShakeDebug)
-                        .nl(PEGI_Styles.ListLabel);
-
-                }
-
-                "DOF".nl();
-                pegi.Nested_Inspect(ref DOFdistance).nl();
-                var targ = DOFTargetStrength.TargetValue;
-                if ("DOF Strength".edit(90, ref targ, 0.0001f, 3f).nl())
-                    DOFTargetStrength.TargetValue = targ;
-
-                if (changed)
-                {
-                    lerpFinished = false;
-                    this.SkipLerp(lerpData);
-                    lerpFinished = true;
-                }
-
-                ConfigurationsListBase.Inspect(ref configs);
-            }
-
-            if ("Lights".IsEntered(ref _inspectedStuff, 1).nl())
-                LightsManager.Nested_Inspect().nl();
-
-            if ("Scene".IsEntered(ref _inspectedStuff, 2).nl())
-                SceneManager.Nested_Inspect().nl();
-
-            if ("Dependencies".IsEntered(ref _inspectedStuff, 4).nl())
-            {
-
-                if (!volumeTracingBaker)
-                        "Volume".edit(60, ref volumeTracingBaker).nl();
-                
-                "Volume Trace Layer".edit_Property(() => VolumeTracingCameraMask, this).nl();
-         
-                "Ray Trace Result Layer".edit_Property(() => RayTracingResultMask, this).nl();         
-            }
-
-    
-            if (changed)
-            {
-                UpdateShaderVariables();
-                SceneManager.StableFrames = 0;
-            }
-
-            if (playLerpAnimation)
-            {
-                "Lerp is Active".writeWarning();
-                "Dominant: {0} [{1}]".F(lerpData.dominantParameter, lerpData.MinPortion).nl();
-                pegi.nl();
-            }
-            else
-                "Lerp Done: {0} [{1}] | Dirty from: {2}".F(lerpData.dominantParameter, lerpData.MinPortion, _setDirtyReason).nl();
-
-          
-
-           
-        }
-
-        public string NameForDisplayPEGI() => "Ray Rendering";
-
-        #endregion
-
         #region Encode & Decode
 
         public CfgEncoder Encode()
@@ -367,9 +255,115 @@ namespace QuizCanners.RayTracing
             RequestLerps();
         }
 
-      
+
 
         #endregion
+
+
+        #region Inspector
+
+
+        private string _setDirtyReason;
+
+        public static RayRenderingManager inspected;
+
+        protected bool _showDependencies;
+        private int _inspectedStuff = -1;
+
+        public void Inspect()
+        {
+            var changed = pegi.ChangeTrackStart();
+
+            inspected = this;
+
+            pegi.toggleDefaultInspector(this);
+
+
+            pegi.toggle(ref PauseAccumulation, icon.Play, icon.Pause);
+
+            var trg = Target;
+            if ("Target".editEnum(60, ref trg).nl())
+                Target = trg;
+
+            if ("Tracer".IsEntered(ref _inspectedStuff, 0).nl())
+            {
+
+                if (Target == RayRenderingTarget.RayMarching)
+                {
+                    "RAY-MARCHING".nl(PEGI_Styles.ListLabel);
+
+                    "Max Steps".edit(ref _maxSteps, 1, 400).nl();
+
+                    "Max Distance".edit(ref _maxDistance, 1, 50000).nl();
+
+                    "Smoothness:".nl();
+                    pegi.Nested_Inspect(ref smoothness); //.Inspect();
+                    pegi.nl();
+
+                    "Shadow Softness".nl();
+                    pegi.Nested_Inspect(ref shadowSoftness).nl();
+                }
+                else
+                {
+                    _rayTraceUseDielecrtic.Nested_Inspect().nl();
+                    _rayTraceUseCheckerboard.Nested_Inspect().nl();
+                    "RAY-INTERSECTION [frms: {0} | stability: {1}]".F((int)SceneManager.StableFrames, SceneManager.CameraShakeDebug)
+                        .nl(PEGI_Styles.ListLabel);
+
+                }
+
+                "DOF".nl();
+                pegi.Nested_Inspect(ref DOFdistance).nl();
+                var targ = DOFTargetStrength.TargetValue;
+                if ("DOF Strength".edit(90, ref targ, 0.0001f, 3f).nl())
+                    DOFTargetStrength.TargetValue = targ;
+
+                if (changed)
+                {
+                    lerpFinished = false;
+                    this.SkipLerp(lerpData);
+                    lerpFinished = true;
+                }
+
+                ConfigurationsSO_Base.Inspect(ref configs);
+            }
+
+            LightsManager.enter_Inspect_AsList(ref _inspectedStuff, 1, exitLabel: "Lights Manager").nl();
+
+            SceneManager.enter_Inspect_AsList(ref _inspectedStuff, 2, exitLabel: "Scene Manager").nl();
+
+            if ("Dependencies".IsEntered(ref _inspectedStuff, 4).nl())
+            {
+
+                if (!volumeTracingBaker)
+                    "Volume".edit(60, ref volumeTracingBaker).nl();
+
+                "Volume Trace Layer".edit_Property(() => VolumeTracingCameraMask, this).nl();
+
+                "Ray Trace Result Layer".edit_Property(() => RayTracingResultMask, this).nl();
+            }
+
+
+            if (changed)
+            {
+                UpdateShaderVariables();
+                SceneManager.StableFrames = 0;
+            }
+
+            if (playLerpAnimation)
+            {
+                "Lerp is Active".writeWarning();
+                "Dominant: {0} [{1}]".F(lerpData.dominantParameter, lerpData.MinPortion).nl();
+                pegi.nl();
+            }
+            else
+                "Lerp Done: {0} [{1}] | Dirty from: {2}".F(lerpData.dominantParameter, lerpData.MinPortion, _setDirtyReason).nl();
+        }
+
+        public string NameForDisplayPEGI() => "Ray Rendering";
+
+        #endregion
+
     }
 
 

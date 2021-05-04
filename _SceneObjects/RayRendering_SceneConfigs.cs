@@ -6,7 +6,7 @@ namespace QuizCanners.RayTracing
 {
 
     [CreateAssetMenu(fileName = FILE_NAME, menuName = "Quiz Canners/Ray Renderer/" + FILE_NAME)]
-    public class RayRendering_SceneConfigs : ConfigurationsListGeneric<SceneConfig>
+    public class RayRendering_SceneConfigs : ConfigurationsSO_Generic<SceneConfig>
     {
         public const string FILE_NAME = "Ray Renderer Scene Config";
     }
@@ -23,7 +23,7 @@ namespace QuizCanners.RayTracing
             set
             {
                 ActiveConfig = value;
-                RayRenderingManager.inspected.SceneManager.Decode(data);
+                RayRenderingManager.inspected.SceneManager.Decode(ActiveConfig.data);
             }
 
         }

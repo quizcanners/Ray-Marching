@@ -774,13 +774,14 @@ MonoBehaviour:
     CameraShakeDebug: 0
   LightsManager:
     configs: {fileID: 11400000, guid: 6d3af2fe61c820248b7f59cad72d2484, type: 2}
+  _target: 3
   PauseAccumulation: 0
   RayTracingResultMask:
     serializedVersion: 2
     m_Bits: 1024
   VolumeTracingCameraMask:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 0
   volumeTracingBaker: {fileID: 105113281}
   stopUpdatingAfter: 500
   _maxSteps: 50
@@ -788,7 +789,7 @@ MonoBehaviour:
   twoBuffers:
   - {fileID: 8400000, guid: f154d97feee8e9941af4e8cf03a66be4, type: 2}
   - {fileID: 8400000, guid: 12c21df7634ccb24288293a7eae9e699, type: 2}
-  playLerpAnimation: 0
+  playLerpAnimation: 1
 --- !u!4 &1659842604351814258
 Transform:
   m_ObjectHideFlags: 0

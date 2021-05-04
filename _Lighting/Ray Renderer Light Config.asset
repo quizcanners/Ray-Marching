@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   configurations:
   - name: New LightConfig
-    data: col|36|r|5|0.868|g|5|0.868|b|5|0.868|a|1|1||sky|36|r|5|0.106|g|5|0.617|b|5|0.774|a|1|1||fog|24|r|1|1|g|1|1|b|1|1|a|1|1||
+    data: col|36|r|5|0.868|g|5|0.868|b|5|0.868|a|1|1||sky|36|r|5|0.106|g|5|0.617|b|5|0.774|a|1|1||fog|28|r|5|0.132|g|4|0.13|b|4|0.13||

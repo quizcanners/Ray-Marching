@@ -115,8 +115,8 @@ Transform:
   - {fileID: 8265793047538879306}
   - {fileID: 8537989787068184600}
   - {fileID: 3164471209538406772}
-  - {fileID: 4592391299406253998}
-  - {fileID: 1589422007315370121}
+  - {fileID: 3511082173699917749}
+  - {fileID: 4594703132756462493}
   - {fileID: 2119237651278193114}
   - {fileID: 3871030963072275576}
   - {fileID: 1842478826}
@@ -141,8 +141,8 @@ MonoBehaviour:
   cube3: {fileID: 7366523315770704238}
   cube4: {fileID: 6628227076829660961}
   cube5: {fileID: 2795153763262636071}
-  sphere0: {fileID: 9001421747642759009}
-  sphere1: {fileID: 6693348452452151288}
+  sphere0: {fileID: 7865197516894250198}
+  sphere1: {fileID: 6049262985729975572}
   light0: {fileID: 7838542503071406652}
 --- !u!1 &800137584267272196
 GameObject:
@@ -158,7 +158,7 @@ GameObject:
   - component: {fileID: 876394581201435321}
   - component: {fileID: 3971465651131541378}
   m_Layer: 0
-  m_Name: Cube_1
+  m_Name: RayMarchCube_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -191,6 +191,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   variableName: RayMarchCube_1
+  shape: 0
   _size:
     min: 0.01
     max: 1000
@@ -274,7 +275,7 @@ GameObject:
   - component: {fileID: 4154257722392745486}
   - component: {fileID: 3761407153598877544}
   m_Layer: 0
-  m_Name: Cube_2
+  m_Name: RayMarchCube_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -307,6 +308,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   variableName: RayMarchCube_2
+  shape: 0
   _size:
     min: 0.01
     max: 1000
@@ -387,7 +389,7 @@ GameObject:
   - component: {fileID: 2119237651278193114}
   - component: {fileID: 7838542503071406652}
   m_Layer: 0
-  m_Name: LightSource
+  m_Name: RayMarchLight_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -421,6 +423,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   variableName: RayMarchLight_0
+  shape: 0
   _size:
     min: 0.01
     max: 1000
@@ -442,7 +445,7 @@ GameObject:
   - component: {fileID: 9168990618274290907}
   - component: {fileID: 6465839026102088501}
   m_Layer: 0
-  m_Name: Cube_3
+  m_Name: RayMarchCube_3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -475,6 +478,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   variableName: RayMarchCube_3
+  shape: 0
   _size:
     min: 0.01
     max: 1000
@@ -558,7 +562,7 @@ GameObject:
   - component: {fileID: 3511082172173672291}
   - component: {fileID: 5032693267780625403}
   m_Layer: 0
-  m_Name: Cube_0
+  m_Name: RayMarchCube_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -591,6 +595,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   variableName: RayMarchCube_0
+  shape: 0
   _size:
     min: 0.01
     max: 1000
@@ -669,11 +674,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3511082173699917749}
+  - component: {fileID: 7865197516894250198}
   - component: {fileID: 3511082173699917754}
   - component: {fileID: 3511082173699917755}
   - component: {fileID: 3511082173699917752}
   m_Layer: 0
-  m_Name: Renderer
+  m_Name: RayMarchSphere_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -687,12 +693,33 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3511082173699917753}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_LocalPosition: {x: -3.4, y: 8.66, z: -10.74}
+  m_LocalScale: {x: 2.4, y: 2.4, z: 2.4}
   m_Children: []
-  m_Father: {fileID: 4592391299406253998}
-  m_RootOrder: 0
+  m_Father: {fileID: 6179333341917497476}
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7865197516894250198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3511082173699917753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8181eda1fc18fe47b7dad958f3bda38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  variableName: RayMarchSphere_0
+  shape: 0
+  _size:
+    min: 0.01
+    max: 1000
+    _value: 1.2
+  color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  roughtness: 0.5
+  matType: 1
 --- !u!33 &3511082173699917754
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -755,101 +782,6 @@ SphereCollider:
   serializedVersion: 2
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
---- !u!1 &3511082173915430236
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 3511082173915430239}
-  - component: {fileID: 3511082173915430232}
-  - component: {fileID: 3511082173915430233}
-  - component: {fileID: 3511082173915430238}
-  m_Layer: 0
-  m_Name: Renderer
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &3511082173915430239
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3511082173915430236}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 2}
-  m_Children: []
-  m_Father: {fileID: 1589422007315370121}
-  m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &3511082173915430232
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3511082173915430236}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &3511082173915430233
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3511082173915430236}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: a41b9f5a16bb3e84ba7de08d350f890d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!135 &3511082173915430238
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3511082173915430236}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4357439588016810343
 GameObject:
   m_ObjectHideFlags: 0
@@ -864,7 +796,7 @@ GameObject:
   - component: {fileID: 8572744496854099842}
   - component: {fileID: 8043976480797349451}
   m_Layer: 0
-  m_Name: Cube_4
+  m_Name: RayMarchCube_4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -897,6 +829,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   variableName: RayMarchCube_4
+  shape: 0
   _size:
     min: 0.01
     max: 1000
@@ -980,7 +913,7 @@ GameObject:
   - component: {fileID: 3317275180920145229}
   - component: {fileID: 3814114672758312687}
   m_Layer: 0
-  m_Name: Cube_5
+  m_Name: RayMarchCube_5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1013,6 +946,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   variableName: RayMarchCube_5
+  shape: 0
   _size:
     min: 0.01
     max: 1000
@@ -1177,6 +1111,123 @@ SphereCollider:
   serializedVersion: 2
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &5474838472238158040
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4594703132756462493}
+  - component: {fileID: 6049262985729975572}
+  - component: {fileID: 4281435101222313049}
+  - component: {fileID: 2945735138771675277}
+  - component: {fileID: 751850975775855930}
+  m_Layer: 0
+  m_Name: RayMarchSphere_1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4594703132756462493
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5474838472238158040}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -3.4, y: 8.66, z: -10.74}
+  m_LocalScale: {x: 2.4, y: 2.4, z: 2.4}
+  m_Children: []
+  m_Father: {fileID: 6179333341917497476}
+  m_RootOrder: 7
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6049262985729975572
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5474838472238158040}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8181eda1fc18fe47b7dad958f3bda38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  variableName: RayMarchSphere_1
+  shape: 0
+  _size:
+    min: 0.01
+    max: 1000
+    _value: 1.2
+  color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  roughtness: 0.5
+  matType: 1
+--- !u!33 &4281435101222313049
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5474838472238158040}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &2945735138771675277
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5474838472238158040}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a41b9f5a16bb3e84ba7de08d350f890d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!135 &751850975775855930
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5474838472238158040}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6191475113504627319
 GameObject:
   m_ObjectHideFlags: 0
@@ -1273,107 +1324,3 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &6484890302739086416
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4592391299406253998}
-  - component: {fileID: 9001421747642759009}
-  m_Layer: 0
-  m_Name: Sphere_0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &4592391299406253998
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6484890302739086416}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -3.4, y: 8.66, z: -10.74}
-  m_LocalScale: {x: 1.2, y: 1.2, z: 1.2}
-  m_Children:
-  - {fileID: 3511082173699917749}
-  m_Father: {fileID: 6179333341917497476}
-  m_RootOrder: 6
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &9001421747642759009
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6484890302739086416}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8181eda1fc18fe47b7dad958f3bda38, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  variableName: RayMarchSphere_0
-  _size:
-    min: 0.01
-    max: 1000
-    _value: 1.2
-  color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  roughtness: 0.5
-  matType: 1
---- !u!1 &6764038384532647947
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1589422007315370121}
-  - component: {fileID: 6693348452452151288}
-  m_Layer: 0
-  m_Name: Sphere_1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1589422007315370121
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6764038384532647947}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 2.94, z: 2.04}
-  m_LocalScale: {x: 1.4247451, y: 1.4247451, z: 1.4247451}
-  m_Children:
-  - {fileID: 3511082173915430239}
-  m_Father: {fileID: 6179333341917497476}
-  m_RootOrder: 7
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6693348452452151288
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6764038384532647947}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8181eda1fc18fe47b7dad958f3bda38, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  variableName: RayMarchSphere_1
-  _size:
-    min: 0.01
-    max: 1000
-    _value: 1.4247451
-  color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  roughtness: 0.5
-  matType: 1

@@ -13,13 +13,25 @@ namespace QuizCanners.RayTracing
     [ExecuteAlways]
     public class PrimitiveObject : MonoBehaviour, IPEGI, ICfgCustom, ILinkedLerping
     {
-
         public string variableName;
+
+        [SerializeField] public Shape shape;
 
         [SerializeField] private QcUtils.DynamicRangeFloat _size = new QcUtils.DynamicRangeFloat(0.01f, 5f, 1);
         [SerializeField] private Color color = Color.gray;
         [SerializeField] private float roughtness = 0.5f;
         [SerializeField] private MaterialType matType = MaterialType.dialectric;
+
+
+        public Vector3 GetSize() 
+        {
+            switch(shape) 
+            {
+                case Shape.Cube: return transform.localScale * 0.5f;
+                case Shape.Sphere: return transform.localScale.x * Vector3.one;
+                default: return transform.localScale;
+            }
+        }
 
         public enum MaterialType { disabled = 0, dialectric = 1, metallic = 2, emissive = 3, glass = 4 }
 
@@ -30,10 +42,8 @@ namespace QuizCanners.RayTracing
         private void SetShaderValues()
         {
             var tf = transform;
-            var localScaleForShader = tf.localScale * 0.5f;
-
             positionAndMat.GlobalValue = tf.position.ToVector4((int)matType);
-            sizeAndNothing.GlobalValue = localScaleForShader.ToVector4();
+            sizeAndNothing.GlobalValue = GetSize().ToVector4();
             colorAndRoughness.GlobalValue = color.Alpha(roughtness);
         }
 
@@ -61,24 +71,38 @@ namespace QuizCanners.RayTracing
 
         public void Inspect()
         {
-         
+
+            pegi.nl();
 
             pegi.toggleDefaultInspector(this).nl();
 
-            if ("Name".editDelayed(ref variableName).nl())
+            "Shape".editEnum(ref shape).nl();
+
+           //if (shape == Shape.Cube)
+             //   "For Cube put position in the bottom courner".writeHint();
+
+            if ("Name".editDelayed(60, ref variableName))
                 InitializeProperties();
+
+            if (gameObject.name != variableName && "Set GO name".Click())
+                gameObject.name = variableName;
+
+            pegi.nl();
 
             var changed = pegi.ChangeTrackStart();
 
             _size.Inspect();
+
+
 
             if (changed)
             {
                 transform.localScale = Vector3.one * _size.Value;
             }
 
+            pegi.nl();
 
-            "Color".edit(ref color).nl(); // = Color.gray;
+            "Color".edit(60, ref color).nl(); // = Color.gray;
             "Roughness".edit(ref roughtness, 0, 1).nl();
 
             "Surface".editEnum(ref matType).nl();
@@ -130,7 +154,7 @@ namespace QuizCanners.RayTracing
 
         public void Portion(LerpData ld)
         {
-            if (_isLerping)
+            if (_isLerping && lrpPosition!= null)
             {
                 lrpPosition.Portion(ld);
                 lrpScale.Portion(ld);
@@ -139,7 +163,7 @@ namespace QuizCanners.RayTracing
 
         public void Lerp(LerpData ld, bool canSkipLerp)
         {
-            if (_isLerping)
+            if (_isLerping && lrpPosition!= null)
             {
                 lrpPosition.Lerp(ld);
                 lrpScale.Lerp(ld);
@@ -208,6 +232,11 @@ namespace QuizCanners.RayTracing
         }
 
         #endregion
+
+        public enum Shape 
+        {
+            Cube, Sphere
+        } 
     }
 
 

@@ -70,11 +70,11 @@ namespace QuizCanners.RayTracing
                     StableFrames += 1;
 
                 if (Mgmt.Target == RayRenderingTarget.Volume)
-                    MainCamera.cullingMask = Mgmt.VolumeTracingCameraMask;
+                    MainCamera.cullingMask = Mgmt.GeometryCameraMask;
 
                 if (isScreen)
                 {
-                    MainCamera.cullingMask = Mgmt.RayTracingResultMask;
+                    MainCamera.cullingMask = Mgmt.RayTracingResultUiMask;
 
                     MainCamera.clearFlags = CameraClearFlags.Nothing;
 
@@ -112,7 +112,7 @@ namespace QuizCanners.RayTracing
 
             if (ld.Done)
             {
-                if (godModeCamera && godModeCamera.mode != GodMode.Mode.FPS)
+                if (godModeCamera)
                     godModeCamera.mode = GodMode.Mode.FPS;
             }
         }
@@ -178,6 +178,11 @@ namespace QuizCanners.RayTracing
         {
             pegi.nl();
 
+            "RAY-INTERSECTION [frms: {0} | stability: {1}]".F((int)StableFrames, CameraShakeDebug)
+                .nl(PEGI_Styles.ListLabel);
+
+            pegi.nl();
+
             if (!MainCamera)
             {
                 "God Mode".edit(ref godModeCamera);
@@ -206,7 +211,7 @@ namespace QuizCanners.RayTracing
 
             if (!rayTraceResult)
                 "Ray-Tracing result".edit(ref rayTraceResult).nl();
-            else if (!Mgmt.RayTracingResultMask.Contains(rayTraceResult.layer))
+            else if (!Mgmt.RayTracingResultUiMask.Contains(rayTraceResult.layer))
             {
                 "Tracing Result Mask Doesn't Contain Tracer's Layer".writeWarning();
                 rayTraceResult.ClickHighlight();

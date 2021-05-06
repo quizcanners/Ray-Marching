@@ -98,10 +98,12 @@
 
 					float3 normal = EstimateNormal(position);
 
+					float outOfBounds;
+
 					float4 bake = SampleVolume(_RayMarchingVolume
 						, position,
 						_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
-						_RayMarchingVolumeVOLUME_H_SLICES);
+						_RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
 					float deDott = max(0, dot(-direction, normal));
 
@@ -158,11 +160,11 @@
 					float reflectedDott = max(0, dot(reflected, reflectedNormal));
 
 				//	return reflectedDott;
-
+	
 					float4 bakeReflected = SampleVolume(_qcPp_DestBuffer//_RayMarchingVolume
 						, reflectionPos,
 						_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
-						_RayMarchingVolumeVOLUME_H_SLICES);
+						_RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
 					float3 toCenterVecRefl = lightSource - reflectionPos;
 

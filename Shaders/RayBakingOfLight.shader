@@ -57,11 +57,11 @@
 
 
 				float3 offsetPos = worldPos + _RayMarchingVolumeVOLUME_POSITION_OFFSET.xyz;
-
+				float outOfBounds;
 				float4 previous = SampleVolume(_MainTex
 					, offsetPos
 					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE,
-					_RayMarchingVolumeVOLUME_H_SLICES);
+					_RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
 				clip(1500 - previous.a);
 

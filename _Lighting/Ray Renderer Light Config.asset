@@ -13,5 +13,9 @@ MonoBehaviour:
   m_Name: Ray Renderer Light Config
   m_EditorClassIdentifier: 
   configurations:
-  - name: New LightConfig
-    data: col|36|r|5|0.868|g|5|0.868|b|5|0.868|a|1|1||sky|36|r|5|0.106|g|5|0.617|b|5|0.774|a|1|1||fog|28|r|5|0.132|g|4|0.13|b|4|0.13||
+  - name: Blue Sky
+    data: col|36|r|5|0.868|g|5|0.804|b|5|0.553|a|1|1||sky|26|g|5|0.389|b|5|0.509|a|1|1||fog|35|r|5|0.216|g|4|0.38|b|5|0.427|a|1|1||
+  - name: Night
+    data: col|36|r|5|0.239|g|5|0.273|b|5|0.434|a|1|1||sky|36|r|5|0.094|g|5|0.093|b|5|0.093|a|1|1||fog|30|r|5|0.059|g|5|0.059|b|5|0.075||
+  - name: Mid Day
+    data: col|36|r|5|0.538|g|5|0.435|b|5|0.145|a|1|1||sky|36|r|5|0.302|g|5|0.477|b|5|0.538|a|1|1||fog|29|r|5|0.231|g|5|0.345|b|4|0.38||

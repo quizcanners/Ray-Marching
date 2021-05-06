@@ -170,10 +170,12 @@
 
 				float reflectedDott = max(0, dot(reflected, reflectedNormal));
 
+				float outOfBounds;
+
 				float4 bakeReflected = SampleVolume(_RayMarchingVolume
 					, reflectionPos,
 					_RayMarchingVolumeVOLUME_POSITION_N_SIZE,
-					_RayMarchingVolumeVOLUME_H_SLICES);
+					_RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
 				float3 toCenterVecRefl = lightSource - reflectionPos;
 

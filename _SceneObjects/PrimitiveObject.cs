@@ -165,8 +165,8 @@ namespace QuizCanners.RayTracing
         {
             if (_isLerping && lrpPosition!= null)
             {
-                lrpPosition.Lerp(ld);
-                lrpScale.Lerp(ld);
+                lrpPosition.Lerp(ld, canSkipLerp);
+                lrpScale.Lerp(ld, canSkipLerp);
                 if (ld.Done)
                     _isLerping = false;
             }

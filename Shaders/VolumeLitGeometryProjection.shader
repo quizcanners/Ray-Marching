@@ -98,17 +98,18 @@
 
 			 float3 noise = tex2Dlod(_Global_Noise_Lookup, float4(screenUV * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0));
 
+			float outOfBounds;
 
 			 float4 tex = SampleVolume(_RayMarchingVolume, i.worldPos
 				 - i.viewDir.xyz * _RayMarchingVolumeVOLUME_POSITION_OFFSET.w * noise.r * 4
 				 , _RayMarchingVolumeVOLUME_POSITION_N_SIZE
-				 , _RayMarchingVolumeVOLUME_H_SLICES);
+				 , _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
 			 float4 tex2 = SampleVolume(_RayMarchingVolume, i.worldPos
 				 - i.viewDir.xyz * _RayMarchingVolumeVOLUME_POSITION_OFFSET.w *(1 + noise.g * 4)
 				 //+ i.normal.xyz * _RayMarchingVolumeVOLUME_POSITION_OFFSET.w
 				 , _RayMarchingVolumeVOLUME_POSITION_N_SIZE
-				 , _RayMarchingVolumeVOLUME_H_SLICES);
+				 , _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
 			 tex = (tex + tex2) * 0.5;
 

@@ -43,22 +43,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df86ad1390c6aa349a96f0d6a60bce43, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  godModeCamera: {fileID: 0}
-  rayTracingResultMask:
+  configs: {fileID: 11400000, guid: d3a61179dc8db2c4fa841593866d73f4, type: 2}
+  SceneManager:
+    godModeCamera: {fileID: 0}
+    sceneElements: {fileID: 0}
+    configs: {fileID: 0}
+    rayTraceResult: {fileID: 0}
+    accumulatedResult: {fileID: 0}
+    StableFrames: 0
+    CameraShakeDebug: 0
+  LightsManager:
+    configs: {fileID: 0}
+  _target: 0
+  PauseAccumulation: 0
+  RayTracingResultUiMask:
     serializedVersion: 2
-    m_Bits: 134217728
-  volumeTracingCameraMask:
+    m_Bits: 1024
+  GeometryCameraMask:
     serializedVersion: 2
     m_Bits: 1
   volumeTracingBaker: {fileID: 0}
-  rayTracingScreenBakingPlane: {fileID: 0}
-  rayTracingScreenOutputPlane: {fileID: 0}
-  sceneConfiguration: {fileID: 0}
+  stopUpdatingAfter: 500
   _maxSteps: 50
   _maxDistance: 9454
   twoBuffers:
   - {fileID: 8400000, guid: f154d97feee8e9941af4e8cf03a66be4, type: 2}
   - {fileID: 8400000, guid: 12c21df7634ccb24288293a7eae9e699, type: 2}
-  stopUpdatingAfter: 500
   playLerpAnimation: 0
-  configs: {fileID: 11400000, guid: d3a61179dc8db2c4fa841593866d73f4, type: 2}

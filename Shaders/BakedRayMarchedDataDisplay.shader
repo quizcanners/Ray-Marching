@@ -81,7 +81,11 @@
 
 				float4 normalAndDist = SdfNormalAndDistance(o.worldPos); //o.normal.xyz *
 
-			    float internal = 1 - saturate(-normalAndDist.w * scale);
+
+
+			   // float internal = 1 - saturate(-normalAndDist.w * scale);
+
+				//return internal;
 
 				//return   internal;
 
@@ -91,23 +95,24 @@
 				//float internal = saturate(-normalAndDist.w);
 
 				//float useSdf = min(1, internal * scale * 5999);
-
-				float4 light = SampleVolume(_RayMarchingVolume, o.worldPos
+				float outOfBounds;
+				float4 col = SampleVolume(_RayMarchingVolume, o.worldPos
 					// + (useSdf * normalAndDist.rgb * internal + o.normal.xyz * (1-useSdf)) *
 					//+ o.normal.xyz *scale
 				, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
-				, _RayMarchingVolumeVOLUME_H_SLICES);
+				, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
+		
 				//return light;
 
-				float4 col = light;//(light + unity_FogColor *internal);
+				//float4 col = light;//(light + unity_FogColor *internal);
 				//col = max(col, float4(0.1, 0.1, 0.1, 0));
 				//return useSdf;
 
-				float unFogged = min(1, col.a);
+				float unFogged = smoothstep(0.5, 0, outOfBounds);//min(1, col.a/100);
 
 			
-				col.rgb = (tex.rgb * col.rgb * unFogged + unity_FogColor.rgb * (1 - unFogged)) *internal;
+				col.rgb = (tex.rgb * col.rgb * unFogged + unity_FogColor.rgb * (1 - unFogged));// *internal;
 				
 				//return tex;
 

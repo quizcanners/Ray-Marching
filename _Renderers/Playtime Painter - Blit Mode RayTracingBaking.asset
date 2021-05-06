@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92f93ff3893e03f48adf5d063e120a5b, type: 3}
   m_Name: Playtime Painter - Blit Mode RayTracingBaking
   m_EditorClassIdentifier: 
+  shader: {fileID: 4800000, guid: 73833b5f1381bf640a70c83bf508ccfd, type: 3}
+  sourceTexture: {fileID: 0}
   selectSourceTexture: 0
   showColorSliders: 1
   usingWorldSpacePosition: 0
   doubleBuffer: 0
-  shader: {fileID: 4800000, guid: 73833b5f1381bf640a70c83bf508ccfd, type: 3}
-  sourceTexture: {fileID: 0}

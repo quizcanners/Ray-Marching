@@ -171,7 +171,7 @@ namespace QuizCanners.RayTracing
 
             SceneManager.enter_Inspect_AsList(ref _inspectedStuff, 3, exitLabel: "Scene Manager").nl();
 
-            if ("Dependencies".IsEntered(ref _inspectedStuff, 4).nl())
+            if ("Dependencies".isEntered(ref _inspectedStuff, 4).nl())
             {
                 if (!volumeTracingBaker)
                     "Volume".edit(60, ref volumeTracingBaker).nl();

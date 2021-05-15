@@ -2,13 +2,18 @@
 
 using QuizCanners.CfgDecode;
 using QuizCanners.Lerp;
+using System.Collections.Generic;
 
 namespace QuizCanners.RayTracing
 {
     public class RayTracingSceneTest : RayTracingSceneBase
     {
         public PrimitiveObject cube0, cube1, cube2, cube3, cube4, cube5, sphere0, sphere1, light0;
-        
+
+        public List<VolumeShapeDraw> VolumeShapeDraws;
+
+
+
         #region Encode & Decode
         
         public override void Decode(string tg, CfgData data)

@@ -9,7 +9,7 @@ namespace QuizCanners.RayTracing
     [Serializable]
     public class RayRandering_LightsManager : IPEGI, ILinkedLerping, ICfgCustom, IPEGI_ListInspect
     {
-        [SerializeField] private RayRendering_LightConfigs configs;
+        [SerializeField] public RayRendering_LightConfigs Configs;
 
         private LinkedLerp.MaterialColor _sunLightColor = new LinkedLerp.MaterialColor("_RayMarchLightColor", Color.grey, 10);
         private LinkedLerp.MaterialColor _skyColor = new LinkedLerp.MaterialColor("_RayMarchSkyColor", Color.grey, 10);
@@ -18,6 +18,7 @@ namespace QuizCanners.RayTracing
         protected RayRenderingManager Mgmt => RayRenderingManager.instance;
 
         #region Encode & Decode
+        public CfgEncoder EncodeSelectedIndex => Configs.Encode();
         public void Decode(CfgData data)
         {
             new CfgDecoder(data).DecodeTagsFor(this);
@@ -30,6 +31,7 @@ namespace QuizCanners.RayTracing
                 case "col": _sunLightColor.TargetValue = data.ToColor(); break;
                 case "sky": _skyColor.TargetValue = data.ToColor(); break;
                 case "fog": _fogColor.TargetValue = data.ToColor(); break;
+
             }
         }
 
@@ -75,7 +77,7 @@ namespace QuizCanners.RayTracing
             if ("Fog Color".edit(ref col).nl())
                 _fogColor.TargetValue = col;
 
-            ConfigurationsSO_Base.Inspect(ref configs);
+            ConfigurationsSO_Base.Inspect(ref Configs);
         }
 
         public void InspectInList(int ind, ref int edited)
@@ -83,10 +85,10 @@ namespace QuizCanners.RayTracing
             if (icon.Enter.Click() || "Lights".ClickLabel())
                 edited = ind;
 
-            if (!configs)
-                "CFG".edit(60, ref configs);
+            if (!Configs)
+                "CFG".edit(60, ref Configs);
             else
-                configs.InspectShortcut();
+                Configs.InspectShortcut();
         }
 
         #endregion

@@ -92,9 +92,9 @@
 						}
 					}
 
-					float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.screenPos.xy * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0));
+				//	float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.screenPos.xy * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0));
 
-					noise.rgb -= 0.5;
+					//noise.rgb -= 0.5;
 
 					float3 normal = EstimateNormal(position);
 
@@ -228,7 +228,7 @@
 					col = max(0, col - 0.004);
 					col = (col*(6.2*col + .5)) / (col*(6.2*col + 1.7) + 0.06);
 
-					col.rgb += noise.rgb*col.rgb*0.2;
+					//col.rgb += noise.rgb*col.rgb*0.2;
 
 					return 	col;
 

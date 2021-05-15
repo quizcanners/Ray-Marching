@@ -45,6 +45,8 @@ uniform float4 RayMarchLight_0_Size;
 uniform float4 _RayMarchSkyColor;
 uniform float4 _RayMarchLightColor;
 
+#define MAX_VOLUME_ALPHA 1500//1e10
+
 // Scenes
 float3 getSkyColor(float3 rd) {
 	float3 col = Mix(unity_FogColor.rgb, _RayMarchSkyColor.rgb, 0.5 + 0.5*rd.y);
@@ -367,6 +369,21 @@ inline float Reflection(float3 start, float3 direction, float mint, float k, out
 	return  closest / mint;
 }
 
+inline float4 NormalAndDistance(float3 pos) {
+
+	float EPSILON = 0.01f;
+
+	float center = SceneSdf(float3(pos.x, pos.y, pos.z));
+
+	float3 normal = normalize(float3(
+		center - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z)),
+		center - SceneSdf(float3(pos.x, pos.y - EPSILON, pos.z)),
+		center - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON))
+		));
+
+	return float4(normal, max(0,center));
+}
+
 inline float3 EstimateNormal(float3 pos) {
 
 	float EPSILON = 0.01f;
@@ -378,12 +395,6 @@ inline float3 EstimateNormal(float3 pos) {
 		center - SceneSdf(float3(pos.x, pos.y - EPSILON, pos.z)),
 		center - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON))
 		));
-
-	/*return normalize(float3(
-		SceneSdf(float3(pos.x + EPSILON, pos.y, pos.z)) - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z)),
-		SceneSdf(float3(pos.x, pos.y + EPSILON, pos.z)) - SceneSdf(float3(pos.x, pos.y - EPSILON, pos.z)),
-		SceneSdf(float3(pos.x, pos.y, pos.z + EPSILON)) - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON))
-		));*/
 }
 
 

@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
+  m_AmbientSkyColor: {r: 1, g: 1, b: 1, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -164,7 +164,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 20
-  offsetClip: 0
+  offsetClip: 0.01
   sensitivity: 5
   _disableRotation: 0
   rotateWithoutRmb: 0
@@ -766,33 +766,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df86ad1390c6aa349a96f0d6a60bce43, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  BuffersManager:
+    _volumeTracingBaker: {fileID: 105113281}
+    _twoBuffers:
+    - {fileID: 8400000, guid: f154d97feee8e9941af4e8cf03a66be4, type: 2}
+    - {fileID: 8400000, guid: 12c21df7634ccb24288293a7eae9e699, type: 2}
+    _stopUpdatingAfterFrames: 500
   TracerManager:
     configs: {fileID: 11400000, guid: d3a61179dc8db2c4fa841593866d73f4, type: 2}
     _target: 2
     _maxSteps: 50
     _maxDistance: 10000
   SceneManager:
-    godModeCamera: {fileID: 120406102}
-    sceneElements: {fileID: 1491823923}
-    configs: {fileID: 11400000, guid: e49960bcafacad149b16c028aec663c2, type: 2}
-    rayTraceResult: {fileID: 1524379921}
-    accumulatedResult: {fileID: 1600838031}
+    Configs: {fileID: 11400000, guid: e49960bcafacad149b16c028aec663c2, type: 2}
+    _godModeCamera: {fileID: 120406102}
+    _sceneElements: {fileID: 1491823923}
+    _rayTraceResult: {fileID: 1524379921}
+    _accumulatedResult: {fileID: 1600838031}
     StableFrames: 0
     CameraShakeDebug: 0
   LightsManager:
-    configs: {fileID: 11400000, guid: 6d3af2fe61c820248b7f59cad72d2484, type: 2}
-  volumeTracingBaker: {fileID: 105113281}
-  PauseAccumulation: 0
+    Configs: {fileID: 11400000, guid: 6d3af2fe61c820248b7f59cad72d2484, type: 2}
   RayTracingResultUiMask:
     serializedVersion: 2
     m_Bits: 1024
   GeometryCameraMask:
     serializedVersion: 2
     m_Bits: 1
-  stopUpdatingAfter: 500
-  twoBuffers:
-  - {fileID: 8400000, guid: f154d97feee8e9941af4e8cf03a66be4, type: 2}
-  - {fileID: 8400000, guid: 12c21df7634ccb24288293a7eae9e699, type: 2}
 --- !u!4 &1659842604351814258
 Transform:
   m_ObjectHideFlags: 0

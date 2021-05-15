@@ -12,6 +12,11 @@ namespace QuizCanners.RayTracing
     public class VolumeTracingBaker : MonoBehaviour, IPEGI
     {
         public bool bakingEnabled = true;
+        public int LocationVersion 
+        {
+            get;
+            private set;
+        }
 
         public RenderTexture _texA;
         public RenderTexture _texB;
@@ -38,20 +43,23 @@ namespace QuizCanners.RayTracing
             }
         }
 
-        private void Paint()
+        public void Paint(Material withMaterial) 
         {
-            if (Target && Source && material)
+            if (Target && Source && withMaterial)
             {
-                RenderTextureBuffersManager.BlitGL(Source, Target, material);
+                RenderTextureBuffersManager.BlitGL(Source, Target, withMaterial);
                 if (volume)
                     volume.Texture = Target;
+
                 targetIsA = !targetIsA;
-              
+
+                _renderedAtFrame = Time.frameCount;
             }
         }
 
         private Vector3 _previous = Vector3.zero;
         private Vector4 _previousDiff = Vector3.zero;
+        private int _renderedAtFrame;
 
         public void SetBakeDirty() => framesToBake = 300;
 
@@ -61,8 +69,6 @@ namespace QuizCanners.RayTracing
         {
             if (bakingEnabled)
             {
-               
-
                 if (volume)
                 {
                     var current = volume.PosSize4Shader.XYZ();
@@ -71,16 +77,17 @@ namespace QuizCanners.RayTracing
                     if (diff != _previousDiff)
                     {
                         PositionOffsetAndScale.GlobalValue = diff;
+                        LocationVersion++;
                         SetBakeDirty();
                     }
                     _previousDiff = diff;
                     _previous = current;
                 }
 
-                if (framesToBake > 0)
+                if (framesToBake > 0 && (_renderedAtFrame != Time.frameCount))
                 {
                     framesToBake--;
-                    Paint();
+                    Paint(material);
                 }
             }
         }
@@ -117,7 +124,7 @@ namespace QuizCanners.RayTracing
             "Material".edit(ref material).nl();
 
             if ("Render".Click().nl())
-                Paint();
+                Paint(material);
 
         }
 

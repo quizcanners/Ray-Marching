@@ -14,18 +14,19 @@ namespace QuizCanners.RayTracing
     [Serializable]
     public class RayRandering_SceneManager : IPEGI, ILinkedLerping, ICfgCustom, IPEGI_ListInspect
     {
-        [SerializeField] public GodMode godModeCamera;
-        [SerializeField] public RayTracingSceneBase sceneElements;
-        [SerializeField] public RayRendering_SceneConfigs configs;
-        [SerializeField] public GameObject rayTraceResult;
-        [SerializeField] public RawImage accumulatedResult;
+        [SerializeField] public RayRendering_SceneConfigs Configs;
+        [SerializeField] private GodMode _godModeCamera;
+        [SerializeField] private RayTracingSceneBase _sceneElements;
+        [SerializeField] private GameObject _rayTraceResult;
+        [SerializeField] private RawImage _accumulatedResult;
 
         public float StableFrames;
         private Vector3 _previousCamPosition = Vector3.zero;
         private Quaternion _previousCamRotation = Quaternion.identity;
         public float CameraShakeDebug;
+        private bool _pauseAccumulation;
 
-        public Camera MainCamera => godModeCamera ? godModeCamera.MainCam : null;
+        public Camera MainCamera => _godModeCamera ? _godModeCamera.MainCam : null;
         protected RayRenderingManager Mgmt => RayRenderingManager.instance;
 
         public void SetDirty()
@@ -33,15 +34,15 @@ namespace QuizCanners.RayTracing
             StableFrames = 0;
         }
 
-        public void Swap(RenderTexture tex) 
+        public void OnSwap(RenderTexture currentTargetBuffer) 
         {
             if (MainCamera)
-                MainCamera.targetTexture = tex;
-            if (accumulatedResult)
-                accumulatedResult.texture = tex;
+                MainCamera.targetTexture = currentTargetBuffer;
+            if (_accumulatedResult)
+                _accumulatedResult.texture = currentTargetBuffer;
         }
 
-        public void ManagedUpdate() 
+        public void ManagedUpdate(out int stableFrames) 
         {
             var isScreen = Mgmt.TargetIsScreenBuffer;
 
@@ -61,7 +62,7 @@ namespace QuizCanners.RayTracing
 
                     CameraShakeDebug = 1 - Mathf.Clamp01(CameraShakeDebug);
 
-                    if (Mgmt.PauseAccumulation)
+                    if (_pauseAccumulation)
                         StableFrames = 0;
                     else
                         StableFrames = StableFrames * CameraShakeDebug + CameraShakeDebug;
@@ -93,37 +94,39 @@ namespace QuizCanners.RayTracing
                 }
             }
 
-            if (rayTraceResult)
-                rayTraceResult.SetActive(isScreen);
+            if (_rayTraceResult)
+                _rayTraceResult.SetActive(isScreen);
 
-            if (accumulatedResult)
-                accumulatedResult.gameObject.SetActive(isScreen);
+            if (_accumulatedResult)
+                _accumulatedResult.gameObject.SetActive(isScreen);
+
+            stableFrames = (int)StableFrames;
 
         }
 
         #region Linked Lerp
         public void Lerp(LerpData ld, bool canSkipLerp)
         {
-            if (sceneElements)
-                sceneElements.Lerp(ld, canSkipLerp);
+            if (_sceneElements)
+                _sceneElements.Lerp(ld, canSkipLerp);
 
-            if (godModeCamera)
-                godModeCamera.Lerp(ld, canSkipLerp);
+            if (_godModeCamera)
+                _godModeCamera.Lerp(ld, canSkipLerp);
 
             if (ld.Done)
             {
-                if (godModeCamera)
-                    godModeCamera.mode = GodMode.Mode.FPS;
+                if (_godModeCamera)
+                    _godModeCamera.mode = GodMode.Mode.FPS;
             }
         }
 
         public void Portion(LerpData ld)
         {
-            if (sceneElements)
-                sceneElements.Portion(ld);
+            if (_sceneElements)
+                _sceneElements.Portion(ld);
 
-            if (godModeCamera)
-                godModeCamera.Portion(ld);
+            if (_godModeCamera)
+                _godModeCamera.Portion(ld);
         }
         #endregion
 
@@ -132,8 +135,8 @@ namespace QuizCanners.RayTracing
         {
             switch (key)
             {
-                case "se": sceneElements.DecodeFull(data); break;
-                case "gm": godModeCamera.Decode(data); break;
+                case "se": _sceneElements.DecodeFull(data); break;
+                case "gm": _godModeCamera.Decode(data); break;
                 case "depth": MainCamera.depthTextureMode = (DepthTextureMode)data.ToInt(); break;
             }
         }
@@ -141,8 +144,8 @@ namespace QuizCanners.RayTracing
         public CfgEncoder Encode()
         {
             var cody = new CfgEncoder()
-                .Add("se", sceneElements)
-                .Add("gm", godModeCamera);
+                .Add("se", _sceneElements)
+                .Add("gm", _godModeCamera);
 
             if (MainCamera)
                 cody.Add("depth", (int)MainCamera.depthTextureMode);
@@ -154,8 +157,8 @@ namespace QuizCanners.RayTracing
         {
             new CfgDecoder(data).DecodeTagsFor(this);
 
-            if (godModeCamera)
-                godModeCamera.mode = GodMode.Mode.LERP;
+            if (_godModeCamera)
+                _godModeCamera.mode = GodMode.Mode.LERP;
 
             Mgmt.RequestLerps();
         }
@@ -168,14 +171,21 @@ namespace QuizCanners.RayTracing
             if (icon.Enter.Click() || "Scene".ClickLabel())
                 edited = ind;
 
-            if (!godModeCamera)
-                pegi.edit(ref godModeCamera);
+            if (!_godModeCamera)
+                pegi.edit(ref _godModeCamera);
+            else if (!_sceneElements)
+                pegi.edit(ref _sceneElements);
+            else if (!_accumulatedResult)
+                pegi.edit(ref _accumulatedResult);
 
 
-            if (!configs)
-                "CFG".edit(60, ref configs);
+            if (!Configs)
+                "CFG".edit(60, ref Configs);
             else
-                configs.InspectShortcut();
+                Configs.InspectShortcut();
+
+            pegi.toggle(ref _pauseAccumulation, icon.Play, icon.Pause);
+
         }
 
         public void Inspect()
@@ -189,10 +199,10 @@ namespace QuizCanners.RayTracing
 
             if (!MainCamera)
             {
-                "God Mode".edit(ref godModeCamera);
+                "God Mode".edit(ref _godModeCamera);
 
                 if (icon.Search.Click().nl())
-                    godModeCamera = Object.FindObjectOfType<GodMode>();
+                    _godModeCamera = Object.FindObjectOfType<GodMode>();
 
                 return;
             }
@@ -208,27 +218,26 @@ namespace QuizCanners.RayTracing
 
             "This will save setup of current scene objects".writeHint();
 
-            "Scene Elements Collection".edit(ref sceneElements).nl();
+            "Scene Elements Collection".edit(ref _sceneElements).nl();
 
-            if (!accumulatedResult)
-                "Accumulated Result".edit(ref accumulatedResult).nl();
+            if (!_accumulatedResult)
+                "Accumulated Result".edit(ref _accumulatedResult).nl();
 
-            if (!rayTraceResult)
-                "Ray-Tracing result".edit(ref rayTraceResult).nl();
-            else if (!Mgmt.RayTracingResultUiMask.Contains(rayTraceResult.layer))
+            if (!_rayTraceResult)
+                "Ray-Tracing result".edit(ref _rayTraceResult).nl();
+            else if (!Mgmt.RayTracingResultUiMask.Contains(_rayTraceResult.layer))
             {
                 "Tracing Result Mask Doesn't Contain Tracer's Layer".writeWarning();
-                rayTraceResult.ClickHighlight();
+                _rayTraceResult.ClickHighlight();
                 pegi.nl();
             }
 
-            if (godModeCamera && godModeCamera.mode == GodMode.Mode.STATIC && "Edit Camera".Click().nl())
-                godModeCamera.mode = GodMode.Mode.FPS;
+            if (_godModeCamera && _godModeCamera.mode == GodMode.Mode.STATIC && "Edit Camera".Click().nl())
+                _godModeCamera.mode = GodMode.Mode.FPS;
 
-            ConfigurationsSO_Base.Inspect(ref configs);
+            ConfigurationsSO_Base.Inspect(ref Configs);
         }
-
-
+        
         #endregion
     }
 }

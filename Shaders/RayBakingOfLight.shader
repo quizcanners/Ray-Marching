@@ -28,7 +28,7 @@
 			#pragma fragment frag
 			#pragma multi_compile __ RT_USE_DIELECTRIC
 			#pragma multi_compile __ RT_USE_CHECKERBOARD
-			#pragma multi_compile __ _IS_RAY_MARCHING
+			//#pragma multi_compile __ _IS_RAY_MARCHING
 			#pragma multi_compile __ RT_DENOISING
 
 			struct v2f {
@@ -63,7 +63,7 @@
 					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE,
 					_RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
-				clip(1500 - previous.a);
+				clip(MAX_VOLUME_ALPHA - previous.a);
 
 				float2 screenUV = o.texcoord.xy * (4 * _CosTime.y) + _SinTime.x;
 
@@ -71,7 +71,10 @@
 				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(screenUV * (123.12345678)
 					+ float2(_SinTime.w, _CosTime.w) * 32.12345612, 0, 0));
 
-				float3 rayDirection = normalize(noise.rgb - 0.5);
+
+				float4 nrmDist = NormalAndDistance(worldPos);
+
+				float3 rayDirection = normalize(nrmDist.xyz / (nrmDist.w * 10 + 1)  + (noise.rgb - 0.5));
 
 				/*
 				#if RT_DENOISING

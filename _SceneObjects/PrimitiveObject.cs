@@ -16,12 +16,10 @@ namespace QuizCanners.RayTracing
         public string variableName;
 
         [SerializeField] public Shape shape;
-
         [SerializeField] private QcUtils.DynamicRangeFloat _size = new QcUtils.DynamicRangeFloat(0.01f, 5f, 1);
         [SerializeField] private Color color = Color.gray;
         [SerializeField] private float roughtness = 0.5f;
         [SerializeField] private MaterialType matType = MaterialType.dialectric;
-
 
         public Vector3 GetSize() 
         {
@@ -71,7 +69,6 @@ namespace QuizCanners.RayTracing
 
         public void Inspect()
         {
-
             pegi.nl();
 
             pegi.toggleDefaultInspector(this).nl();

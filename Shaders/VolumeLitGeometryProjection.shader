@@ -41,10 +41,10 @@
 			 float4 screenPos : TEXCOORD1;
 			 float4 projPos : TEXCOORD2;
 			 //float3 VL		: TEXCOORD3;
-			 float3 normal	: TEXCOORD4;
+			 float3 normal	: TEXCOORD3;
 			 //float3 ViewT	: TEXCOORD5;
-			 float3 viewDir	: TEXCOORD6;
-			 float3 worldPos : TEXCOORD7;
+			 float3 viewDir	: TEXCOORD4;
+			 float3 worldPos : TEXCOORD5;
 		   };
 
 		   float4 _MainTex_ST;
@@ -83,12 +83,6 @@
 			   i.viewDir.xyz = normalize(i.viewDir.xyz);
 
 				float dott = max(0, dot(i.viewDir.xyz, i.normal.xyz));
-
-
-			 //float4 tex = tex2D(_MainTex, i.texcoord);
-
-		
-
 
 			 float4 depth = tex2Dproj(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos));
 

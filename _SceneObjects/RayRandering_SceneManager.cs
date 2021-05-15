@@ -168,6 +168,10 @@ namespace QuizCanners.RayTracing
             if (icon.Enter.Click() || "Scene".ClickLabel())
                 edited = ind;
 
+            if (!godModeCamera)
+                pegi.edit(ref godModeCamera);
+
+
             if (!configs)
                 "CFG".edit(60, ref configs);
             else

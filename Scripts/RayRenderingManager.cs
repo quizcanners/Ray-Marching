@@ -11,7 +11,7 @@ using UnityEditor;
 namespace QuizCanners.RayTracing
 {
     [ExecuteAlways]
-    public class RayRenderingManager :MonoBehaviour , IPEGI, ILinkedLerping
+    public class RayRenderingManager : MonoBehaviour , IPEGI, ILinkedLerping
     {
         public static RayRenderingManager instance;
 

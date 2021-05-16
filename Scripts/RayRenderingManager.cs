@@ -4,6 +4,7 @@ using QuizCanners.CfgDecode;
 using QuizCanners.Inspect;
 using QuizCanners.Lerp;
 using QuizCanners.Utils;
+using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -15,58 +16,59 @@ namespace QuizCanners.RayTracing
     {
         public static RayRenderingManager instance;
 
-        public RayRandering_BuffersManager BuffersManager = new RayRandering_BuffersManager();
-        public RayRandering_TracerManager TracerManager = new RayRandering_TracerManager();
-        public RayRandering_SceneManager SceneManager = new RayRandering_SceneManager();
-        public RayRandering_LightsManager LightsManager = new RayRandering_LightsManager();
+        [SerializeField] internal RayRandering_BuffersManager buffersManager = new RayRandering_BuffersManager();
+        [SerializeField] internal RayRandering_TracerManager tracerManager = new RayRandering_TracerManager();
+        [SerializeField] internal RayRandering_SceneManager sceneManager = new RayRandering_SceneManager();
+        [SerializeField] internal RayRandering_LightsManager lightsManager = new RayRandering_LightsManager();
+        [SerializeField] internal VolumeTracingBaker volumeTracingBaker;
 
-        [SerializeField] private CfgData _lastState;
+        [SerializeField] internal CfgData _lastState;
 
         [Header("Common")]
-        [SerializeField] public LayerMask RayTracingResultUiMask;
-        [SerializeField] public LayerMask GeometryCameraMask;
+        [SerializeField] internal LayerMask RayTracingResultUiMask;
+        [SerializeField] internal LayerMask GeometryCameraMask;
 
-        public void Swap()
+        public RayRenderingTarget Target => tracerManager.Target;
+
+        internal void Swap()
         {
-            BuffersManager.OnSwap(out RenderTexture targetBuffer);
-            SceneManager.OnSwap(currentTargetBuffer: targetBuffer);
+            buffersManager.OnSwap(out RenderTexture targetBuffer);
+            sceneManager.OnSwap(currentTargetBuffer: targetBuffer);
         }
-     
-        public RayRenderingTarget Target => TracerManager.Target;
 
-        public bool TargetIsScreenBuffer => Target == RayRenderingTarget.RayIntersection || Target == RayRenderingTarget.RayMarching;
+        internal bool TargetIsScreenBuffer => Target == RayRenderingTarget.RayIntersection || Target == RayRenderingTarget.RayMarching;
 
-        public void OnEnable()
+        private void OnEnable()
         {
             instance = this;
-            TracerManager.OnConfigurationChanged();
+            tracerManager.OnConfigurationChanged();
             this.DecodeFull(_lastState);
         }
 
-        public void OnDisable()
+        private void OnDisable()
         {
             _lastState = Encode().CfgData;
         }
 
-        public void SetDirty(string reason = "?")
+        public void SetBakingDirty(string reason = "?")
         {
-            SceneManager.SetDirty();
+            sceneManager.OnSetBakingDirty();
             _setDirtyReason = reason;
         }
 
         #region Encode & Decode
         public CfgEncoder Encode() => new CfgEncoder()
-                .Add("tM", TracerManager.configs)
-                .Add("lM", LightsManager.Configs)
-                .Add("sM", SceneManager.Configs);
+                .Add("tM", tracerManager.configs)
+                .Add("lM", lightsManager.Configs)
+                .Add("sM", sceneManager.Configs);
 
         public void Decode(string key, CfgData data)
         {
             switch (key) 
             {
-                case "tM": TracerManager.configs.DecodeFull(data); break;
-                case "lM": LightsManager.Configs.DecodeFull(data); break;
-                case "sM": SceneManager.Configs.DecodeFull(data); break;
+                case "tM": tracerManager.configs.DecodeFull(data); break;
+                case "lM": lightsManager.Configs.DecodeFull(data); break;
+                case "sM": sceneManager.Configs.DecodeFull(data); break;
             }
         }
         #endregion
@@ -82,37 +84,49 @@ namespace QuizCanners.RayTracing
 
             if (!lerpFinished)
             {
-                lerpData.Reset();
-                Portion(lerpData);
-                Lerp(lerpData, false);
+                _lerpData.Reset();
+                Portion(_lerpData);
+                Lerp(_lerpData, false);
             }
 
-            SceneManager.ManagedUpdate(out int stableFrames);
-            BuffersManager.ManagedUpdate(stableFrames: stableFrames);
+            
+            sceneManager.ManagedUpdate(out int stableFrames, out List<VolumeShapeDraw> shapes);
+            buffersManager.ManagedUpdate(stableFrames: stableFrames);
+
+            if (volumeTracingBaker)
+            {
+                volumeTracingBaker.enabled = Target == RayRenderingTarget.Volume;
+
+                if (volumeTracingBaker.enabled)
+                {
+                    volumeTracingBaker.ManagedUpdate(shapes: shapes, stableFrames);
+                  
+                }
+            }
         }
 
         private bool lerpFinished;
+        private readonly LerpData _lerpData = new LerpData();
 
         public void RequestLerps() => lerpFinished = false;
         
-        private LerpData lerpData = new LerpData();
         public void Portion(LerpData ld)
         {
             if (lerpFinished)
                 return;
 
-            TracerManager.Portion(ld);
-            LightsManager.Portion(ld);
-            SceneManager.Portion(ld);
+            tracerManager.Portion(ld);
+            lightsManager.Portion(ld);
+            sceneManager.Portion(ld);
         }
         public void Lerp(LerpData ld, bool canSkipLerp)
         {
             if (lerpFinished)
                 return;
 
-            LightsManager.Lerp(ld, canSkipLerp);
-            TracerManager.Lerp(ld, canSkipLerp);
-            SceneManager.Lerp(ld, canSkipLerp);
+            lightsManager.Lerp(ld, canSkipLerp);
+            tracerManager.Lerp(ld, canSkipLerp);
+            sceneManager.Lerp(ld, canSkipLerp);
             
             if (ld.Done)
                 lerpFinished = true;
@@ -134,13 +148,15 @@ namespace QuizCanners.RayTracing
 
             pegi.nl();
 
-            TracerManager.enter_Inspect_AsList(ref _inspectedStuff, 1, exitLabel: "Tracer Manager").nl();
+            tracerManager.enter_Inspect_AsList(ref _inspectedStuff, 1, exitLabel: "Tracer Manager").nl();
 
-            LightsManager.enter_Inspect_AsList(ref _inspectedStuff, 2, exitLabel: "Lights Manager").nl();
+            lightsManager.enter_Inspect_AsList(ref _inspectedStuff, 2, exitLabel: "Lights Manager").nl();
 
-            SceneManager.enter_Inspect_AsList(ref _inspectedStuff, 3, exitLabel: "Scene Manager").nl();
+            sceneManager.enter_Inspect_AsList(ref _inspectedStuff, 3, exitLabel: "Scene Manager").nl();
 
-            BuffersManager.enter_Inspect_AsList(ref _inspectedStuff, 4, exitLabel: "Buffers Manager").nl();
+            buffersManager.enter_Inspect_AsList(ref _inspectedStuff, 4, exitLabel: "Buffers Manager").nl();
+
+            "Volume".edit_enter_Inspect(ref volumeTracingBaker, ref _inspectedStuff, 5).nl();
 
             if ("Dependencies".isEntered(ref _inspectedStuff, 10).nl())
             {
@@ -152,8 +168,8 @@ namespace QuizCanners.RayTracing
             if (changed)
             {
                 lerpFinished = false;
-                SceneManager.StableFrames = 0;
-                this.SkipLerp(lerpData);
+                SetBakingDirty(reason: "Inspector Changes");
+                this.SkipLerp(_lerpData);
             }
 
             if (_inspectedStuff == -1)
@@ -161,7 +177,7 @@ namespace QuizCanners.RayTracing
                 if (!lerpFinished)
                 {
                     "Lerp is Active".writeWarning();
-                    "Dominant: {0} [{1}]".F(lerpData.dominantParameter, lerpData.MinPortion).nl();
+                    "Dominant: {0} [{1}]".F(_lerpData.dominantParameter, _lerpData.MinPortion).nl();
                     pegi.nl();
                 }
                 else
@@ -169,7 +185,7 @@ namespace QuizCanners.RayTracing
                     if (icon.Refresh.Click())
                         RequestLerps();
 
-                    "Lerp Done: {0} [{1}] | Dirty from: {2}".F(lerpData.dominantParameter, lerpData.MinPortion, _setDirtyReason).nl();
+                    "Lerp Done: {0} [{1}] | Dirty from: {2}".F(_lerpData.dominantParameter, _lerpData.MinPortion, _setDirtyReason).nl();
                 }
             }
         }

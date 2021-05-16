@@ -2,7 +2,9 @@
 {
 	Properties{
 		   _MainTex("Albedo (RGB)", 2D) = "white" {}
-		   [Toggle(_DEBUG)] debugOn("Debug", Float) = 0
+		   _ObjectPos("World Position", Vector) = (0,0,0,0)
+		   _ObjectSize("Object Size", Vector) = (0,0,0,0)
+		  // [Toggle(_DEBUG)] debugOn("Debug", Float) = 0
 	}
 
 	SubShader{
@@ -35,7 +37,10 @@
 			};
 
 			sampler2D _MainTex;
-	
+			float4 _ObjectPos;
+			float4 _ObjectSize;
+
+
 			v2f vert(appdata_full v) {
 				v2f o;
 				UNITY_SETUP_INSTANCE_ID(v);
@@ -46,12 +51,18 @@
 				return o;
 			}
 
+
 			float4 frag(v2f o) : COLOR{
 
 				float3 worldPos = volumeUVtoWorld(o.texcoord.xy
 					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
 					, _RayMarchingVolumeVOLUME_H_SLICES);
 
+				float dist = length(_ObjectPos - worldPos);
+				
+				float alpha = step(dist, _ObjectSize.x);
+
+			//	clip(_ObjectSize.x - dist);
 
 				//float3 offsetPos = worldPos + _RayMarchingVolumeVOLUME_POSITION_OFFSET.xyz;
 				float outOfBounds;
@@ -63,7 +74,9 @@
 
 				//clip(1500 - previous.a);
 
-				return float4(1,0,0,MAX_VOLUME_ALPHA);
+				float4 col = float4(1,0,0,MAX_VOLUME_ALPHA) * alpha + previous * (1-alpha);
+
+				return col;
 			}
 			ENDCG
 		}

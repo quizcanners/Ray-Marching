@@ -21,9 +21,8 @@ namespace QuizCanners.RayTracing
         private readonly ShaderProperty.TextureValue PATH_TRACING_SOURCE_BUFFER = new ShaderProperty.TextureValue("_RayTracing_SourceBuffer", set_ScreenFillAspect: true);
         private readonly ShaderProperty.TextureValue PATH_TRACING_TARGET_BUFFER = new ShaderProperty.TextureValue("_RayTracing_TargetBuffer", set_ScreenFillAspect: true);
 
-        [SerializeField] private VolumeTracingBaker _volumeTracingBaker;
+       // [SerializeField] private VolumeTracingBaker _volumeTracingBaker;
         [SerializeField] private RenderTexture[] _twoBuffers;
-        [SerializeField] private int _stopUpdatingAfterFrames = 500;
         [NonSerialized] private bool _firstIsSourceBuffer;
 
         private RenderTexture SourceBuffer => _firstIsSourceBuffer ? _twoBuffers[0] : _twoBuffers[1];
@@ -43,32 +42,15 @@ namespace QuizCanners.RayTracing
 
         public void ManagedUpdate(float stableFrames) 
         {
-            if (_volumeTracingBaker)
-            {
-                _volumeTracingBaker.bakingEnabled = Mgmt.Target == RayRenderingTarget.Volume;
-            }
-
-
             RAY_TRACE_TRANSPARENCY.GlobalValue = stableFrames < 2 ? 1f : Mathf.Clamp(2f / stableFrames, 0.001f, 0.5f);
-
             DENOISING.Enabled = stableFrames < 16;//(_stopUpdatingAfter * 0.25f);
-
             MOTION_TRACING.Enabled = stableFrames < 2;
-
-            bool baked = stableFrames > _stopUpdatingAfterFrames;
-
-            if (!baked && _volumeTracingBaker)
-                _volumeTracingBaker.SetBakeDirty();
         }
 
         #region Inspector
         public void Inspect()
         {
             pegi.nl();
-
-            if (!_volumeTracingBaker)
-                "Volume".edit(60, ref _volumeTracingBaker).nl();
-
             "Buffers".edit_Array(ref _twoBuffers).nl();
         }
 
@@ -79,12 +61,8 @@ namespace QuizCanners.RayTracing
 
             if (!this.isAttentionWrite())
             {
-                if (!_volumeTracingBaker)
-                    pegi.edit(ref _volumeTracingBaker);
-                else    if ("Buffers MGMT".ClickLabel())
+                if ("Buffers MGMT".ClickLabel())
                     edited = ind;
-
-               
             }
             
             

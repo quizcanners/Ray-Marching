@@ -4,6 +4,7 @@ using QuizCanners.Lerp;
 using QuizCanners.Prototype;
 using QuizCanners.Utils;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
@@ -20,20 +21,16 @@ namespace QuizCanners.RayTracing
         [SerializeField] private GameObject _rayTraceResult;
         [SerializeField] private RawImage _accumulatedResult;
 
-        public float StableFrames;
-        private Vector3 _previousCamPosition = Vector3.zero;
-        private Quaternion _previousCamRotation = Quaternion.identity;
-        public float CameraShakeDebug;
-        private bool _pauseAccumulation;
+        [NonSerialized] public float _stableFrames;
+        [NonSerialized] private Vector3 _previousCamPosition = Vector3.zero;
+        [NonSerialized] private Quaternion _previousCamRotation = Quaternion.identity;
+        [NonSerialized] public float _cameraShakeDebug;
 
         public Camera MainCamera => _godModeCamera ? _godModeCamera.MainCam : null;
         protected RayRenderingManager Mgmt => RayRenderingManager.instance;
 
-        public void SetDirty()
-        {
-            StableFrames = 0;
-        }
-
+        public void OnSetBakingDirty() => _stableFrames = 0;
+        
         public void OnSwap(RenderTexture currentTargetBuffer) 
         {
             if (MainCamera)
@@ -42,8 +39,13 @@ namespace QuizCanners.RayTracing
                 _accumulatedResult.texture = currentTargetBuffer;
         }
 
-        public void ManagedUpdate(out int stableFrames) 
+        public void ManagedUpdate(out int stableFrames, out List<VolumeShapeDraw> shapes) 
         {
+            if (_sceneElements)
+                shapes = _sceneElements.VolumeShapeDraws;
+            else
+                shapes = null;
+
             var isScreen = Mgmt.TargetIsScreenBuffer;
 
             if (MainCamera)
@@ -54,21 +56,18 @@ namespace QuizCanners.RayTracing
                 {
                     var position = tf.position;
                     var rotation = tf.rotation;
-                    CameraShakeDebug = (_previousCamPosition - position).magnitude * 10 +
+                    _cameraShakeDebug = (_previousCamPosition - position).magnitude * 10 +
                                        Quaternion.Angle(_previousCamRotation, rotation);
 
                     _previousCamPosition = position;
                     _previousCamRotation = rotation;
 
-                    CameraShakeDebug = 1 - Mathf.Clamp01(CameraShakeDebug);
+                    _cameraShakeDebug = 1 - Mathf.Clamp01(_cameraShakeDebug);
 
-                    if (_pauseAccumulation)
-                        StableFrames = 0;
-                    else
-                        StableFrames = StableFrames * CameraShakeDebug + CameraShakeDebug;
+                    _stableFrames = _stableFrames * _cameraShakeDebug + _cameraShakeDebug;
                 }
                 else
-                    StableFrames += 1;
+                    _stableFrames += 1;
 
                 if (Mgmt.Target == RayRenderingTarget.Volume)
                     MainCamera.cullingMask = Mgmt.GeometryCameraMask;
@@ -100,7 +99,7 @@ namespace QuizCanners.RayTracing
             if (_accumulatedResult)
                 _accumulatedResult.gameObject.SetActive(isScreen);
 
-            stableFrames = (int)StableFrames;
+            stableFrames = (int)_stableFrames;
 
         }
 
@@ -177,22 +176,21 @@ namespace QuizCanners.RayTracing
                 pegi.edit(ref _sceneElements);
             else if (!_accumulatedResult)
                 pegi.edit(ref _accumulatedResult);
+            else if (!_rayTraceResult)
+                "Ray Trace Result".edit(ref _rayTraceResult);
 
 
             if (!Configs)
                 "CFG".edit(60, ref Configs);
             else
                 Configs.InspectShortcut();
-
-            pegi.toggle(ref _pauseAccumulation, icon.Play, icon.Pause);
-
         }
 
         public void Inspect()
         {
             pegi.nl();
 
-            "RAY-INTERSECTION [frms: {0} | stability: {1}]".F((int)StableFrames, CameraShakeDebug)
+            "RAY-INTERSECTION [frms: {0} | stability: {1}]".F((int)_stableFrames, _cameraShakeDebug)
                 .nl(PEGI_Styles.ListLabel);
 
             pegi.nl();

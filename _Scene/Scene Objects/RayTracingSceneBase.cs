@@ -1,12 +1,14 @@
 ﻿using QuizCanners.CfgDecode;
 using QuizCanners.Lerp;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace QuizCanners.RayTracing
 {
-
     public abstract class RayTracingSceneBase : MonoBehaviour, ILinkedLerping, ICfg
     {
+        public List<VolumeShapeDraw> VolumeShapeDraws;
+
 
         #region Encode & Decode
 

@@ -114,7 +114,7 @@ namespace QuizCanners.RayTracing
             {
                 _isDirty = true;
                 if (RayRenderingManager.instance)
-                    RayRenderingManager.instance.SetDirty("Inspector");
+                    RayRenderingManager.instance.SetBakingDirty("Inspector");
             }
         }
 
@@ -140,7 +140,7 @@ namespace QuizCanners.RayTracing
                 SetShaderValues();
 
                 if (RayRenderingManager.instance)
-                    RayRenderingManager.instance.SetDirty(gameObject.name);
+                    RayRenderingManager.instance.SetBakingDirty(gameObject.name);
             }
         }
 

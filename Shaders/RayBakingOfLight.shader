@@ -51,15 +51,14 @@
 
 			float4 frag(v2f o) : COLOR{
 
-				float3 worldPos = volumeUVtoWorld(o.texcoord.xy
+				float3 worldPos = volumeUVtoWorld(o.texcoord.xy 
 					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
 					, _RayMarchingVolumeVOLUME_H_SLICES);
 
-
-				float3 offsetPos = worldPos + _RayMarchingVolumeVOLUME_POSITION_OFFSET.xyz;
+				float3 offsetPos = worldPos + _RayMarchingVolumeVOLUME_POSITION_OFFSET.xyz ;
 				float outOfBounds;
 				float4 previous = SampleVolume(_MainTex
-					, offsetPos
+					, offsetPos 
 					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE,
 					_RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 

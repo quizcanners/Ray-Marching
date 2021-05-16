@@ -23,11 +23,11 @@ namespace QuizCanners.RayTracing
             set
             {
                 ActiveConfig = value;
-                RayRenderingManager.instance.LightsManager.Decode(ActiveConfig.data);
+                RayRenderingManager.instance.lightsManager.Decode(ActiveConfig.data);
             }
 
         }
 
-        public override CfgEncoder EncodeData() => RayRenderingManager.instance.LightsManager.Encode();
+        public override CfgEncoder EncodeData() => RayRenderingManager.instance.lightsManager.Encode();
     }
 }

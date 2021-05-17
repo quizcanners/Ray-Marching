@@ -190,7 +190,7 @@ namespace QuizCanners.RayTracing
     }
 
 #if UNITY_EDITOR
-    [CustomEditor(typeof(VolumeTracingBaker))] internal class VolumeTracingBakerDrawer : PEGI_Inspector
+    [CustomEditor(typeof(VolumeTracingBaker))] internal class VolumeTracingBakerDrawer : PEGI_Inspector_Override
     {
     }
 #endif

@@ -240,7 +240,7 @@ namespace QuizCanners.RayTracing
 
 
 #if UNITY_EDITOR
-    [CustomEditor(typeof(PrimitiveObject))] internal class RayMarchingObjectDrawer : PEGI_Inspector { }
+    [CustomEditor(typeof(PrimitiveObject))] internal class RayMarchingObjectDrawer : PEGI_Inspector_Override { }
 #endif
 
 }

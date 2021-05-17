@@ -62,14 +62,12 @@
 					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE,
 					_RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
-				clip(MAX_VOLUME_ALPHA - previous.a);
+				//clip(MAX_VOLUME_ALPHA - previous.a);
 
 				float2 screenUV = o.texcoord.xy * (4 * _CosTime.y) + _SinTime.x;
 
-
 				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(screenUV * (123.12345678)
 					+ float2(_SinTime.w, _CosTime.w) * 32.12345612, 0, 0));
-
 
 				float4 nrmDist = NormalAndDistance(worldPos);
 

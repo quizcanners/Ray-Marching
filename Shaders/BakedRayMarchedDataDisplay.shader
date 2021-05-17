@@ -103,6 +103,8 @@
 				, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
 		
+			//	return col.a * 0.001;
+
 				//return light;
 
 				//float4 col = light;//(light + unity_FogColor *internal);

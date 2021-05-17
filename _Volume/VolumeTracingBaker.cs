@@ -34,8 +34,6 @@ namespace QuizCanners.RayTracing
         public Material material;
         public VolumeTexture volume;
 
-        private bool _locationShiftDirty = false;
-
         private ShaderProperty.VectorValue _positionOffset;
 
         public ShaderProperty.VectorValue PositionOffsetAndScale
@@ -192,7 +190,7 @@ namespace QuizCanners.RayTracing
     }
 
 #if UNITY_EDITOR
-    [CustomEditor(typeof(VolumeTracingBaker))] internal class VolumeTracingBakerDrawer : PEGI_Inspector_Mono<VolumeTracingBaker>
+    [CustomEditor(typeof(VolumeTracingBaker))] internal class VolumeTracingBakerDrawer : PEGI_Inspector
     {
     }
 #endif

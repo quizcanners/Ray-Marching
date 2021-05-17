@@ -68,7 +68,7 @@ namespace QuizCanners.RayTracing
 
 
     #if UNITY_EDITOR
-    [CustomEditor(typeof(VolumeShapeDraw))] internal class VolumeShapeDrawInspectorOverride : PEGI_Inspector_Mono<VolumeShapeDraw> { }
+    [CustomEditor(typeof(VolumeShapeDraw))] internal class VolumeShapeDrawInspectorOverride : PEGI_Inspector { }
     #endif
 
 }

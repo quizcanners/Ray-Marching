@@ -74,7 +74,7 @@
 
 				//clip(1500 - previous.a);
 
-				float4 col = float4(1,0,0,MAX_VOLUME_ALPHA) * alpha + previous * (1-alpha);
+				float4 col = float4(1,0,0,MAX_VOLUME_ALPHA-10) * alpha + previous * (1-alpha);
 
 				return col;
 			}

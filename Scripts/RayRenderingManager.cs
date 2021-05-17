@@ -200,7 +200,7 @@ namespace QuizCanners.RayTracing
     public enum RayRenderingTarget { Disabled = 0, RayIntersection = 1, RayMarching = 2, Volume = 3 }
 
 #if UNITY_EDITOR
-    [CustomEditor(typeof(RayRenderingManager))] internal class RayMarchingManagerDrawer : PEGI_Inspector_Mono<RayRenderingManager> { }
+    [CustomEditor(typeof(RayRenderingManager))] internal class RayMarchingManagerDrawer : PEGI_Inspector { }
 #endif
 
 }

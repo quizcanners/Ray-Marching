@@ -1,13 +1,9 @@
 using QuizCanners.Inspect;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using System;
 using QuizCanners.Utils;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
+
 
 namespace QuizCanners.RayTracing
 {
@@ -48,7 +44,7 @@ namespace QuizCanners.RayTracing
 
         public void Inspect()
         {
-            pegi.toggleDefaultInspector(this); pegi.nl();
+            pegi.nl();
 
             "Material Prototype".edit(ref _bakeMaterial).nl();
 
@@ -65,10 +61,6 @@ namespace QuizCanners.RayTracing
         }
     }
 
-
-
-    #if UNITY_EDITOR
-    [CustomEditor(typeof(VolumeShapeDraw))] internal class VolumeShapeDrawInspectorOverride : PEGI_Inspector_Override { }
-    #endif
+    [PEGI_Inspector_Override(typeof(VolumeShapeDraw))] internal class VolumeShapeDrawInspectorOverride : PEGI_Inspector_Override { }
 
 }

@@ -1,13 +1,10 @@
-﻿using System;
+﻿
 using UnityEngine;
 using QuizCanners.CfgDecode;
 using QuizCanners.Inspect;
 using QuizCanners.Lerp;
 using QuizCanners.Utils;
 using System.Collections.Generic;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace QuizCanners.RayTracing
 {
@@ -144,8 +141,6 @@ namespace QuizCanners.RayTracing
 
             var changed = pegi.ChangeTrackStart();
 
-            pegi.toggleDefaultInspector(this);
-
             pegi.nl();
 
             tracerManager.enter_Inspect_AsList(ref _inspectedStuff, 1, exitLabel: "Tracer Manager").nl();
@@ -199,8 +194,6 @@ namespace QuizCanners.RayTracing
 
     public enum RayRenderingTarget { Disabled = 0, RayIntersection = 1, RayMarching = 2, Volume = 3 }
 
-#if UNITY_EDITOR
-    [CustomEditor(typeof(RayRenderingManager))] internal class RayMarchingManagerDrawer : PEGI_Inspector_Override { }
-#endif
+    [PEGI_Inspector_Override(typeof(RayRenderingManager))] internal class RayMarchingManagerDrawer : PEGI_Inspector_Override { }
 
 }

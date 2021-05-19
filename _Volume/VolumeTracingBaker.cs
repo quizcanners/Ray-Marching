@@ -3,9 +3,6 @@ using UnityEngine;
 using QuizCanners.Utils;
 using QuizCanners.Inspect;
 using System.Collections.Generic;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace QuizCanners.RayTracing
 {
@@ -141,9 +138,6 @@ namespace QuizCanners.RayTracing
 
         public void Inspect()
         {
-            pegi.nl();
-
-            pegi.toggleDefaultInspector(this);
 
             pegi.nl();
 
@@ -189,9 +183,6 @@ namespace QuizCanners.RayTracing
 
     }
 
-#if UNITY_EDITOR
-    [CustomEditor(typeof(VolumeTracingBaker))] internal class VolumeTracingBakerDrawer : PEGI_Inspector_Override
-    {
-    }
-#endif
+    [PEGI_Inspector_Override(typeof(VolumeTracingBaker))] internal class VolumeTracingBakerDrawer : PEGI_Inspector_Override   {  }
+
 }

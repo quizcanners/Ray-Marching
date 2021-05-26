@@ -3,13 +3,10 @@ using QuizCanners.Inspect;
 using QuizCanners.Lerp;
 using QuizCanners.Utils;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace QuizCanners.RayTracing
 {
-
     [Serializable]
     public class RayRandering_TracerManager : IPEGI, ILinkedLerping, ICfgCustom, IPEGI_ListInspect
     {
@@ -78,15 +75,12 @@ namespace QuizCanners.RayTracing
             {
                 case "sm": smoothness.Decode(data); break;
                 case "shSo": shadowSoftness.Decode(data); break;
-
-
                 case "targ": Target = (RayRenderingTarget)data.ToInt(); break;
 
                 case "dofD": DOFdistance.Decode(data); break;
                 case "dofPow": DOF_STRENGTH.TargetValue = data.ToFloat(); break;
                 case "diEl": RAY_TRACE_DIALECTRIC.Enabled = data.ToBool(); break;
                 case "rtCB": RAY_TRACE_CHECKERBOARD.Enabled = data.ToBool(); break;
-               
             }
         }
 

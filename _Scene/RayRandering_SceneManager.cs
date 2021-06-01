@@ -1,7 +1,7 @@
 ﻿using QuizCanners.CfgDecode;
 using QuizCanners.Inspect;
 using QuizCanners.Lerp;
-using QuizCanners.Prototype;
+using QuizCanners.IsItAGame;
 using QuizCanners.Utils;
 using System;
 using System.Collections.Generic;

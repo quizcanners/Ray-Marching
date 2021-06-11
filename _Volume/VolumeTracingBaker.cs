@@ -77,7 +77,7 @@ namespace QuizCanners.RayTracing
         {
             if (Target && Source && withMaterial)
             {
-                RenderTextureBuffersManager.BlitGL(Source, Target, withMaterial);
+                PlaytimePainter_RenderTextureBuffersManager.BlitGL(Source, Target, withMaterial);
                 if (volume)
                     volume.Texture = Target;
 

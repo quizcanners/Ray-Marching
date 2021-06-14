@@ -13,7 +13,7 @@ namespace QuizCanners.RayTracing
         [SerializeField] public RayRendering_TracerConfigs configs;
         [SerializeField] private RayRenderingTarget _target;
 
-        private ShaderProperty.ShaderKeyword USING_RAY_MARCHING = new ShaderProperty.ShaderKeyword("_IS_RAY_MARCHING");
+        private readonly ShaderProperty.ShaderKeyword USING_RAY_MARCHING = new ShaderProperty.ShaderKeyword("_IS_RAY_MARCHING");
 
         public RayRenderingTarget Target
         {
@@ -31,17 +31,17 @@ namespace QuizCanners.RayTracing
         [NonSerialized] private QcUtils.DynamicRangeFloat smoothness = new QcUtils.DynamicRangeFloat(0.01f, 10, 1);
         [NonSerialized] private QcUtils.DynamicRangeFloat shadowSoftness = new QcUtils.DynamicRangeFloat(0.01f, 10, 1);
 
-        private ShaderProperty.FloatValue MAX_STEPS_IN_SHADER = new ShaderProperty.FloatValue("_maxRayMarchSteps");
-        private ShaderProperty.FloatValue MAX_DISTANCE_IN_SHADER = new ShaderProperty.FloatValue("_MaxRayMarchDistance");
-        private LinkedLerp.MaterialFloat RAY_MARCHSMOOTHNESS = new LinkedLerp.MaterialFloat("_RayMarchSmoothness", 1, 30);
-        private LinkedLerp.MaterialFloat RAY_MARCH_SHADOW_SMOOTHNESS = new LinkedLerp.MaterialFloat("_RayMarchShadowSoftness", 1, 30);
+        private readonly ShaderProperty.FloatValue MAX_STEPS_IN_SHADER = new ShaderProperty.FloatValue("_maxRayMarchSteps");
+        private readonly ShaderProperty.FloatValue MAX_DISTANCE_IN_SHADER = new ShaderProperty.FloatValue("_MaxRayMarchDistance");
+        private readonly LinkedLerp.MaterialFloat RAY_MARCHSMOOTHNESS = new LinkedLerp.MaterialFloat("_RayMarchSmoothness", 1, 30);
+        private readonly LinkedLerp.MaterialFloat RAY_MARCH_SHADOW_SMOOTHNESS = new LinkedLerp.MaterialFloat("_RayMarchShadowSoftness", 1, 30);
 
         [Header("Ray-Tracing")]
         [NonSerialized] private QcUtils.DynamicRangeFloat DOFdistance = new QcUtils.DynamicRangeFloat(min: 0.01f, max: 50, value: 1);
-        [NonSerialized] private LinkedLerp.MaterialFloat RAY_TRACE_DOF = new LinkedLerp.MaterialFloat("_RayTraceDofDist", startingValue: 1f, startingSpeed: 100f); // x - distance 
-        [NonSerialized] private LinkedLerp.MaterialFloat DOF_STRENGTH = new LinkedLerp.MaterialFloat("_RayTraceDOF", startingValue: 0.0001f, startingSpeed: 10);
-        [NonSerialized] private ShaderProperty.ShaderKeyword RAY_TRACE_DIALECTRIC = new ShaderProperty.ShaderKeyword("RT_USE_DIELECTRIC");
-        [NonSerialized] private ShaderProperty.ShaderKeyword RAY_TRACE_CHECKERBOARD = new ShaderProperty.ShaderKeyword("RT_USE_CHECKERBOARD");
+        [NonSerialized] private readonly LinkedLerp.MaterialFloat RAY_TRACE_DOF = new LinkedLerp.MaterialFloat("_RayTraceDofDist", startingValue: 1f, startingSpeed: 100f); // x - distance 
+        [NonSerialized] private readonly LinkedLerp.MaterialFloat DOF_STRENGTH = new LinkedLerp.MaterialFloat("_RayTraceDOF", startingValue: 0.0001f, startingSpeed: 10);
+        [NonSerialized] private readonly ShaderProperty.ShaderKeyword RAY_TRACE_DIALECTRIC = new ShaderProperty.ShaderKeyword("RT_USE_DIELECTRIC");
+        [NonSerialized] private readonly ShaderProperty.ShaderKeyword RAY_TRACE_CHECKERBOARD = new ShaderProperty.ShaderKeyword("RT_USE_CHECKERBOARD");
 
         public void OnConfigurationChanged()
         {
@@ -143,7 +143,7 @@ namespace QuizCanners.RayTracing
                 OnConfigurationChanged();
         }
 
-        public void InspectInList(int ind, ref int edited)
+        public void InspectInList(ref int edited, int ind)
         {
   
             if (icon.Enter.Click())

@@ -165,7 +165,7 @@ namespace QuizCanners.RayTracing
 
         #region Inspector
 
-        public void InspectInList(int ind, ref int edited)
+        public void InspectInList(ref int edited, int ind)
         {
             if (icon.Enter.Click() || "Scene".ClickLabel())
                 edited = ind;

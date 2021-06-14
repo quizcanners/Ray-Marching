@@ -11,9 +11,9 @@ namespace QuizCanners.RayTracing
     {
         [SerializeField] public RayRendering_LightConfigs Configs;
 
-        private LinkedLerp.MaterialColor _sunLightColor = new LinkedLerp.MaterialColor("_RayMarchLightColor", Color.grey, 10);
-        private LinkedLerp.MaterialColor _skyColor = new LinkedLerp.MaterialColor("_RayMarchSkyColor", Color.grey, 10);
-        private LinkedLerp.ColorValue _fogColor = new LinkedLerp.ColorValue("Fog", speed: 10);
+        private readonly LinkedLerp.MaterialColor _sunLightColor = new LinkedLerp.MaterialColor("_RayMarchLightColor", Color.grey, 10);
+        private readonly LinkedLerp.MaterialColor _skyColor = new LinkedLerp.MaterialColor("_RayMarchSkyColor", Color.grey, 10);
+        private readonly LinkedLerp.ColorValue _fogColor = new LinkedLerp.ColorValue("Fog", speed: 10);
 
         protected RayRenderingManager Mgmt => RayRenderingManager.instance;
 
@@ -80,7 +80,7 @@ namespace QuizCanners.RayTracing
             ConfigurationsSO_Base.Inspect(ref Configs);
         }
 
-        public void InspectInList(int ind, ref int edited)
+        public void InspectInList(ref int edited, int ind)
         {
             if (icon.Enter.Click() || "Lights".ClickLabel())
                 edited = ind;

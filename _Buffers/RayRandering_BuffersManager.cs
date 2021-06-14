@@ -54,7 +54,7 @@ namespace QuizCanners.RayTracing
             "Buffers".edit_Array(ref _twoBuffers).nl();
         }
 
-        public void InspectInList(int ind, ref int edited)
+        public void InspectInList(ref int edited, int ind)
         {
             if (icon.Enter.Click())
                 edited = ind;

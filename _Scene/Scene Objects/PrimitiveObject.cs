@@ -12,8 +12,8 @@ namespace QuizCanners.RayTracing
     public class PrimitiveObject : MonoBehaviour, IPEGI, ICfgCustom, ILinkedLerping
     {
         public string variableName;
+        public Shape shape;
 
-        [SerializeField] public Shape shape;
         [SerializeField] private QcUtils.DynamicRangeFloat _size = new QcUtils.DynamicRangeFloat(0.01f, 5f, 1);
         [SerializeField] private Color color = Color.gray;
         [SerializeField] private float roughtness = 0.5f;

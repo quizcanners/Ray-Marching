@@ -1,4 +1,4 @@
-﻿using QuizCanners.CfgDecode;
+﻿using QuizCanners.Migration;
 using QuizCanners.Lerp;
 using System.Collections.Generic;
 using UnityEngine;

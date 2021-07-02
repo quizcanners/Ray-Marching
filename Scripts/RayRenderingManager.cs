@@ -1,6 +1,6 @@
 ﻿
 using UnityEngine;
-using QuizCanners.CfgDecode;
+using QuizCanners.Migration;
 using QuizCanners.Inspect;
 using QuizCanners.Lerp;
 using QuizCanners.Utils;

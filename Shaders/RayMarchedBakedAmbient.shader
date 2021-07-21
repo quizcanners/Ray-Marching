@@ -27,7 +27,7 @@
 			#pragma fragment frag
 			#pragma multi_compile_instancing
 			#pragma multi_compile_fwdbase // useful to have shadows 
-			#pragma shader_feature ____ _DEBUG 
+			#pragma shader_feature_local ____ _DEBUG 
 
 			#pragma target 3.0
 

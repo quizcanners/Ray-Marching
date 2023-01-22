@@ -62,6 +62,9 @@ namespace QuizCanners.RayTracing
 
                 SharedLight.transform.rotation = LightIsSun ? m_CelestialAxisTransform.rotation : Quaternion.LookRotation(-m_CelestialAxisTransform.forward);
 
+                m_MoonRenderer.gameObject.SetActive(m_CelestialAxisTransform.forward.y > -0.3f);
+                SunObject.SetActive(m_CelestialAxisTransform.forward.y < 0.3f);
+
                 SunObject.transform.localScale = Vector3.one * 50;//25 * SunSize.Evaluate(TimeOfDayFraction * 24) * Vector3.one;
                 m_MoonTransform.localScale = Vector3.one * 40; //MoonSize.Evaluate(TimeOfDayFraction * 24) * m_MoonStartingSize;
                 m_MoonPhaseMaterial.SetFloat("_MoonBrightness", MoonObjectFade.Evaluate(TimeOfDayFraction * 24));

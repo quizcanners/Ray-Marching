@@ -33,9 +33,6 @@ Shader "RayTracing/Geometry/Beveled Edges "
 				#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
 				#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
 
-
-
-
 				#pragma vertex vert
 				#pragma fragment frag
 				#pragma multi_compile_instancing
@@ -107,16 +104,17 @@ Shader "RayTracing/Geometry/Beveled Edges "
 
 					float border = smoothstep(0,1, edge.r + edge.g + edge.b); //max(max(edge.r, edge.g), edge.b);
 					float3 edgeN = edge0 * edge.r + edge1 * edge.g + edge2 * edge.b;
-					float junk = min(1, (edge.g * edge.b + edge.r * edge.b + edge.r * edge.g) * (1 - min(1, width * width))) * border;
+					//float junk = min(1, (edge.g * edge.b + edge.r * edge.b + edge.r * edge.g) * (1 - min(1, width * width)))* border;
+					// For Low Poly mesh junk normal can have artifacts
+
 
 					weight =  smoothstep(0, 2, (seam.r + seam.g + seam.b + seam.a) * border);
 
 					return normalize(
 
-						lerp(
-							lerp(sharpNorm, edgeN, border),
-							junkNorm,
-							junk)
+						//lerp(
+							lerp(sharpNorm, edgeN, border)
+							//,junkNorm,	junk)
 
 					);
 
@@ -158,13 +156,15 @@ Shader "RayTracing/Geometry/Beveled Edges "
 					tex = lerp(tex, _EdgeColor, edgeColorVisibility * _EdgeColor.a);
 					//tex = lerp(tex, mip, edgeColorVisibility); //_EdgeColor
 
+					//return tex;
+
 					ApplyTangent(normal, tnormal, o.wTangent);
 
 					//normal = normalize(normal);
 
 					float fresnel = smoothstep(0,1,dot(normal, o.viewDir.xyz));
 
-
+				//	return float4(normal,1);
 				
 
 
@@ -186,7 +186,14 @@ Shader "RayTracing/Geometry/Beveled Edges "
 					float shadow = SHADOW_ATTENUATION(o);
 					float direct = shadow * smoothstep(1 - ambient, 1.5 - ambient * 0.5, dot(normal, _WorldSpaceLightPos0.xyz));
 
+
+					//return shadow;
+
+
 					float3 lightColor = GetDirectional() * direct;
+
+
+					
 
 					float3 volumePos = o.worldPos;
 
@@ -199,10 +206,11 @@ Shader "RayTracing/Geometry/Beveled Edges "
 
 
 					ColorCorrect(tex.rgb);
+				
 
 					float3 col = tex.rgb * (lightColor + bake.rgb * ambient) + lightColor * 0.02 * (1 - fresnel);
 
-
+				
 
 					
 					//col.rgb *= tex.rgb;

@@ -81,6 +81,17 @@ uniform float4 _RayMarthMinLight;
 #define MATCH_RAY_TRACED_SUN_LIGH_GLOSS 0.2
 
 
+inline float4 SampleVolume(float3 pos, out float outOfBounds)
+{
+	float4 bake = SampleVolume(_RayMarchingVolume, pos
+		, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
+		, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
+
+	return bake;
+}
+
+
+
 float getShadowAttenuation(float3 worldPos)
 {
 #if defined(SHADOWS_CUBE)
@@ -414,6 +425,13 @@ float4 render(in float3 ro, in float3 rd, in float4 seed)
 			return float4(col * skyCol, distance);
 		}
 	}
+
+#ifdef _qc_AMBIENT_SIMULATION
+	float outOfBounds;
+	float4 vol = SampleVolume(ro, outOfBounds);
+
+	return vol * 0.5 * (1- outOfBounds);
+#endif
 
 	return 0;
 }

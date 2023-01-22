@@ -276,7 +276,7 @@
 			
 
 				float fresnel = dot(viewDir, normal);
-				
+				float4 col = i.color;
 #if SURFC_MATT 
 				float outOfBounds;
 				float4 vol = SampleVolume(newPos, outOfBounds);
@@ -300,7 +300,7 @@
 				ambientCol *= ambientBlock;
 				ambientCol.rgb += topDown.rgb + topDownRefl.rgb;
 			
-				float4 col = i.color;
+				
 				col.rgb *= ambientCol + lightColor;
 
 				//alpha *= smoothstep(0, 0.05, fresnel);
@@ -344,8 +344,8 @@
 				col.rgb = bakeReflected.rgb;
 #elif SURFC_GLOW
 
-				float glow = smoothstep(0.1,0, minDist) ;
-				col *= min(smoothstep(1,0.5,fresnel), pow(glow, 3));
+				float glow = smoothstep(0.1,0, minDist);
+				col *= min(smoothstep(1,0.5,fresnel), pow(glow, 3)) * alpha;
 				return col;
 #endif
 

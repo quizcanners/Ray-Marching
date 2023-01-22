@@ -1,6 +1,7 @@
 using QuizCanners.Inspect;
 using QuizCanners.Utils;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace QuizCanners.RayTracing
 {
@@ -60,6 +61,22 @@ namespace QuizCanners.RayTracing
         }
 
         #endregion
+
+        void RenderViaCommandBuffer() 
+        {
+            CommandBuffer command = new CommandBuffer();
+
+            command.SetViewMatrix(Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one));
+            command.SetProjectionMatrix(Matrix4x4.Ortho(-_orthoSize, _orthoSize, -_orthoSize, _orthoSize, 0.03f, 50));
+
+            command.SetRenderTarget(_orthogonalCamera.targetTexture);
+
+            // command.ClearRenderTarget(true, true, Color.clear);
+          
+            //command.DrawMesh()
+
+            Graphics.ExecuteCommandBuffer(command);
+        }
 
         void UpdateCamera() 
         {

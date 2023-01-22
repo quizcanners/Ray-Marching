@@ -100,14 +100,6 @@ float3 GetDirectional()
 	return _LightColor0.rgb;// *MATCH_RAY_TRACED_SUN_COEFFICIENT;// * smoothstep(0, 0.1, _WorldSpaceLightPos0.y);
 }
 
-inline float4 SampleVolume(float3 pos, out float outOfBounds)
-{
-	float4 bake = SampleVolume(_RayMarchingVolume, pos
-		, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
-		, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
-
-	return bake;
-}
 
 inline float4 SampleVolumeOffsetByNormal(float3 pos, float3 normal, out float outOfBounds)
 {
@@ -143,7 +135,16 @@ inline void ApplyTopDownLightAndShadow(float2 topdownUv, float3 normal, float3 w
 	float4 tdUv = float4(topdownUv + normal.xz * _RayTracing_TopDownBuffer_Position.w * 2, 0, 0);
 
 	float4 topDown = tex2Dlod(_RayTracing_TopDownBuffer, tdUv);
-	float topDownVisible = gotVolume * smoothstep(3, 0, abs(_RayTracing_TopDownBuffer_Position.y - worldPos.y));
+
+
+	float2 offUv = tdUv - 0.5;
+
+	float topDownVisible =
+		
+		 (1 - smoothstep(0.2, 0.25, length(offUv * offUv))) *
+		
+		//gotVolume * 
+		smoothstep(3, 0, abs(_RayTracing_TopDownBuffer_Position.y - worldPos.y));
 	topDown *= topDown;
 	float ambientBlock = max(0.25f, 1 - topDown.a);
 
@@ -159,6 +160,11 @@ inline void ApplyTopDownLightAndShadow(float2 topdownUv, float3 normal, float4 b
 		float smoothness = bumpMap.b; 
 
 		float2 offset = normal.xz * _RayTracing_TopDownBuffer_Position.w;
+
+
+
+		float2 offUv = topdownUv - 0.5;
+		gotVolume = (1 - smoothstep(0.2, 0.25, length(offUv * offUv)));
 
 		float4 topDown = tex2D(_RayTracing_TopDownBuffer, topdownUv + offset * (0.2 + smoothness));
 		float4 topDownRefl = tex2Dlod(_RayTracing_TopDownBuffer, float4(topdownUv + offset * 4 , 0, 0));

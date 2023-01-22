@@ -64,9 +64,15 @@
 
 				float4 nrmDist = NormalAndDistance(worldPos);
 
-				float3 rayDirection = normalize(noise.rgb - 0.5);
+				float3 rayDirection = //normalize(
+					normalize(noise.rgb - 0.5); // +nrmDist.xyz * smoothstep(2, 0, nrmDist.w));
 	
-				float4 col = render(worldPos, rayDirection, noise);
+				float4 col = //(
+					render(worldPos, rayDirection, noise);
+					/* + render(worldPos, rayDirection, noise.yzwx)
+					+ render(worldPos, rayDirection, noise.zwxy)
+					+ render(worldPos, rayDirection, noise.wxyz)
+					) *0.25;*/
 		
 				
 #ifdef UNITY_COLORSPACE_GAMMA

@@ -80,7 +80,7 @@
 
 				float4 previous = tex2Dlod(_PreviousTex, float4(o.texcoord.xy, 0, 0));
 
-				total = lerp(previous, total, 0.5);
+				total = lerp(previous, total, 0.2 + 0.7 * smoothstep(500, 0, a));
 
 				total = max(0, total); // Fixes a some division bug
 

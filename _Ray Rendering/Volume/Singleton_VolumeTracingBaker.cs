@@ -227,8 +227,6 @@ namespace QuizCanners.RayTracing
         {
             volume = GetComponent<C_VolumeTexture>();
         }
-
-
     }
 
     [PEGI_Inspector_Override(typeof(Singleton_VolumeTracingBaker))] internal class Singleton_VolumeTracingBakerDrawer : PEGI_Inspector_Override   {  }

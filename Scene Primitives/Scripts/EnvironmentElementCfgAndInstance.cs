@@ -1,6 +1,5 @@
 using PainterTool;
 using QuizCanners.Inspect;
-using QuizCanners.Migration;
 using QuizCanners.Utils;
 using UnityEngine;
 
@@ -10,9 +9,8 @@ namespace QuizCanners.RayTracing
     {
         public class CfgAndInstance : IPEGI_ListInspect, IPEGI
         {
-            public string PrefabKey;
             public C_RayT_PrimShape_EnvironmentElement EnvironmentElement;
-            private CfgData _data;
+            //private CfgData _data;
 
             private readonly Gate.Frame _instanceWeightGate = new();
             private float _weight = 0;
@@ -60,7 +58,6 @@ namespace QuizCanners.RayTracing
             #region Inspector
             public void InspectInList(ref int edited, int index)
             {
-                pegi.Edit(ref PrefabKey);
                 ToString().PegiLabel().Write();
 
                 if (Icon.Enter.Click())

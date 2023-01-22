@@ -48,7 +48,6 @@
 				float3 worldPos		: TEXCOORD0;
 				float3 normal		: TEXCOORD1;
 				float3 viewDir		: TEXCOORD3;
-				//float4 screenPos	: TEXCOORD4;
 				float2 texcoord		: TEXCOORD4;
 				float4 wTangent		: TEXCOORD5;
 				float2 topdownUv	: TEXCOORD6;
@@ -125,11 +124,14 @@
 				float4 avgColor = _RayMarchSkyColor * 0.75  + _LightColor0 * 0.5 + (unity_FogColor) * 0.15;
 
 
-				float3 reflection;
+				float3 reflection = 0;
 
 	
 				if (gloss > 0.5) 
 				{
+					
+
+
 					float toview = max(0, dot(normal, o.viewDir.xyz));
 					float3 reflectedRay = -normalize(o.viewDir.xyz - 2 * (toview)*normal);
 
@@ -183,6 +185,7 @@
 					float outOfBoundsRefl;
 					float4 bakeReflected = SampleVolumeOffsetByNormal(reflectionPos, normalTmp, outOfBoundsRefl);
 
+
 					//bakeReflected *= smoothstep(-0.001, 0, sdfNnD.w);
 
 					float2 reflTdUv = (reflectionPos.xz - _RayTracing_TopDownBuffer_Position.xz) * _RayTracing_TopDownBuffer_Position.w + 0.5;
@@ -221,15 +224,11 @@
 					float lightRelected = gloss / ((1.00001 - saturate(dot(reflectedRay, lightDir))) * 1000);
 					reflection = (2 - max(0, dot(o.viewDir.xyz, normal))) * (reflection + lightColor * lightRelected * 64) * 0.5;
 
-					reflection = lerp(reflection, avgColor.rgb, smoothstep(0.6, 0.5, gloss));
+					//reflection = lerp(reflection, avgColor.rgb, smoothstep(0.6, 0.5, gloss));
 
 					//reflection *= shadow;
 
-				}// else 
-				//#endif
-				//{
-				//	reflection = avgColor.rgb;
-				//}
+				}
 
 				float4 col = 1;
 

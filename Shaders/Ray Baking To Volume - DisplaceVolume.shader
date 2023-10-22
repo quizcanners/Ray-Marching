@@ -27,6 +27,9 @@
 			#pragma vertex vert
 			#pragma fragment frag
 
+			#pragma multi_compile ___ Qc_OffsetRGBA
+			#pragma multi_compile ___ _qc_IGNORE_SKY
+
 			struct v2f {
 				float4 pos : 		SV_POSITION;
 				float2 texcoord : TEXCOORD0;
@@ -43,17 +46,33 @@
 				return o;
 			}
 
+			float4 _RayMarchingVolumeVOLUME_POSITION_N_SIZE_PREVIOUS;
+			float4 _RayMarchingVolumeVOLUME_H_SLICES_PREVIOUS;
+
+			inline float3 volumeUVtoWorld_Previous(float2 uv) 
+			{
+				return volumeUVtoWorld(uv, _RayMarchingVolumeVOLUME_POSITION_N_SIZE_PREVIOUS, _RayMarchingVolumeVOLUME_H_SLICES_PREVIOUS);
+			}
+
 			float4 frag(v2f o) : COLOR{
 
 				float3 worldPos = volumeUVtoWorld(o.texcoord.xy);
 
-				float3 offsetPos = worldPos + _RayMarchingVolumeVOLUME_POSITION_OFFSET.xyz ;
-
 				float outOfBounds;
-				float4 vol = SampleVolume(_MainTex, offsetPos, outOfBounds);
 
-				vol *= 0.98 * (1- outOfBounds);
+					float4 vol = SampleVolume(_MainTex, worldPos
+					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE_PREVIOUS
+					, _RayMarchingVolumeVOLUME_H_SLICES_PREVIOUS, outOfBounds);
 
+				
+				//float4 vol = SampleVolume(_MainTex, worldPos, outOfBounds);
+
+#if Qc_OffsetRGBA
+				vol.a *= (1 - outOfBounds);
+#else
+				vol.a *= (1 - outOfBounds);
+#endif
+				
 				return vol;
 			}
 			ENDCG

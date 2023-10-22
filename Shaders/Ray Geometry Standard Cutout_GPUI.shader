@@ -4,25 +4,46 @@ Shader "GPUInstancer/RayTracing/Geometry/Standard Cutout"
 	{
 		_MainTex("Albedo (RGB)", 2D) = "white" {}
 
-		[KeywordEnum(Nonmetal, Metal, Glass)] _SURFACE("Surface", Float) = 0
+		_SpecularMap("R-Metalic G-Ambient _ A-Specular", 2D) = "black" {}
+		_BumpMap("Normal Map", 2D) = "bump" {}
+		[KeywordEnum(None, MADS, Separate)] _AO("AO Source", Float) = 0
+		_OcclusionMap("Ambient Map", 2D) = "white" {}
+		[Toggle(_AMBIENT_IN_UV2)] ambInuv2("Ambient mapped to UV2", Float) = 0
+		[Toggle(_COLOR_R_AMBIENT)] colAIsAmbient("Vert Col is Ambient", Float) = 0
+			[Toggle(_SDF_AMBIENT)] sdfAmbient("SDF Ambient", Float) = 0
 
-		[KeywordEnum(None, Regular, Combined)] _BUMP("Combined Map", Float) = 0
-		_BumpMap("Bump/Combined Map (or None)", 2D) = "gray" {}
-	
-		[Toggle(_AMBIENT)] useAmbient("Use Ambient Map", Float) = 0
-		_Ambient("Ambient Map", 2D) = "white" {}
+		[Toggle(_WIND_SHAKE)] windShake("Wind Shaking", Float) = 0
 
-		[Toggle(_SHOWUVTWO)] thisDoesntMatter("Debug Uv 2", Float) = 0
+			[Toggle(_BACKFACE_FLIP)] fixBackface("Backface Flip", Float) = 0
 
 		[Toggle(_SUB_SURFACE)] subSurfaceScattering("SubSurface Scattering", Float) = 0
-		_SubSurface("Sub Surface Color", Color) = (1,0.5,0,0)
+		[HDR] _SubSurface("Sub Surface Color", Color) = (1,0.5,0,0)
 		_SkinMask("Skin Mask (_UV2)", 2D) = "white" {}
+
+			[KeywordEnum(OFF, ON, INVERTEX, MIXED)] _PER_PIXEL_REFLECTIONS("Traced Reflections", Float) = 0
+			[Toggle(_DYNAMIC_OBJECT)] dynamic("Dynamic Object", Float) = 0
+
 	}
 
 	Category
 	{
 		SubShader
 		{
+			CGINCLUDE
+
+			
+				#pragma shader_feature_local _PER_PIXEL_REFLECTIONS_OFF _PER_PIXEL_REFLECTIONS_ON _PER_PIXEL_REFLECTIONS_INVERTEX  _PER_PIXEL_REFLECTIONS_MIXED
+				#define RENDER_DYNAMICS
+
+				#pragma multi_compile ___ _qc_USE_RAIN
+				#pragma multi_compile ___ _qc_IGNORE_SKY
+				#pragma multi_compile qc_NO_VOLUME qc_GOT_VOLUME 
+
+				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+
+			
+			ENDCG
+
 			Pass
 			{
 				Tags
@@ -43,27 +64,23 @@ Shader "GPUInstancer/RayTracing/Geometry/Standard Cutout"
 
 				#define RENDER_DYNAMICS
 
-				#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-				#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-				#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-				#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
-
-
-
 				#pragma vertex vert
 				#pragma fragment frag
 				#pragma multi_compile_fwdbase
-				#pragma shader_feature_local _BUMP_NONE  _BUMP_REGULAR _BUMP_COMBINED 
-				#pragma shader_feature_local _SURFACE_NONMETAL _SURFACE_METAL _SURFACE_GLASS  
+				#pragma skip_variants LIGHTPROBE_SH LIGHTMAP_ON DIRLIGHTMAP_COMBINED DYNAMICLIGHTMAP_ON SHADOWS_SHADOWMASK LIGHTMAP_SHADOW_MIXING
 
-				#pragma multi_compile LIGHTMAP_OFF LIGHTMAP_ON
-
+				#pragma shader_feature_local ___ _WIND_SHAKE
+				#pragma shader_feature_local ___ _BACKFACE_FLIP
+				#pragma shader_feature_local ___ _AMBIENT_IN_UV2
+				#pragma shader_feature_local _AO_NONE _AO_MADS _AO_SEPARATE
+				#pragma shader_feature_local ___ _COLOR_R_AMBIENT
+				#pragma shader_feature_local ___ _DYNAMIC_OBJECT
 				#pragma shader_feature_local ___ _SUB_SURFACE
-				#pragma shader_feature_local ___ _AMBIENT
-				#pragma shader_feature_local ___ _SHOWUVTWO
-				#pragma multi_compile ___ _qc_Rtx_MOBILE
-
-				struct v2f {
+				#pragma shader_feature_local ___ _SDF_AMBIENT
+		
+				
+				struct v2f
+				{
 					float4 pos			: SV_POSITION;
 					float2 texcoord		: TEXCOORD0;
 					float2 texcoord1	: TEXCOORD1;
@@ -72,9 +89,7 @@ Shader "GPUInstancer/RayTracing/Geometry/Standard Cutout"
 					float4 wTangent		: TEXCOORD4;
 					float3 viewDir		: TEXCOORD5;
 					SHADOW_COORDS(6)
-
-					float2 topdownUv : TEXCOORD7;
-					float2 lightMapUv : TEXCOORD8;
+					float4 traced : TEXCOORD7;
 					fixed4 color : COLOR;
 				};
 
@@ -82,12 +97,9 @@ Shader "GPUInstancer/RayTracing/Geometry/Standard Cutout"
 				float4 _MainTex_ATL_UvTwo_TexelSize;
 
 				sampler2D _MainTex;
-				#if _AMBIENT
-				sampler2D _Ambient;
-				#endif
 				float4 _MainTex_ST;
 				float4 _MainTex_TexelSize;
-				sampler2D _Bump;
+
 				sampler2D _SkinMask;
 				float4 _SubSurface;
 
@@ -100,6 +112,12 @@ Shader "GPUInstancer/RayTracing/Geometry/Standard Cutout"
 
 					float4 worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1));
 
+#if _WIND_SHAKE
+					float topDownShadow = TopDownSample_Shadow(worldPos.xyz);
+					v.vertex = mul(unity_WorldToObject, float4(WindShakeWorldPos(worldPos.xyz, topDownShadow), v.vertex.w));
+					worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1));
+#endif
+
 					o.pos = UnityObjectToClipPos(v.vertex);
 					o.texcoord = TRANSFORM_TEX(v.texcoord, _MainTex);
 					o.texcoord1 = v.texcoord1;
@@ -108,240 +126,232 @@ Shader "GPUInstancer/RayTracing/Geometry/Standard Cutout"
 					o.color = v.color;
 					o.viewDir = WorldSpaceViewDir(v.vertex);
 
-					o.lightMapUv = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
+					o.traced = GetTraced_Mirror_Vert(o.worldPos, normalize(o.viewDir.xyz), o.normal.xyz);
 
-
-					TRANSFER_WTANGENT(o)
-					TRANSFER_TOP_DOWN(o);
+					TRANSFER_WTANGENT(o);
 					TRANSFER_SHADOW(o);
 
 					return o;
 				}
 
+#if _AO_SEPARATE
+				sampler2D _OcclusionMap;
+#endif
 
-				float4 frag(v2f o) : COLOR
+				sampler2D _SpecularMap;
+
+				float4 frag(v2f i) : COLOR
 				{
+					float3 viewDir = normalize(i.viewDir.xyz);
+					float2 uv = i.texcoord.xy;
 
+					float4 tex = tex2D(_MainTex, uv);
+					clip(tex.a-0.1);
 
-					#if _qc_Rtx_MOBILE
+					float4 madsMap = tex2D(_SpecularMap, uv);
+					float displacement = madsMap.b;
 
-						float4 mobTex = tex2D(_MainTex, o.texcoord);
+					float dott = dot(viewDir, i.normal.xyz);
 
-						clip(mobTex.a - 0.5);
+					#if _BACKFACE_FLIP
+					float isBackface = smoothstep( 0, -0.001, dott);
 
-						ColorCorrect(mobTex.rgb);
+					i.normal.xyz = lerp(i.normal.xyz, -i.normal.xyz, isBackface);
 
-						#if LIGHTMAP_ON
-							mobTex.rgb *= DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, o.lightMapUv));
-						#else 
-
-							float oobMob;
-							mobTex.rgb *= SampleVolume(o.worldPos, oobMob).rgb;
-
-						#endif
-
-						return mobTex;
-
+					//	return float4(i.normal.xyz,1);
 					#endif
-
-					float3 viewDir = normalize(o.viewDir.xyz);
-					float rawFresnel = smoothstep(1,0, dot(viewDir, o.normal.xyz));
-
-					
-					float2 uv = o.texcoord.xy;
-
-					float4 bumpMap;
-					float3 tnormal;
-					SampleBumpMap(_BumpMap, bumpMap, tnormal, uv);
-
-					uv -= tnormal.rg  *  _MainTex_TexelSize.xy;
-
-					float4 tex = tex2D(_MainTex, uv);// * o.color;
-
-					clip(tex.a - 0.5);
 				
-					float3 normal = o.normal.xyz;
 
-					ApplyTangent(normal, tnormal, o.wTangent);
+					float rawFresnel = smoothstep(1, 0, abs(dott));
+					float offsetAmount = (1 + rawFresnel * rawFresnel * 4);
 
-					float fresnel = saturate(dot(normal,viewDir));
+					float3 tnormal = UnpackNormal(tex2D(_BumpMap, uv));
+					uv -= tnormal.rg * _MainTex_TexelSize.xy;
+					float3 normal = i.normal.xyz;
 
-					//return fresnel;
+					//return dott;
 
-					float smoothness = 
-					#if _BUMP_COMBINED
-					bumpMap.b;
-					#else 
-					0.1;
-					#endif
+					float ao;
 
-					float ambient = 
-					#if _BUMP_COMBINED
-					 bumpMap.a;
-					#else 
+#if _AO_SEPARATE
+#	if _AMBIENT_IN_UV2
+					ao = tex2D(_OcclusionMap, i.texcoord1.xy).r;
+#	else
+					ao = tex2D(_OcclusionMap, uv).r;
+#	endif
+#elif _AO_MADS
+					ao = madsMap.g;
+#else 
+					ao = 1;
+#endif
 
-					#if _AMBIENT
-						tex2D(_Ambient, uv).r;// * o.color;
-					#else 
-						1;
-					#endif
-					#endif
+#if _COLOR_R_AMBIENT
+					ao *= (0.25 + i.color.r * 0.75);
+#endif
 
-					float shadow = SHADOW_ATTENUATION(o);
+				
+					ApplyTangent(normal, tnormal, i.wTangent);
 
-					float direct = shadow * smoothstep(1 - ambient, 1.5 - ambient * 0.5, dot(normal, _WorldSpaceLightPos0.xyz));
-					
-					float3 lightColor = GetDirectional() * direct;
+					float shadow = SHADOW_ATTENUATION(i);//getShadowAttenuation(i.worldPos);
+
+					// ********************** Contact Shadow
+
+#if _DYNAMIC_OBJECT
+
+
+	ao *=SampleContactAO(i.worldPos, normal);
+//	return ao;
+#endif
+					// ********************** WATER
+
+					float water = 0;
+
+#if _qc_USE_RAIN
+
+
+					float rain = GetRain(i.worldPos, normal, i.normal, shadow);
+
+					float flattenWater = ApplyWater(water, rain, ao, displacement, madsMap, tnormal, i.worldPos, i.normal.y);
+
+					normal = i.normal.xyz;
+					ApplyTangent(normal, tnormal, i.wTangent);
+
+#endif
+
+#if _SDF_AMBIENT
+
+	ao *=SampleContactAO(i.worldPos, normal);
+#endif
+
+					float metal = madsMap.r;
+					float fresnel = GetFresnel_FixNormal(normal,  i.normal, viewDir) * ao;
+					float specular = GetSpecular(madsMap.a, fresnel, metal); 
+
+				
+
+					float3 lightColor = Savage_GetDirectional_Opaque(shadow, ao, normal,  i.worldPos);
 
 					// LIGHTING
+					float3 bake;
+					float3 volumeSamplePosition;
+					bake = Savage_GetVolumeBake(i.worldPos, normal, i.normal, volumeSamplePosition);
 
-					#if _SURFACE_NONMETAL  
+					TOP_DOWN_SETUP_UV(topdownUv, i.worldPos);
+					float4 topDownAmbient = SampleTopDown_Ambient(topdownUv, normal, i.worldPos);
+					ao *= topDownAmbient.a;
+					bake += topDownAmbient.rgb;
 
+					ModifyColorByWetness(tex.rgb, water, madsMap.a);
 
-					float4 normalAndDist = SdfNormalAndDistance(o.worldPos);
+					float3 reflectionColor = 0;
+					float3 pointLight = GetPointLight(volumeSamplePosition, normal, ao, viewDir, specular, reflectionColor);
+
+					float3 col = tex.rgb * (pointLight + lightColor + bake * ao);
+
+					// *********************** Reflections
+
+					float3 reflectedRay = reflect(-viewDir, normal.xyz);
+
+					float4 topDownAmbientSpec = SampleTopDown_Specular(topdownUv, reflectedRay, i.worldPos, i.normal.xyz, specular);
+
+					ao *= topDownAmbientSpec.a;
+
+					float3 reflectedBake = GetBakedAndTracedReflection(volumeSamplePosition, reflectedRay, specular, i.traced);
+
+					float specularReflection = GetDirectionalSpecular(normal, viewDir, specular);// pow(dott, power) * brightness;
+
+					reflectionColor += specularReflection * lightColor
+						+ (topDownAmbientSpec.rgb + reflectedBake) * ao;
+
 					
-					float3 volumePos = o.worldPos + (normal + normalAndDist.xyz * saturate(normalAndDist.w)) 
-						* lerp(0.5, 1 - fresnel, smoothness) * 0.5
-						* _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w;
 
-					float outOfBounds;
-					float4 bakeRaw = SampleVolume(volumePos, outOfBounds);
-
-					float gotVolume = bakeRaw.a * (1- outOfBounds);
-					outOfBounds = 1 - gotVolume;
-					float3 avaragedAmbient = GetAvarageAmbient(normal);
-					bakeRaw.rgb = lerp(bakeRaw.rgb, avaragedAmbient, outOfBounds); // Up 
-
-					float4 bake = bakeRaw;
-
-					ApplyTopDownLightAndShadow(o.topdownUv,  normal,  bumpMap,  o.worldPos,  gotVolume, fresnel, bake);
+					MixInSpecular(col, reflectionColor, tex, metal, specular, fresnel);
 
 #					if _SUB_SURFACE
 
-					float2 damUv = o.texcoord1.xy;
-					float4 mask = tex2D(_MainTex_ATL_UvTwo, damUv);
+					float4 skin = tex2D(_SkinMask, i.texcoord.xy) * _SubSurface;
 
-					float skin = tex2D(_SkinMask, damUv);
-					float subSurface = _SubSurface.a * skin * (1-mask.g)  * (1+rawFresnel) * 0.5;
+					ApplySubSurface(col, skin, volumeSamplePosition, viewDir, specular, rawFresnel, shadow);
+
 #					endif
 
-					float3 col = lightColor * (1 + outOfBounds) 
-						+ bake.rgb * ambient
-						;
-					
-					ColorCorrect(tex.rgb);
+					ApplyBottomFog(col.rgb, i.worldPos.xyz, viewDir.y);
 
-					col.rgb *=tex.rgb;
-
-					AddGlossToCol(lightColor);
-
-			
-#					if _SUB_SURFACE
-					col *= 1-subSurface;
-					TopDownSample(o.worldPos, bakeRaw.rgb, outOfBounds);
-					col.rgb += subSurface * _SubSurface.rgb * (_LightColor0.rgb * shadow + bakeRaw.rgb);
-#					endif
-
-#			elif _SURFACE_METAL
-
-			
-				float3 reflectionPos;
-				float outOfBoundsRefl;
-				float3 bakeReflected = SampleReflection(o.worldPos, viewDir, normal, shadow, reflectionPos, outOfBoundsRefl);
-
-				TopDownSample(reflectionPos, bakeReflected, outOfBoundsRefl);
-
-				ColorCorrect(tex.rgb);
-				float3 col =  tex.rgb * bakeReflected;
-
-#			elif _SURFACE_GLASS
-
-
-				float3 reflectionPos;
-				float outOfBoundsRefl;
-				float3 bakeReflected = SampleReflection(o.worldPos, viewDir, normal, shadow, reflectionPos, outOfBoundsRefl);
-
-				TopDownSample(reflectionPos, bakeReflected, outOfBoundsRefl);
-
-				float outOfBounds;
-				float3 straightHit;
-				float3 bakeStraight = SampleRay(o.worldPos, normalize(-viewDir - normal*0.5), shadow, straightHit, outOfBounds );
-
-				TopDownSample(straightHit, bakeStraight, outOfBounds);
-
-			//	return fresnel;
-
-				float showReflected = 1 - fresnel;
-
-				float3 col;
-
-				col = lerp (bakeStraight,
-				bakeReflected , showReflected);
-
-			//	col.r = lerp(bakeStraight.r, bakeReflected.r, pow(showReflected,3));
-			//	col.g = lerp(bakeStraight.g, bakeReflected.g, showReflected * showReflected);
-			//	col.b = lerp(bakeStraight.b, bakeReflected.b, pow(showReflected,0.5));
-#				endif
-
-
-					ApplyBottomFog(col, o.worldPos.xyz, viewDir.y);
-
-					return float4(col,1);
+					return float4(col, 1);
 
 				}
 				ENDCG
 			}
 
+			Pass 
+			{
+				Name "Caster"
+				Tags 
+				{ 
+					"LightMode" = "ShadowCaster" 
+				}
 
-			  Pass {
-        Name "Caster"
-        Tags { "LightMode" = "ShadowCaster" }
-					Cull Off//Back
-CGPROGRAM
+				Cull Off//Back
+				CGPROGRAM
 #include "UnityCG.cginc"
 #include "./../../GPUInstancer/Shaders/Include/GPUInstancerInclude.cginc"
 #pragma instancing_options procedural:setupGPUI
 #pragma multi_compile_instancing
-#pragma vertex vert
-#pragma fragment frag
-#pragma target 2.0
-#pragma multi_compile_shadowcaster
-#include "UnityCG.cginc"
+				#pragma vertex vert
+				#pragma fragment frag
+				#pragma target 2.0
+				#pragma multi_compile_shadowcaster
+				#pragma shader_feature_local ___ _WIND_SHAKE
+				#include "UnityCG.cginc"
 
-struct v2f {
-    V2F_SHADOW_CASTER;
-    float2  uv : TEXCOORD1;
-    UNITY_VERTEX_OUTPUT_STEREO
-};
+				struct v2f 
+				{
+					V2F_SHADOW_CASTER;
+					float2  uv : TEXCOORD1;
+					UNITY_VERTEX_OUTPUT_STEREO
+				};
 
 
-uniform sampler2D _MainTex;
-float4 _MainTex_ST;
+				uniform sampler2D _MainTex;
+				float4 _MainTex_ST;
 
-v2f vert( appdata_base v )
-{
-    v2f o;
-    UNITY_SETUP_INSTANCE_ID(v);
-    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-    TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
-    o.uv = TRANSFORM_TEX(v.texcoord, _MainTex);
-    return o;
-}
+				v2f vert( appdata_base v )
+				{
+					v2f o;
 
-uniform fixed _Cutoff;
-uniform fixed4 _Color;
+					UNITY_SETUP_INSTANCE_ID(v);
 
-float4 frag( v2f i ) : SV_Target
-{
-    fixed4 texcol = tex2D( _MainTex, i.uv );
-    clip( texcol.a - 0.5 );
+					#if _WIND_SHAKE
+						float4 worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1));
+						float topDownShadow = TopDownSample_Shadow(worldPos.xyz);
+						v.vertex = mul(unity_WorldToObject, float4(WindShakeWorldPos(worldPos.xyz, topDownShadow), v.vertex.w));
+						//worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1));
+					#endif
 
-    SHADOW_CASTER_FRAGMENT(i)
-}
-ENDCG
+					UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+					TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
 
-    }
+					o.uv = TRANSFORM_TEX(v.texcoord, _MainTex);
+					return o;
+				}
 
+				uniform fixed _Cutoff;
+				uniform fixed4 _Color;
+
+				float4 frag( v2f i ) : SV_Target
+				{
+					float4 texcol = tex2D( _MainTex, i.uv );
+
+					float fwid = length(fwidth(i.uv));
+
+					clip(texcol.a - 0.1);
+
+					//clip(texcol.a - 0.5 + smoothstep(0, 1, fwid * 100) * 0.45);
+
+					SHADOW_CASTER_FRAGMENT(i)
+				}
+				ENDCG
+			}
 		}
 		Fallback "Diffuse"
 	}

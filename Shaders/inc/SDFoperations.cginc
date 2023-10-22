@@ -1,7 +1,14 @@
 // You can add/subtract sin(pos.x/y/y); but use: if  abs(dist)<0.1 
 // abs(dist) - thickness to create a shell
-float dot2(in float2 v) { return dot(v, v); }
-float ndot(in float2 a, in float2 b) { return a.x * b.x - a.y * b.y; }
+float dot2(in float2 v) 
+{ 
+	return dot(v, v); 
+}
+
+float ndot(in float2 a, in float2 b) 
+{ 
+	return a.x * b.x - a.y * b.y;
+}
 
 float2 rotateV2(float2 p, float a) 
 {
@@ -72,6 +79,23 @@ inline float GridDistance(float3 p, float size, float thickness)
 	return min(min(length(rem.xy), length(rem.yz)) ,length(rem.xz))	- thickness;
 }
 
+float insideBox3D(float3 v, float3 center, float3 size)
+{
+	float3 bottomLeft = center - size;
+	float3 topRight = center + size;
+	float3 s = step(bottomLeft, v) - step(topRight, v);
+	return s.x * s.y * s.z;
+}
+
+float sdfBox(float3 currentRayPosition, float3 boxPosition, float3 boxSize)
+{
+	float3 adjustedRayPosition = currentRayPosition - boxPosition;
+	float3 distanceVec = abs(adjustedRayPosition) - boxSize;
+	float maxDistance = max(distanceVec.x, max(distanceVec.y, distanceVec.z));
+	float distanceToBoxSurface = min(maxDistance, 0.0) + length(max(distanceVec, 0.0));
+
+	return distanceToBoxSurface;
+}
 
 inline float CubeDistance_Inernal(float3 p, float3 size)
 {
@@ -79,17 +103,15 @@ inline float CubeDistance_Inernal(float3 p, float3 size)
 	return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
-float3 GetRotatedPos(float3 pos, float3 spherePos, float4 rotation)
+float3 GetRotatedPos(float3 pos, float3 centerPos, float4 rotation)
 {
-	pos -= spherePos; 
+	pos -= centerPos;
 	pos = RotateVec(pos, rotation); 
 	return pos;
 }
 
 #define ROTATE_APPLY(SDF_INTERNAL) \
 float dist = SDF_INTERNAL(GetRotatedPos(p, posNsize.xyz, rotation), size) ; \
-
-
 
 float3 GetTwistedPosition(in float3 p, in float k )
 {
@@ -108,9 +130,6 @@ inline float CubeDistanceRot(float3 p, float4 rotation , float4 posNsize, float3
 
 	return dist;
 }
-
-
-
 
 inline float CubeDistance(float3 p, float4 posNsize, float3 size, float softness) 
 {
@@ -151,7 +170,8 @@ inline float CubicSmin(float a, float b, float k)
 	return min(a, b) - h * h*h*k*(1.0 / 6.0);
 }
 
-inline float SmoothIntersection(float d1, float d2, float k) {
+inline float SmoothIntersection(float d1, float d2, float k) 
+{
 	float h = saturate(0.5 - 0.5 * (d2 - d1) / k);
 	return lerp(d2, d1, h) + k * h * (1.0 - h);
 }
@@ -162,7 +182,6 @@ inline float OpSmoothSubtraction(float d1, float d2, float k)
 	float h = saturate((1 - (d2 + d1) / (k + 0.0001))*0.5);
 	return lerp(d1, -d2, h) + k * h * (1 - h);
 }
-
 
 inline float DifferenceSDF(float distA, float distB) 
 {

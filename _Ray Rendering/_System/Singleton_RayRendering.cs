@@ -1,29 +1,35 @@
 ﻿using UnityEngine;
-using QuizCanners.Migration;
-using QuizCanners.Inspect;
-using QuizCanners.Lerp;
-using QuizCanners.Utils;
+
 using System;
-using QuizCanners.SpecialEffects;
 
 namespace QuizCanners.RayTracing
 {
+    using SpecialEffects;
+    using static RayRendering;
+    using Migration;
+    using Inspect;
+    using Lerp;
+    using Utils;
+
     [ExecuteAlways]
-    internal partial class Singleton_RayRendering : Singleton.BehaniourBase, IPEGI, ILinkedLerping, ICfg, ITaggedCfg
+    [AddComponentMenu("Quiz с'Anners/Ray Rendering/RTX Controller")]
+    public class Singleton_RayRendering : Singleton.BehaniourBase, IPEGI, ILinkedLerping, ICfg, ITaggedCfg
     {
         [Header("Submanagers")]
         [SerializeField] internal BuffersManager buffersManager = new();
         [SerializeField] internal TracerManager tracerManager = new();
         [SerializeField] internal SceneManager sceneManager = new();
-        [SerializeField] internal WeatherManager lightsManager = new();
         [SerializeField] internal QualityManager qualityManager = new();
         [SerializeField] internal ColorManager colorManager = new();
+        [SerializeField] internal SDFVolume sdfVolume = new();
+        [SerializeField] public WeatherManager lightsManager = new();
+        [SerializeField] internal LowResolutionDepth lowResolutionDepth;
 
         [Header("Dependencies")]
      
         [SerializeField] internal ConstantValues Constants = new();
 
-        [SerializeField] internal CfgData _lastState;
+       // [SerializeField] internal CfgData _lastState;
 
         [Serializable]
         public class ConstantValues
@@ -31,36 +37,49 @@ namespace QuizCanners.RayTracing
             public int TransparentFrames = 16;
         }
 
+        public int Version = 0;
+
         Singleton_VolumeTracingBaker VolumeTracingBaker => Singleton.Get<Singleton_VolumeTracingBaker>();
-        private RayRenderingTarget Target => tracerManager.Target;
+        internal RayRenderingTarget Target => tracerManager.Target;
         public bool NeedScreenSpaceBaking => lightsManager.MaxRenderFrames > sceneManager.StableFrames;
         internal bool TargetIsScreenBuffer => Target == RayRenderingTarget.RayIntersection || Target == RayRenderingTarget.RayMarching || Target == RayRenderingTarget.ProgressiveRayMarching;
        
         protected override void OnAfterEnable()
         {
-            this.Decode(_lastState);
+           // this.Decode(_lastState);
             qualityManager.ManagedOnEnable();
             tracerManager.OnConfigurationChanged();
             sceneManager.ManagedOnEnable();
             lightsManager.ManagedOnEnable();
             colorManager.ManagedOnEnable();
+            sdfVolume.ManagedOnEnable();
+            SetBakingDirty(reason: "Scene reloaded");
         }
 
         protected override void OnBeforeOnDisableOrEnterPlayMode(bool _afterEnableCalled)
         {
             if (_afterEnableCalled)
             {
-                _lastState = Encode().CfgData;
+                //_lastState = Encode().CfgData;
                 sceneManager.ManagedOnDisable();
                 tracerManager.ManagedOnDisable();
                 lightsManager.ManagedOnDisable();
+                sdfVolume.ManagedOnDisable();
             }
         }
 
-        public void SetBakingDirty(string reason = "?")
+        public void SetBakingDirty(string reason = "?", bool invalidateResult = false)
         {
             sceneManager.OnSetBakingDirty();
             _setDirtyReason = reason;
+            Version++;
+            if (invalidateResult) 
+            {
+                if (VolumeTracingBaker)
+                {
+                    VolumeTracingBaker.ClearBake(eraseResult: false);
+                }
+            }
         }
 
         #region Encode & Decode
@@ -88,6 +107,8 @@ namespace QuizCanners.RayTracing
 
         public void Update()
         {
+            lightsManager.ManagedUpdate();
+
             if (!Application.isPlaying) 
                 return;
             
@@ -97,6 +118,8 @@ namespace QuizCanners.RayTracing
                 Portion(_lerpData);
                 Lerp(_lerpData, false);
             }
+
+            sdfVolume.ManagedUpdate();
 
             sceneManager.ManagedUpdate(out int stableFrames);
 
@@ -115,7 +138,7 @@ namespace QuizCanners.RayTracing
             }
 
             buffersManager.ManagedUpdate(stableFrames: stableFrames);
-            lightsManager.ManagedUpdate();
+          
 
             if (VolumeTracingBaker)
             {
@@ -123,10 +146,11 @@ namespace QuizCanners.RayTracing
 
                 if (VolumeTracingBaker.enabled) 
                 {
+                    /*
                     if (stableFrames < 2)
                         VolumeTracingBaker.ClearBake();
                     else if (stableFrames < 16)
-                        VolumeTracingBaker.BakeNewAreas();
+                        VolumeTracingBaker.RestartBaker();*/
                 }
             
             }
@@ -157,9 +181,9 @@ namespace QuizCanners.RayTracing
             tracerManager.Lerp(ld, canSkipLerp);
             sceneManager.Lerp(ld, canSkipLerp);
 
-            SetBakingDirty("Lerping");
+           // SetBakingDirty("Lerping");
 
-            if (ld.Done)
+            if (ld.IsDone)
                 lerpFinished = true;
             
         }
@@ -211,6 +235,10 @@ namespace QuizCanners.RayTracing
 
                 buffersManager.Enter_Inspect_AsList(exitLabel: "Buffers Manager").Nl();
 
+                sdfVolume.Enter_Inspect_AsList(exitLabel: "SDF Manager").Nl();
+
+                lowResolutionDepth.Enter_Inspect_AsList(exitLabel: "Low Res Depth").Nl();
+
                 colorManager.Enter_Inspect().Nl();
 
                 if ("Volume".PegiLabel().IsEntered().Nl_ifEntered())
@@ -232,12 +260,9 @@ namespace QuizCanners.RayTracing
 
                 if (changed)
                 {
-                    if (VolumeTracingBaker)
-                    {
-                        VolumeTracingBaker.ClearBake();
-                    }
+                 
                     lerpFinished = false;
-                    SetBakingDirty(reason: "Inspector Changes");
+                    SetBakingDirty(reason: "Inspector Changes", invalidateResult: true);
                 }
 
                 if (context.IsAnyEntered == false && Application.isPlaying)
@@ -256,6 +281,17 @@ namespace QuizCanners.RayTracing
                         "Lerp Done: {0} [{1}] | Dirty from: {2}".F(_lerpData.dominantParameter, _lerpData.MinPortion, _setDirtyReason).PegiLabel().Nl();
                     }
                 }
+
+                
+                if (context.IsAnyEntered == false) 
+                {
+                    "Shadows:".PegiLabel(pegi.Styles.BaldText).Nl();
+                    var sc = QualitySettings.shadowCascades;
+                    "_ Cascades".PegiLabel().Edit(ref sc, 1, 4).Nl().OnChanged(()=> QualitySettings.shadowCascades = sc);
+
+                    var sd = QualitySettings.shadowDistance;
+                    "_ Distance".PegiLabel().Edit(ref sd).Nl().OnChanged(() => QualitySettings.shadowDistance = sd);
+                }
             }
         }
 
@@ -272,13 +308,18 @@ namespace QuizCanners.RayTracing
              else
                  "RTX (No Cfgs)".PegiLabel().Write();*/
 
-            // tracerManager.InspectInList_Nested(ref edited, ind); //exitLabel: "Tracer Manager").Nl();
-
-            if (Icon.Enter.Click() | "RTX & Weather Root".PegiLabel().ClickLabel())
+             if (Icon.Enter.Click())
                 edited = ind;
 
-            pegi.ClickHighlight(this);
+            "RTX".PegiLabel(40, pegi.Styles.EnterLabel).Write();
 
+            tracerManager.Inspect_Select(); //InspectInList_Nested(ref edited, ind); //exitLabel: "Tracer Manager").Nl();
+
+            lightsManager.Inspect_SelectConfig(); //InspectInList_Nested(ref edited, ind);
+
+
+
+            pegi.ClickHighlight(this);
         }
 
         public override string NeedAttention()
@@ -291,10 +332,8 @@ namespace QuizCanners.RayTracing
 
         #endregion
 
-        public enum RayRenderingTarget { Disabled = 0, RayIntersection = 1, RayMarching = 2, Volume = 3, ProgressiveRayMarching = 4 }
+       
     }
-
-
 
     [PEGI_Inspector_Override(typeof(Singleton_RayRendering))] internal class RayMarchingManagerDrawer : PEGI_Inspector_Override { }
 

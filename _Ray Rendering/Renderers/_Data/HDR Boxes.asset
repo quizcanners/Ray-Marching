@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36bd6a3e23532134fa789a6f3fa7451f, type: 3}
+  m_Name: HDR Boxes
+  m_EditorClassIdentifier: 
+  _hdrs:
+  - name: Daytime
+    reference:
+      m_AssetGUID: 1cde0e200e792cb4491204276a656490
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_EditorAssetChanged: 0
+  - name: Sunset
+    reference:
+      m_AssetGUID: 656a59a5ff93c46498416d97e5c16b66
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_EditorAssetChanged: 0
+  - name: Night
+    reference:
+      m_AssetGUID: 9b82fbec2f4256340baf7f93d89c8678
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_EditorAssetChanged: 0
+  - name: Weird
+    reference:
+      m_AssetGUID: ff4f1cf99ff8858439b5e9615d843087
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_EditorAssetChanged: 0
+  - name: Crisp
+    reference:
+      m_AssetGUID: b4f7f426701298a40b42d89dcd2645f7
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_EditorAssetChanged: 0
+  - name: Cloudy
+    reference:
+      m_AssetGUID: 64c94b9ba36b4a046b15d52e1e8b5e8e
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_EditorAssetChanged: 0
+  - name: Space
+    reference:
+      m_AssetGUID: c159dc1c905e4454ca2d5d1560d599c3
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_EditorAssetChanged: 0

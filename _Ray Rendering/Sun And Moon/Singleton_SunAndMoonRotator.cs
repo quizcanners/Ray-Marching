@@ -1,187 +1,114 @@
 using QuizCanners.Inspect;
+using QuizCanners.Lerp;
 using QuizCanners.Migration;
 using QuizCanners.Utils;
-using System;
-using System.Collections.Generic;
-using UniStorm.Effects;
 using UnityEngine;
-using static UniStorm.UniStormSystem;
 
 namespace QuizCanners.RayTracing
 {
 
     [ExecuteAlways]
-    public class Singleton_SunAndMoonRotator : Singleton.BehaniourBase, IPEGI_Handles, ICfg
+    [AddComponentMenu("Quiz ñ'Anners/Sun And Moon")]
+    public class Singleton_SunAndMoonRotator : Singleton.BehaniourBase, IPEGI_Handles, ICfg, ILinkedLerping
     {
+
         [Header("Sun")]
-        [SerializeField] public Light SharedLight;
-        [SerializeField] public GameObject SunObject;
-        [SerializeField] public Transform m_SunTransform;
-        [SerializeField] public Transform m_CelestialAxisTransform;
+        public Light SharedLight;
 
         public int SunAngle = 10;
-        [NonSerialized] internal UniStormSunShafts m_SunShafts;
 
-        [Header("Moon")]
-        [SerializeField] public Transform Moon;
-        public AnimationCurve MoonObjectFade = AnimationCurve.Linear(0, 1, 24, 1);
-        public List<MoonPhaseClass> MoonPhaseList = new();
-        public Color MoonPhaseColor = Color.white;
-        public Material m_MoonPhaseMaterial;
-        [SerializeField] Renderer m_MoonRenderer;
-        [SerializeField] Transform m_MoonTransform;
-        UniStormSunShafts m_MoonShafts;
 
-        private float _timeOfDayFraction;
+        private readonly LinkedLerp.QuaternionValue _sunRotation = new("ROtation", Quaternion.identity, 50f);
 
-        [SerializeField] private float _intensity;
+        private bool IsAnimating = true;
 
-        public float Intensity 
+        private float _intensityFallback = 1f;
+
+        public float SunIntensity 
         {
-            get => _intensity;
+            get => Singleton.GetValue<Singleton_RayRendering, float>(s => s.lightsManager.SunIntensity, _intensityFallback); //_intensityAnimation.targetValue;
+
             set 
             {
-                _intensity = value;
+                _intensityFallback = value;
+               // Singleton.Try<Singleton_RayRendering>(s => s.lightsManager.SunIntensity = _intensityFallback);
                 UpdateIntensity();
             }
         }
+
+    //    private float SunAttenuation => Singleton.GetValue<Singleton_RayRendering, float>(s => s.lightsManager.SunAttenuation, defaultValue: 1, logOnServiceMissing: false);
+
         private void UpdateIntensity() 
         {
-            SharedLight.intensity = _intensity * QcMath.SmoothStep(0f, 0.3f, Mathf.Abs(m_CelestialAxisTransform.forward.y));
+            SharedLight.intensity = SunIntensity * QcMath.SmoothStep(0f, 0.3f, Mathf.Abs(SharedLight.transform.forward.y));
         }
 
-        public bool LightIsSun => m_CelestialAxisTransform.forward.y < 0;
+        public Quaternion GetSunRotation() => _sunRotation.CurrentValue;
 
-        public float TimeOfDayFraction 
+        public void SetSunRotation(Quaternion rotation) 
         {
-            get => _timeOfDayFraction;
-            set 
-            {
-                _timeOfDayFraction = value;
-                m_CelestialAxisTransform.eulerAngles = new Vector3(TimeOfDayFraction * 360 - 100, 180, 180);
-
-                SharedLight.transform.rotation = LightIsSun ? m_CelestialAxisTransform.rotation : Quaternion.LookRotation(-m_CelestialAxisTransform.forward);
-
-                m_MoonRenderer.gameObject.SetActive(m_CelestialAxisTransform.forward.y > -0.3f);
-                SunObject.SetActive(m_CelestialAxisTransform.forward.y < 0.3f);
-
-                SunObject.transform.localScale = Vector3.one * 50;//25 * SunSize.Evaluate(TimeOfDayFraction * 24) * Vector3.one;
-                m_MoonTransform.localScale = Vector3.one * 40; //MoonSize.Evaluate(TimeOfDayFraction * 24) * m_MoonStartingSize;
-                m_MoonPhaseMaterial.SetFloat("_MoonBrightness", MoonObjectFade.Evaluate(TimeOfDayFraction * 24));
-                UpdateIntensity();
-            }
+            _sunRotation.TargetAndCurrentValue = rotation;
+            OnTimeOfDayChanged();
         }
 
-        private Camera PlayerCamera => Camera.main;
+        private bool LightIsSun => SharedLight.transform.forward.y < 0;
+
+        void OnTimeOfDayChanged()
+        {
+            SharedLight.transform.rotation = _sunRotation.CurrentValue; 
+            UpdateIntensity();
+        }
+
+        public void SetLightSourcePositionAndColor(Vector3 position, Color color) 
+        {
+            Singleton.Try<Singleton_CameraOperatorGodMode>(c => 
+            {
+                var diff = position - c.Position;
+                SetSunRotation(Quaternion.LookRotation(-diff, Vector3.up));
+                SharedLight.color = color;
+            });
+        }
+
 
         protected override void OnAfterEnable()
         {
             base.OnAfterEnable();
 
             RenderSettings.sun = SharedLight;
+            IsAnimating = true;
         }
 
-        void CreateSun() 
+        #region Linked Lerp
+
+        private readonly LerpData _lerpData = new(unscaledTime: false);
+
+        public void Portion(LerpData ld)
         {
-           /* Sun = GameObject.Find("UniStorm Sun").GetComponent<Light>();
-            Sun.transform.localEulerAngles = new Vector3(0, SunAngle, 0);
-            m_CelestialAxisTransform = GameObject.Find("Celestial Axis").transform;
-            RenderSettings.sun = Sun;*/
-
-            SunObject = GameObject.Instantiate((GameObject)Resources.Load("UniStorm Sun Object"), transform.position, Quaternion.identity);
-            SunObject.name = "Sun";
-            m_SunTransform = SunObject.GetComponent<Renderer>().transform;
-            m_SunTransform.parent = SharedLight.transform;
-
-            m_SunTransform.localPosition = new Vector3(0, 0, -2000);
-            m_SunTransform.localEulerAngles = new Vector3(270, 0, 0);
+            _sunRotation.Portion(ld);
+            ///_timeOfDayAnimation.Portion(ld);
         }
 
-        void CreateMoon()
+        public void Lerp(LerpData ld, bool canSkipLerp)
         {
-           // Moon = GameObject.Find("UniStorm Moon").transform; //.GetComponent<Light>();
-           // Moon.localEulerAngles = new Vector3(-180, MoonAngle, 0);
-            GameObject m_CreatedMoon = Instantiate((GameObject)Resources.Load("UniStorm Moon Object") as GameObject, transform.position, Quaternion.identity);
-            m_CreatedMoon.name = "UniStorm Moon Object";
-            m_MoonRenderer = GameObject.Find("UniStorm Moon Object").GetComponent<Renderer>();
-            m_MoonTransform = m_MoonRenderer.transform;
-            m_MoonPhaseMaterial = m_MoonRenderer.sharedMaterial;
-            m_MoonPhaseMaterial.SetColor("_MoonColor", MoonPhaseColor);
-            m_MoonTransform.parent = Moon;
+            _sunRotation.Lerp(ld, canSkipLerp);
+           // _timeOfDayAnimation.Lerp(ld, canSkipLerp);
 
+            OnTimeOfDayChanged();
         }
 
-        void UpdateMoonTransform() 
-        {
-            if (PlayerCamera.farClipPlane < 2000)
-            {
-                m_MoonTransform.localPosition = new Vector3(0, 0, PlayerCamera.farClipPlane * -1);
-                m_MoonTransform.localEulerAngles = new Vector3(270, 0, 0);
-                m_MoonTransform.localScale = new Vector3(m_MoonTransform.localScale.x, m_MoonTransform.localScale.y, m_MoonTransform.localScale.z);
-            }
-            else
-            {
-                m_MoonTransform.localPosition = new Vector3(0, 0, -2000);
-                m_MoonTransform.localEulerAngles = new Vector3(270, 0, 0);
-                m_MoonTransform.localScale = new Vector3(m_MoonTransform.localScale.x, m_MoonTransform.localScale.y, m_MoonTransform.localScale.z);
-            }
-        }
-
-        void CreateMoonShafts()
-        {
-            if (m_MoonShafts)
-                return;
-
-            m_MoonShafts = PlayerCamera.gameObject.AddComponent<UniStormSunShafts>();
-            m_MoonShafts.sunShaftsShader = Shader.Find("Hidden/UniStormSunShafts");
-            m_MoonShafts.simpleClearShader = Shader.Find("Hidden/UniStormSimpleClear");
-            m_MoonShafts.useDepthTexture = true;
-            m_MoonShafts.maxRadius = 0.3f;
-            m_MoonShafts.sunShaftBlurRadius = 3.32f;
-            m_MoonShafts.radialBlurIterations = 3;
-            m_MoonShafts.sunShaftIntensity = 1;
-            GameObject MoonTransform = new GameObject("Moon Transform");
-            MoonTransform.transform.SetParent(Moon);
-            MoonTransform.transform.localPosition = new Vector3(0, 0, -20000);
-            m_MoonShafts.sunTransform = MoonTransform.transform;
-            ColorUtility.TryParseHtmlString("#515252FF", out Color SunColor);
-            m_MoonShafts.sunColor = SunColor;
-            ColorUtility.TryParseHtmlString("#222222FF", out Color ThresholdColor);
-            m_MoonShafts.sunThreshold = ThresholdColor;
-        }
-
-        void SetMoonPhase(int index)
-        {
-            if (MoonPhaseList.Count > 0)
-            {
-                var phase = MoonPhaseList[index];
-                m_MoonPhaseMaterial.SetTexture("_MainTex", phase.MoonPhaseTexture);
-                m_MoonRenderer.material = m_MoonPhaseMaterial;
-                m_MoonPhaseMaterial.SetColor("_MoonColor", MoonPhaseColor);
-            }
-        }
-
-
+        #endregion
 
         public void Update()
         {
-            /*
-            if (SunShaftsEffect == EnableFeature.Enabled && Light.Sun.intensity > 0)
-            {
-                m_SunShafts.sunShaftIntensity = SunLightShaftIntensity.Evaluate(TimeOfDayFraction * 24);
-                m_SunShafts.radialBlurIterations = SunLightShaftsBlurIterations;
-                m_SunShafts.sunShaftBlurRadius = SunLightShaftsBlurSize;
-                m_SunShafts.sunColor = SunLightShaftsColor.Evaluate(TimeOfDayFraction);
-            }
-            else if (MoonShaftsEffect == EnableFeature.Enabled) // && Light.Moon.intensity > 0)
-            {
-                m_MoonShafts.sunShaftIntensity = MoonLightShaftIntensity.Evaluate(TimeOfDayFraction * 24);
-                m_MoonShafts.radialBlurIterations = MoonLightShaftsBlurIterations;
-                m_MoonShafts.sunShaftBlurRadius = MoonLightShaftsBlurSize;
-                m_MoonShafts.sunColor = MoonLightShaftsColor.Evaluate(TimeOfDayFraction);
-            }*/
-        }
+            if (!IsAnimating)
+                return;
 
+            _lerpData.Update(this, canSkipLerp: false);
+            OnTimeOfDayChanged();
+
+            if (_lerpData.IsDone)
+                IsAnimating = false;
+        }
 
         #region Inspector
 
@@ -196,27 +123,17 @@ namespace QuizCanners.RayTracing
                 {
                     base.Inspect();
                     "Light is {0}".F(LightIsSun ? "Sun" : "Moon").PegiLabel().Nl();
-                    if ("Time Fraction".PegiLabel().Edit_01(ref _timeOfDayFraction).Nl())
-                        TimeOfDayFraction = _timeOfDayFraction;
-                }
+                   
+                    /*var t = TimeOfDayFraction_Target;
+                    if ("Time Fraction".PegiLabel().Edit_01(ref t).Nl())
+                        TimeOfDayFraction_Target = t;*/
 
-                if ("Debug".PegiLabel().IsEntered().Nl())
-                {
-                    pegi.ClickConfirm(CreateSun).Nl();
-                    pegi.ClickConfirm(CreateMoon).Nl();
-                    pegi.ClickConfirm(UpdateMoonTransform).Nl();
-
-                    if (!m_SunShafts && "Add Sun Shafts".PegiLabel().Click().Nl())
-                        m_SunShafts = Camera.main.gameObject.AddComponent<UniStormSunShafts>();
                 }
             }
         }
 
         public void OnSceneDraw()
         {
-            var axs = m_CelestialAxisTransform.transform;
-            pegi.Handle.Line(axs.position, axs.position + axs.forward * 10, Color.blue);
-
             var sun = SharedLight.transform;
             pegi.Handle.Line(sun.position, sun.position + 10 * SharedLight.intensity * sun.forward, Color.red);
         }
@@ -225,18 +142,23 @@ namespace QuizCanners.RayTracing
 
         #region Encode & Decode
         public CfgEncoder Encode() => new CfgEncoder()
-            .Add("t", TimeOfDayFraction)
-            .Add("i", Intensity)
+           .Add("rot", SharedLight.transform.rotation)
+           //.Add("t", TimeOfDayFraction_Target)
             ;
 
         public void DecodeTag(string key, CfgData data)
         {
            switch (key) 
            {
-                case "t": TimeOfDayFraction = data.ToFloat(); break;
-                case "i": Intensity = data.ToFloat(); break;
+               // case "t": TimeOfDayFraction_Target = data.ToFloat(); break;
+                case "rot": _sunRotation.TargetValue = data.ToQuaternion();
+
+                    IsAnimating = true;
+                    break;   
            }
         }
+
+
 
         #endregion
     }

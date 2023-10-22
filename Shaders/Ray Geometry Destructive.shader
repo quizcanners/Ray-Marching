@@ -2,26 +2,42 @@ Shader "RayTracing/Geometry/Destructible Dynamic"
 {
 	Properties
 	{
-		[NoScaleOffset] _MainTex_ATL_UvTwo("_Main DAMAGE (_UV2) (_ATL) (RGB)", 2D) = "black" {}
-		_Diffuse("Albedo (RGB)", 2D) = "white" {}
-		[KeywordEnum(None, Regular, Combined)] _BUMP("Combined Map", Float) = 0
-		_Map("Bump/Combined Map (or None)", 2D) = "gray" {}
-		
-		_DamDiffuse("Damaged Diffuse", 2D) = "white" {}
-		[NoScaleOffset]_BumpD("Bump Damage", 2D) = "gray" {}
 
-		_DamDiffuse2("Damaged Diffuse Deep", 2D) = "white" {}
-		[NoScaleOffset]_BumpD2("Bump Damage 2", 2D) = "gray" {}
+		_MainTex("Albedo (RGB)", 2D) = "white" {}
+	
+		_SpecularMap("R-Metalic G-Ambient _ A-Specular", 2D) = "black" {}
+		_BumpMap("Normal Map", 2D) = "bump" {}
 
-		_BloodPattern("Blood Pattern", 2D) = "gray" {}
+		[KeywordEnum(MADS, None, Separate)] _AO("AO Source", Float) = 0
+		_OcclusionMap("Ambient Map", 2D) = "white" {}
+
+		[Toggle(_AMBIENT_IN_UV2)] ambInuv2("Ambient mapped to UV2", Float) = 0
+		[Toggle(_COLOR_R_AMBIENT)] colAIsAmbient("Vert Col is Ambient", Float) = 0
+
+		_GorificationForce("Gorification", Range(0,1)) = 0
+
+		[Toggle(_PARALLAX)] parallax("Parallax", Float) = 0
+		_ParallaxForce("Parallax Amount", Range(0.001,0.3)) = 0.01
+
+		[NoScaleOffset] _Damage_Tex("_Main DAMAGE (_UV2) (_ATL) (RGB)", 2D) = "black" {}
+
+		_DamDiffuse("Damaged Diffuse", 2D) = "red" {}
 
 		[Toggle(_USE_IMPACT)] useImpact("_USE_IMPACT", Float) = 0
 		[Toggle(_DAMAGED)] isDamaged("_DAMAGED", Float) = 0
-		[Toggle(_SHOWUVTWO)] thisDoesntMatter("Debug Uv 2", Float) = 0
 
 		[Toggle(_SUB_SURFACE)] subSurfaceScattering("SubSurface Scattering", Float) = 0
 		_SubSurface("Sub Surface Scattering", Color) = (1,0.5,0,0)
 		_SkinMask("Skin Mask (_UV2)", 2D) = "white" {}
+
+
+		_BloodNoise("Blood Noise", 2D) = "white" {}
+
+		_Overlay("Overlay (RGBA)", 2D) = "white" {}
+		_OverlayTiling("Overlay Tiling", float) = 1
+
+				[KeywordEnum(OFF, ON, INVERTEX, MIXED)] _PER_PIXEL_REFLECTIONS("Traced Reflections", Float) = 0
+
 	}
 
 
@@ -32,22 +48,28 @@ Shader "RayTracing/Geometry/Destructible Dynamic"
 		#pragma shader_feature_local ___ _USE_IMPACT
 		#pragma shader_feature_local ___ _DAMAGED
 		#pragma shader_feature_local ___ _SUB_SURFACE
+		#pragma shader_feature_local ___ _PARALLAX
 
+	
+		#pragma shader_feature_local ___ _AMBIENT_IN_UV2
+		#pragma shader_feature_local _AO_MADS  _AO_NONE   _AO_SEPARATE
+		#pragma shader_feature_local ___ _COLOR_R_AMBIENT
 
-		#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-		#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-		#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-		#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
+		#pragma shader_feature_local _PER_PIXEL_REFLECTIONS_OFF _PER_PIXEL_REFLECTIONS_ON _PER_PIXEL_REFLECTIONS_INVERTEX  _PER_PIXEL_REFLECTIONS_MIXED
+	
 
-//#				if	_USE_IMPACT
-					float _ImpactDisintegration;
-					float _ImpactDeformation;
-					float4 _ImpactPosition;
-					float4 _qc_BloodColor;
-//#				endif
+		#pragma multi_compile qc_NO_VOLUME qc_GOT_VOLUME 
+		#pragma multi_compile __ _qc_IGNORE_SKY 
+
+		#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+		#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+
+			float _ImpactDisintegration;
+			float _ImpactDeformation;
+			float4 _ImpactPosition;
+			
 
 			float4 _SubSurface;
-
 
 			float3 DeformVertex(float3 worldPos, float3 normal, out float impact)
 			{
@@ -60,29 +82,34 @@ Shader "RayTracing/Geometry/Destructible Dynamic"
 
 				float deDist = 1/(1+dist);
 
-				impact = _ImpactDisintegration * (deDist + gyr * 0.5 + smoothstep(_ImpactDeformation, 0, dist)); //*lerp(1.5, 0.75, finalStage));
+				//float offset = ;
+
+				float explode = _ImpactDisintegration * _ImpactDeformation;
+
+				impact = smoothstep(0,2, (_ImpactDeformation * 0.1 + _ImpactDisintegration) *
+					(deDist + gyr * 0.5 + smoothstep(_ImpactDeformation, 0, dist))); //*lerp(1.5, 0.75, finalStage));
 				
-				// + min(_ImpactDeformation, _ImpactDeformation / (dist + 0.01));
+				worldPos.xyz -= impact * explode * normalize(vec) * 0.25 * smoothstep(0.5,0, dist);
 
-				float expansion = smoothstep(0, 1, _ImpactDisintegration * deDist);
+				float expansion = smoothstep(0, 1, explode * deDist);
 
-				return worldPos.xyz - ((normalize(vec) - normal) * 0.4 * gyr + _ImpactDisintegration * float3(0,6,0)) * expansion;
+				return worldPos.xyz -
+					normalize(vec) * (expansion + explode) +
+					normal * 0.1 * gyr * expansion ;
 			}
 
-			
 			float GetDisintegration(float3 worldPos, float4 mask, float impact)
 			{
 				//float gyr = abs(sdGyroid(worldPos * 5, 1));
 				float deInt = 1 - _ImpactDisintegration;
-				float destruction = smoothstep(deInt, deInt + 0.001 , impact);
+				float destruction = smoothstep(deInt, deInt + 0.1 , impact);
 				return min(0.01 - destruction, 0.75f - mask.g);
 			}
 
 			float LightUpAmount(float3 worldPos)
 			{
 				float dist = length(_ImpactPosition.xyz - worldPos);
-				return _ImpactDeformation //* smoothstep(0.1, 0, _ImpactDisintegration) 
-				* smoothstep(0.35, 0, dist);
+				return _ImpactDeformation * smoothstep(0.6, 0, dist);
 			}
 
 			void AddSubSurface(inout float3 col, float4 mask, float lightUp)
@@ -120,12 +147,8 @@ Shader "RayTracing/Geometry/Destructible Dynamic"
 			#pragma fragment frag
 			#pragma multi_compile_instancing
 			#pragma multi_compile_fwdbase
+			#pragma skip_variants LIGHTPROBE_SH LIGHTMAP_ON DIRLIGHTMAP_COMBINED DYNAMICLIGHTMAP_ON SHADOWS_SHADOWMASK LIGHTMAP_SHADOW_MIXING
 
-			#pragma shader_feature_local _BUMP_NONE  _BUMP_REGULAR _BUMP_COMBINED 
-			#pragma shader_feature_local ___ _SHOWUVTWO
-
-			#pragma multi_compile ___ _qc_Rtx_MOBILE
-			
 
 			struct v2f {
 				float4 pos			: SV_POSITION;
@@ -141,37 +164,38 @@ Shader "RayTracing/Geometry/Destructible Dynamic"
 					float2 impact : TEXCOORD7;
 #				endif
 
-				float2 topdownUv : TEXCOORD8;
+#if _PARALLAX || _DAMAGED
+				float3 tangentViewDir : TEXCOORD8; // 5 or whichever is free
+#endif
+				float4 traced : TEXCOORD9;
 				fixed4 color : COLOR;
 			};
 
-			sampler2D _MainTex_ATL_UvTwo;
-			float4 _MainTex_ATL_UvTwo_TexelSize;
+			sampler2D _Damage_Tex;
+			float4 _Damage_Tex_TexelSize;
 
-			sampler2D _Diffuse;
+			sampler2D _MainTex;
+			float4 _MainTex_ST;
+			float4 _MainTex_TexelSize;
+
 			sampler2D _SkinMask;
-			float4 _Diffuse_ST;
-			float4 _Diffuse_TexelSize;
-			sampler2D _Bump;
+			float _ParallaxForce;
 
-#				if _DAMAGED
+			sampler2D _BumpMap;
+			sampler2D _SpecularMap;
+
+			float4 _BloodNoise_ST;
+			sampler2D _BloodNoise;
+
+#if _AO_SEPARATE
+			sampler2D _OcclusionMap;
+#endif
+
+#			if _DAMAGED
 				sampler2D _DamDiffuse;
 				float4 _DamDiffuse_TexelSize;
-
-				sampler2D _DamDiffuse2;
-				float4 _DamDiffuse2_TexelSize;
-
-				sampler2D _BumpD;
-				sampler2D _BumpD2;
-#				endif
-				
-			sampler2D _Map;
-			float4 _Map_ST;
-		
-
-
-
-
+#			endif
+						
 			v2f vert(appdata_full v) 
 			{
 				v2f o;
@@ -187,214 +211,261 @@ Shader "RayTracing/Geometry/Destructible Dynamic"
 #				endif
 
 				o.pos = UnityObjectToClipPos(v.vertex);
-				o.texcoord = TRANSFORM_TEX(v.texcoord, _Diffuse);
+				o.texcoord = TRANSFORM_TEX(v.texcoord, _MainTex);
 				o.texcoord1 = v.texcoord1;
 				o.worldPos = worldPos;
 				
-				o.color = v.color;
 				o.viewDir = WorldSpaceViewDir(v.vertex);
 
-				TRANSFER_WTANGENT(o)
-				TRANSFER_TOP_DOWN(o);
-				TRANSFER_SHADOW(o);
+#				if _PARALLAX || _DAMAGED
+					TRANSFER_TANGENT_VIEW_DIR(o);
+#				endif
 
+				o.traced = GetTraced_Mirror_Vert(o.worldPos, normalize(o.viewDir.xyz), o.normal.xyz);
+
+
+				TRANSFER_WTANGENT(o)
+				TRANSFER_SHADOW(o);
+				o.color = v.color;
 				return o;
 			}
 
-			
-			sampler2D _BloodPattern;
+			float _GorificationForce;
 
-			float4 frag(v2f o) : COLOR
+			float4 frag(v2f i) : COLOR
 			{
+				float2 damUv = i.texcoord1.xy;
+				float4 mask = tex2D(_Damage_Tex, damUv);
+				float4 noise = tex2D(_BloodNoise, damUv * _BloodNoise_ST.xy);
 
-				o.viewDir.xyz = normalize(o.viewDir.xyz);
-				float2 damUv = o.texcoord1.xy;
-				float4 mask = tex2D(_MainTex_ATL_UvTwo, damUv);
-			
-
-				// R - Blood
-				// G - Damage
-
-				float rawFresnel = smoothstep(1,0, dot(o.viewDir.xyz, o.normal.xyz));
+				//return mask;
 
 #				if _USE_IMPACT
-					//float gyr = sdGyroid(o.worldPos * 20, 0.2);
-					float deInt = 1 - _ImpactDisintegration;
 
-					float redness = smoothstep( deInt * 0.75, deInt, o.impact.x);
-					mask.g = lerp(mask.g, 1, redness);
-					//float destruction = smoothstep(deInt, deInt + 0.001 + gyr , o.impact );
+					//i.impact.x *= (1+noise.x)*0.5;
+
+					i.impact.xy *= (0.5+noise.r);
+					//float gyr = sdGyroid(i.worldPos * 20, 0.2);
+					//float deInt = 1 - _ImpactDisintegration;
+
+					//float redness = smoothstep(deInt * 0.75, deInt, i.impact.x);
+					//mask.g = lerp(mask.g, 1, redness);
+					//float destruction = smoothstep(deInt, deInt + 0.001 + gyr , i.impact );
 
 					//clip(min(0.01 - destruction, 0.9f - mask.g));
 
-					clip(GetDisintegration(o.worldPos, mask, o.impact.x));
+					
+
+					clip(GetDisintegration(i.worldPos, mask, i.impact.x));
+
+					mask.r = lerp(mask.r, 1, i.impact.x);
+					
+					//return i.impact.y;
 #				endif
+
+mask *= (0.5+noise.r);
+
+				float2 uv = i.texcoord.xy;
+				float3 viewDir = normalize(i.viewDir.xyz);
+				float rawFresnel = saturate(1 - dot(viewDir, i.normal.xyz));
+				float offsetAmount = (1 + rawFresnel * rawFresnel * 4);
+				float4 madsMap = tex2D(_SpecularMap, uv);
+				float displacement = madsMap.b;
+			
+
+
+#if _PARALLAX || _DAMAGED
+				i.tangentViewDir = normalize(i.tangentViewDir);
+				i.tangentViewDir.xy /= i.tangentViewDir.z; // abs(o.tangentViewDir.z + 0.42);
+				float deOff = _ParallaxForce / offsetAmount;
+
+				CheckParallax(uv, madsMap, _SpecularMap, i.tangentViewDir, deOff, displacement);
+#endif
+
+				float3 tnormal = UnpackNormal(tex2D(_BumpMap, uv));
+				uv -= tnormal.rg * _MainTex_TexelSize.xy;
+				float3 normal = i.normal.xyz;
 
 			
 
-				// Get Layers					
-				float2 uv = o.texcoord.xy;
+				float ao;
 
-				float4 bumpMap;
-				float3 tnormal;
-				SampleBumpMap(_Map, bumpMap, tnormal, uv);
-				float4 tex = tex2D(_Diffuse, uv - tnormal.rg  * _Diffuse_TexelSize.xy) * o.color;
+#if _AO_SEPARATE
+#	if _AMBIENT_IN_UV2
+				ao = tex2D(_OcclusionMap, i.texcoord1.xy).r;
+#	else
+				ao = tex2D(_OcclusionMap, uv).r;
+#	endif
+
+#elif _AO_MADS
+				ao = madsMap.g;
+#else 
+				ao = 1;
+#endif
+
+	
+
+#if _COLOR_R_AMBIENT
+				ao *= (0.25 + i.color.r * 0.75);
+#endif
+
+				float4 tex = tex2D(_MainTex, uv);
+
+				float water = 0;
 
 #				if _DAMAGED
-					float2 terUv = uv*1.9;
 
-					float4 bumpd;
-					float3 tnormald;
-					SampleBumpMap(_BumpD, bumpd, tnormald, terUv);
-					float4 dam = tex2D(_DamDiffuse, terUv + tnormald.rg  * _DamDiffuse_TexelSize.xy);
+					//float noise = tex2D(_MainTex, uv * 4.56).r;
 
-					terUv *= 0.3;
+					float damDepth = mask.g *3 - noise - displacement;
+					float damAlpha = smoothstep(0, 0.5, damDepth);
+					float damAlpha2 = smoothstep(1, 1.5, damDepth);
 
-					float4 bumpd2;
-					float3 tnormald2;
-					SampleBumpMap(_BumpD2, bumpd2, tnormald2, terUv);
-					float4 dam2 = tex2D(_DamDiffuse2, terUv + tnormald2.rg  * _DamDiffuse2_TexelSize.xy);
+					mask.r += damAlpha2;
 
-					float2 offset = _MainTex_ATL_UvTwo_TexelSize.xy * 0.33;
+					//float2 offset = _Damage_Tex.xy;
+					float2 damPix = _Damage_Tex_TexelSize.xy;
+					float4 maskY = tex2D(_Damage_Tex, damUv + float2(0, damPix.y));
+					float4 maskX = tex2D(_Damage_Tex, damUv + float2(damPix.x, 0));
+					float3 damBump = normalize(float3(maskX.g - mask.g, maskY.g - mask.g, 0.1));
 
-					float maskUp = tex2D(_MainTex_ATL_UvTwo, float2(damUv.x, damUv.y + offset.y)).r - mask.g;
-					float maskRight = tex2D(_MainTex_ATL_UvTwo, float2(damUv.x + offset.x, damUv.y)).r - mask.g;
 
-					float3 dentNorm = float3(-maskRight, maskUp, 0);
+				
 
-					// MIX LAYERS
-					float fw = min(0.2, length(fwidth(uv)) * 100);
 
-					float tHoldDam = (1.01 + bumpd.a - bumpd2.a) * 0.5;
-					float damAlpha2 = smoothstep(max(0, tHoldDam  - fw), tHoldDam + fw, mask.g);
-					dam = lerp(dam, dam2, damAlpha2);
-					bumpd = lerp(bumpd, bumpd2, damAlpha2);
+					float2 terUv = uv * 1.9;
+					float4 dam = tex2D(_DamDiffuse, terUv);
+				//	float4 dam2 = tex2D(_DamDiffuse2, terUv * 0.3);
 
-#					if !_BUMP_NONE
-						tnormald = lerp(tnormald, tnormald2, damAlpha2);
-#					endif
 
-					float tHold = (1.01 - bumpd.a + bumpMap.a) * 0.1;
-					float damAlpha = smoothstep(max(0, tHold - fw), tHold + fw, mask.g);
+
+				//	dam = lerp(dam, dam2, damAlpha2);
+					tnormal = lerp(tnormal, damBump, damAlpha);
+
+					float damHole = smoothstep(4, 0, damDepth);
 
 					tex = lerp(tex, dam, damAlpha);
-					bumpMap = lerp(bumpMap, bumpd, damAlpha);
 
-#					if !_BUMP_NONE
-						tnormal = lerp(tnormal, tnormald, damAlpha);
-#					endif
+#				if _USE_IMPACT
 
-#				endif
+					//float toBlood = smoothstep(0, 0.5, _ImpactDisintegration);
 
-				// BUMP
 				
-#				if _SHOWUVTWO
-					float2 pixelEdge = (_MainTex_ATL_UvTwo_TexelSize.zw * damUv);
-					float dist = length(o.worldPos.xyz - _WorldSpaceCameraPos.xyz);
-					float2 awpos = abs(pixelEdge);
-					float2 iwpos = floor(awpos);
-					float2 smooth = abs(awpos - iwpos - 0.5);
-					float smoothingEdge = max(smooth.x, smooth.y);
-					int ind = (iwpos.x + iwpos.y);
-					int op = ind * 0.5f;
-					float fade = op * 
-						_MainTex_ATL_UvTwo_TexelSize.w * 0.03;
-					smoothingEdge = smoothstep( 0, fade, 0.5 - smoothingEdge);
-					float4 val = (0.25 + mask) * 0.5  + float4(lerp(0.25, abs(ind - op * 2) * 0.5, smoothingEdge), damUv.x, damUv.y, 0);
-					return  val;
-#				endif
 
-				float3 normal = o.normal.xyz;
+					//tex = lerp(tex, _qc_BloodColor * dam, toBlood);
+						//tex = lerp(tex, _qc_BloodColor, _GorificationForce);
 
-#				if _DAMAGED
-					tnormal -= float3(-dentNorm.x, dentNorm.y, 0) * damAlpha;
-#				endif
+					//madsMap = lerp(madsMap, float4(1,1,1,1), toBlood);
 
-				ApplyTangent(normal, tnormal, o.wTangent);
+#endif
 
-				float fresnel = saturate(dot(normal, o.viewDir.xyz));
-
-#				if _DAMAGED
-
-					float showBlood = smoothstep(bumpMap.a*0.5, bumpMap.a, mask.r * (1 + tex2D(_BloodPattern, uv).r)); // bumpMap.a * max(0, normal.y) * (1 - bumpMap.b);
-
-					float showBloodWave = normal.y * showBlood * damAlpha2;
-
-					// BLOODY FLOOR
-					float3 bloodGyrPos = o.worldPos.xyz*3 + float3(0,_Time.y - mask.g,0)  ;
-					//abs(dot(sin(pos), cos(pos.zxy)))
-					float3 boodNormal = normalize (float3(
-						(abs(dot(sin(bloodGyrPos), cos(bloodGyrPos.zxy)))), 1 + (1-mask.r)*4,
-						abs(dot(sin(bloodGyrPos.yzx), cos(bloodGyrPos.xzy)))));
-
-					normal = normalize(lerp(normal, boodNormal, smoothstep(0.1,0.4, showBloodWave)));
-
-					float3 bloodColor = _qc_BloodColor.rgb * (1 - mask.r*0.75);
-
-					tex.rgb = lerp(tex.rgb, bloodColor, showBlood );
-					bumpMap = lerp(bumpMap, float4(0.5, 0.5, 0.8, 0.8), showBloodWave);
+					ApplyBlood(mask, water, tex.rgb, madsMap, displacement);
 
 #				endif
 
-				float smoothness = bumpMap.b;// lerp(bumpMap.b, 0.8, isBlood);
 
-				// LIGHTING
+				ApplyTangent(normal, tnormal, i.wTangent);
 
-				float3 volumePos = o.worldPos 
-				+ normal 
-					* lerp(0.5, 1 - fresnel, smoothness) * 0.5
-					* _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w;
 
-				float outOfBounds;
-				float4 bakeRaw = SampleVolume(volumePos, outOfBounds);
+				// SDF Ambient
 
-				float gotVolume = bakeRaw.a * (1- outOfBounds);
-				outOfBounds = 1 - gotVolume;
-				float3 avaragedAmbient = GetAvarageAmbient(normal);
-				bakeRaw.rgb = lerp(bakeRaw.rgb, avaragedAmbient, outOfBounds); // Up 
+			/*	float outsideVolume;
+				float4 scene = SampleSDF(i.worldPos , outsideVolume);
 
-				float4 bake = bakeRaw;
+				float toSurface = saturate(dot(scene.xyz, -normal));
 
-				float shadow = SHADOW_ATTENUATION(o) * SampleSkyShadow(o.worldPos);
+			
 
-				ApplyTopDownLightAndShadow(o.topdownUv,  normal,  bumpMap,  o.worldPos,  gotVolume, fresnel, bake);
-
-		
-
-				float ambient = bumpMap.a * smoothstep(-0.5, 0.25, o.color.a);
-
-				// Mix Reflected and direct
-
-				float direct = shadow * smoothstep(1 - ambient, 1.5 - ambient * 0.5, dot(normal, _WorldSpaceLightPos0.xyz));
-					
-				float3 sunColor =  GetDirectional();
-
-				float3 lightColor =sunColor * direct;
+				ao *= 1 - toSurface * (1-outsideVolume) * saturate(1-scene.a);*/ //lerp(toSurface, 1, oobSDF);
 
 
 
-				float3 col = lightColor * (1 + outOfBounds) + bake.rgb * ambient;
-					
-				ColorCorrect(tex.rgb);
 
-				col *=tex.rgb;
+					float shadow = SHADOW_ATTENUATION(i);
+				// ********************** WATER
 
-				AddGlossToCol(lightColor);
+
+#if _qc_USE_RAIN || _DAMAGED
+
+				float rain = GetRain(i.worldPos, normal, i.normal, shadow); //float GetRain(float3 worldPos, float3 normal, float3 rawNormal, float shadow)
+
+				float4 rainNoise = GetRainNoise(i.worldPos, displacement, normal.y, rain);
+
+				float flattenWater = ApplyWater(water, rain, ao, displacement, madsMap, rainNoise);
+
+				normal = lerp(normal, i.normal.xyz, flattenWater);
+				// normal = i.normal.xyz;
+				// ApplyTangent(normal, tnormal, i.wTangent);
+#endif
+
+
+    float3 worldPosAdjusted = i.worldPos;
+	ao *= SampleContactAO_OffsetWorld(worldPosAdjusted, normal);
+
+
+
+				// **************** light
+
+				float metal = madsMap.r;
+				float fresnel = 1 - saturate(dot(normal, viewDir)); 
+				float specular = GetSpecular(madsMap.a, fresnel, metal);
+
+			
+
+				float3 lightColor = Savage_GetDirectional_Opaque(shadow, ao, normal, i.worldPos);
+
+				float3 volumeSamplePosition;
+				float3 bake = Savage_GetVolumeBake(worldPosAdjusted, normal, i.normal, volumeSamplePosition);
+
+				TOP_DOWN_SETUP_UV(topdownUv, i.worldPos);
+				float4 topDownAmbient = SampleTopDown_Ambient(topdownUv, normal, i.worldPos);
+				ao *= topDownAmbient.a;
+				bake.rgb += topDownAmbient.rgb;
+
+				ModifyColorByWetness(tex.rgb, water, madsMap.a);
+
+
+				float3 reflectionColor = 0;
+				float3 pointLight = GetPointLight(volumeSamplePosition, normal, ao, viewDir, specular, reflectionColor);
+
+
+				float3 col = tex.rgb * (pointLight + lightColor + bake * ao);
+
+				//return water; // float4(col, 1);
+
+#if RT_FROM_CUBEMAP || _SUB_SURFACE
+
+				float3 reflectedRay = reflect(-viewDir, i.normal.xyz);
+
+				float4 topDownAmbientSpec = SampleTopDown_Specular(topdownUv, reflectedRay, i.worldPos, i.normal.xyz, specular);
+				ao *= topDownAmbientSpec.a;
+				reflectionColor += topDownAmbientSpec.rgb;
+
+				reflectionColor += GetBakedAndTracedReflection(volumeSamplePosition, reflectedRay, specular, i.traced);
+				reflectionColor *= ao;
+
+				reflectionColor += GetDirectionalSpecular(normal, viewDir, specular * 0.9) * lightColor;
+
+				MixInSpecular(col, reflectionColor, tex, metal, specular, fresnel);
+
 
 #				if _SUB_SURFACE
-					float skin = tex2D(_SkinMask, damUv);
-					float subSurface = _SubSurface.a * skin * (1-mask.g) * (1+rawFresnel) * 0.5;
-					col *= 1-subSurface;
-					TopDownSample(o.worldPos, bakeRaw.rgb, outOfBounds);
-					col.rgb += subSurface * _SubSurface.rgb * (sunColor * shadow + bakeRaw.rgb);
-					mask *= skin;
-				#endif
+				float4 skin = tex2D(_SkinMask, i.texcoord.xy) * _SubSurface;
 
+				ApplySubSurface(col, skin, volumeSamplePosition, viewDir, specular, rawFresnel, shadow);
+
+
+#				endif
+
+#endif
+
+				//	return float4(col, 1);
+				
 				#if _USE_IMPACT
-					AddSubSurface(col, mask, o.impact.y);
+					AddSubSurface(col, mask, i.impact.y);
 				#endif
 
-				ApplyBottomFog(col, o.worldPos.xyz, o.viewDir.y);
+				ApplyBottomFog(col, i.worldPos.xyz, viewDir.y);
 
 				return float4(col,1);
 
@@ -411,8 +482,8 @@ Shader "RayTracing/Geometry/Destructible Dynamic"
 			#pragma fragment frag
 			#pragma multi_compile_instancing
 			#include "UnityCG.cginc"
-			fixed4 _MainColor;
-			sampler2D _MainTex_ATL_UvTwo;
+			//fixed4 _MainColor;
+			sampler2D _Damage_Tex;
 			sampler2D _DamDiffuse;
 
 
@@ -427,6 +498,10 @@ Shader "RayTracing/Geometry/Destructible Dynamic"
 					SHADOW_COORDS(4)
 			//	#endif
 				float3 viewDir		: TEXCOORD5;
+				float3 normal		: TEXCOORD6;
+
+				float4 traced : TEXCOORD7;
+
 			};
 
 			v2f vert(appdata_full v)
@@ -440,53 +515,243 @@ Shader "RayTracing/Geometry/Destructible Dynamic"
 
 				o.worldPos = worldPos;
 
-				float3 normal = UnityObjectToWorldNormal(v.normal);
+				o.normal = UnityObjectToWorldNormal(v.normal);
 
-				v.vertex = mul(unity_WorldToObject, float4(DeformVertex(worldPos, normal,  o.impact.x), v.vertex.w));
+
+				v.vertex = mul(unity_WorldToObject, float4(DeformVertex(worldPos, o.normal, o.impact.x), v.vertex.w));
 
 				o.impact.y = LightUpAmount(worldPos);
 
 				o.pos = UnityObjectToClipPos(v.vertex);
 				o.viewDir = WorldSpaceViewDir(v.vertex);
+				o.normal = -o.normal;
+
+				o.traced = GetTraced_Mirror_Vert(worldPos, normalize(o.viewDir.xyz), o.normal.xyz);
+
 				TRANSFER_SHADOW(o);
 
 				return o;
 			}
 
-			fixed4 frag(v2f o) : SV_Target
+			sampler2D _SkinMask;
+
+			float4 frag(v2f i) : SV_Target
 			{
 
-				float2 damUv = o.texcoord1.xy;
-				float4 mask = tex2D(_MainTex_ATL_UvTwo, damUv);
+				float2 damUv = i.texcoord1.xy;
+				float4 mask = tex2D(_Damage_Tex, damUv);
+
+				float3 viewDir = normalize(i.viewDir.xyz);
 
 				// R - Blood
 				// G - Damage
 
-				float4 col =1;
+				float3 tex =1;
 
 				#if _USE_IMPACT
 
-					float disintegrate = GetDisintegration(o.worldPos, mask, o.impact.x);
+					float disintegrate = GetDisintegration(i.worldPos, mask, i.impact.x);
 
 
-					col = lerp(col, 4, smoothstep(0.01, 0, disintegrate));
+				//	tex = lerp(tex, 4, smoothstep(0.01, 0, disintegrate));
 
 					clip(disintegrate);
 				#endif
-
-				float shadow = SHADOW_ATTENUATION(o) * SampleSkyShadow(o.worldPos);
-
-				PrimitiveLight(lightColor, ambientCol, outOfBounds, o.worldPos, float3(0,-1,0));
-				TopDownSample(o.worldPos, ambientCol, outOfBounds);
+					 
+				tex *= tex2D(_DamDiffuse, i.uv).rgb;
 
 				
-				col.rgb *= (ambientCol + lightColor * shadow);
 
-				col.rgb *= tex2D(_DamDiffuse, o.uv);
+				float3 normal = i.normal;
 
-				AddSubSurface(col.rgb, mask, o.impact.y);
+				float ao = _ImpactDisintegration;
 
-				ApplyBottomFog(col.rgb, o.worldPos.xyz, o.viewDir.y);
+				float specular = 0.75 + _ImpactDisintegration * 0.2;
+
+				float shadow = SHADOW_ATTENUATION(o); // *SampleSkyShadow(i.worldPos);
+
+				float3 lightColor = Savage_GetDirectional_Opaque(shadow, ao, normal, i.worldPos);
+					
+				float3 volumeSamplePosition;
+				float3 bake = Savage_GetVolumeBake(i.worldPos, normal, i.normal, volumeSamplePosition);
+
+				TOP_DOWN_SETUP_UV(topdownUv, i.worldPos);
+				float4 topDownAmbient = SampleTopDown_Ambient(topdownUv, normal, i.worldPos);
+				ao *= topDownAmbient.a;
+				bake += topDownAmbient.rgb;
+
+
+				//tex *= _qc_BloodColor.rgb; // , fresnel);
+
+				AddSubSurface(tex, mask, i.impact.y);
+
+			
+
+				float metal = 1;
+				float water = 1;
+				float fresnel =  saturate(1- dot(viewDir, normal));
+				ModifyColorByWetness(tex.rgb, water, specular);
+
+				float3 reflectionColor = 0;
+
+				float3 pointLight = GetPointLight(volumeSamplePosition, normal, ao, viewDir, specular, reflectionColor);
+
+
+				float3 col = tex * (pointLight + lightColor + bake*ao); 
+
+
+
+					
+
+	// *********************  Reflections
+
+					float3 reflectedRay = reflect(-viewDir, normal);
+
+					
+
+					float4 topDownAmbientSpec = SampleTopDown_Specular(topdownUv, reflectedRay, i.worldPos, i.normal.xyz, specular);
+					ao *= topDownAmbientSpec.a;
+					reflectionColor += topDownAmbientSpec.rgb;
+
+					reflectionColor += GetBakedAndTracedReflection(volumeSamplePosition, reflectedRay, specular, i.traced);
+					reflectionColor *= ao;
+
+					reflectionColor += GetDirectionalSpecular(normal, viewDir, specular * 0.95) * lightColor;
+
+
+				///	return float4(reflectionColor,1);
+
+					MixInSpecular(col, reflectionColor, tex, metal, specular, fresnel);
+
+
+#				if _SUB_SURFACE
+
+				float4 skin = tex2D(_SkinMask, i.uv) * _SubSurface;
+
+			//	return skin;
+
+				ApplySubSurface(col, skin, volumeSamplePosition, viewDir, specular, fresnel, shadow);
+
+
+#				endif
+
+
+				ApplyBottomFog(col.rgb, i.worldPos.xyz, i.viewDir.y);
+
+				return float4(col,1);
+			}
+			ENDCG
+		}
+
+		Pass
+		{
+
+			// Furry
+			Tags
+			{
+				"LightMode" = "ForwardBase"
+				"Queue" = "Transparent"
+				"PreviewType" = "Plane"
+				"IgnoreProjector" = "True"
+				"RenderType" = "Transparent"
+			}
+
+			ZWrite Off
+			Cull Front
+			Blend SrcAlpha OneMinusSrcAlpha
+
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+			#pragma multi_compile_instancing
+			#include "UnityCG.cginc"
+			sampler2D _Damage_Tex;
+
+
+
+			struct v2f
+			{
+				float4 pos			: SV_POSITION;
+				float2 uv:TEXCOORD0;
+				float2 texcoord1 : TEXCOORD1;
+				float2 impact : TEXCOORD2;
+				float3 worldPos		: TEXCOORD3;
+				SHADOW_COORDS(4)
+				float3 viewDir		: TEXCOORD5;
+				float3 normal		: TEXCOORD6;
+				float4 screenPos : TEXCOORD7;
+			};
+
+			v2f vert(appdata_full v)
+			{
+				v2f o;
+
+				o.uv = v.texcoord;
+				UNITY_SETUP_INSTANCE_ID(v);
+				float4 worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1));
+				o.texcoord1 = v.texcoord1;
+				o.worldPos = worldPos;
+				o.normal = UnityObjectToWorldNormal(v.normal);
+
+				float toCum = (0.5 + smoothstep(0,10, length(_WorldSpaceCameraPos - o.worldPos)))*0.04;
+
+
+				v.vertex = mul(unity_WorldToObject, float4(DeformVertex(worldPos, o.normal, o.impact.x) + o.normal*toCum, v.vertex.w));
+
+				o.impact.y = LightUpAmount(worldPos);
+				o.pos = UnityObjectToClipPos(v.vertex);
+				o.viewDir = WorldSpaceViewDir(v.vertex);
+					o.screenPos = ComputeScreenPos(o.pos); 
+					  COMPUTE_EYEDEPTH(o.screenPos.z);
+				TRANSFER_SHADOW(o);
+
+				return o;
+			}
+
+			sampler2D _SkinMask;
+			sampler2D	_Overlay;
+			float _OverlayTiling;
+
+			float4 frag(v2f i) : SV_Target
+			{
+
+			i.normal = normalize(i.normal);
+
+				float2 damUv = i.texcoord1.xy;
+				float4 mask = tex2D(_Damage_Tex, damUv);
+
+				#if _USE_IMPACT
+					float disintegrate = GetDisintegration(i.worldPos, mask, i.impact.x);
+					clip(disintegrate);
+				#endif
+					 
+				float4 col = tex2D(_Overlay, i.uv * _OverlayTiling);
+
+				float3 viewDir = normalize(i.viewDir.xyz);
+				float2 screenUV = i.screenPos.xy / i.screenPos.w;
+
+				float3 normal = -viewDir;
+
+                float3 bake = SampleVolume_CubeMap(i.worldPos, normal);
+
+				TopDownSample(i.worldPos, bake);
+
+               	bake.rgb += GetPointLight_Transpaent(i.worldPos, -viewDir);
+
+                float3 shadowPos = i.worldPos;
+                float shadow = SampleRayShadow(shadowPos); // * SampleSkyShadow(i.worldPos);
+
+                col.rgb *= bake + shadow * GetDirectional() * 0.5;
+
+				float fresnel =  smoothstep(0 ,1, dot(-viewDir, i.normal));
+			
+			    float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, screenUV);
+			    float sceneZ = LinearEyeDepth(UNITY_SAMPLE_DEPTH(depth));
+			    float fade = smoothstep(2 ,3, (sceneZ - i.screenPos.z));
+			
+				ApplyBottomFog(col.rgb, i.worldPos.xyz, viewDir.y);
+
+				col.a *=  fresnel * fade;
 
 				return col;
 			}
@@ -521,10 +786,6 @@ Shader "RayTracing/Geometry/Destructible Dynamic"
 
 			};
 
-
-		
-		
-
 			v2f vert(appdata_full v)
 			{
 				v2f o;
@@ -556,13 +817,13 @@ Shader "RayTracing/Geometry/Destructible Dynamic"
 				return o;
 			}
 
-			sampler2D _MainTex_ATL_UvTwo;
+			sampler2D _Damage_Tex;
 
 
 			float4 frag(v2f o) : SV_Target
 			{
 				float2 damUv = o.texcoord1.xy;
-				float4 mask = tex2D(_MainTex_ATL_UvTwo, damUv);
+				float4 mask = tex2D(_Damage_Tex, damUv);
 
 				// R - Blood
 				// G - Damage

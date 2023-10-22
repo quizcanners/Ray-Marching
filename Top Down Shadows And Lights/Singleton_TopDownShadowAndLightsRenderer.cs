@@ -1,21 +1,101 @@
 using QuizCanners.Inspect;
 using QuizCanners.Utils;
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace QuizCanners.RayTracing
 {
     [ExecuteAlways]
+    [AddComponentMenu("Quiz ñ'Anners/Top Down Light Camera")]
     public class Singleton_TopDownShadowAndLightsRenderer : Singleton.BehaniourBase, IPEGI
     {
         [SerializeField] private Camera _orthogonalCamera;
         [SerializeField] private int _orthoSize = 16;
         [SerializeField] private float _height = 100;
         [SerializeField] private int _renderLayer = 10;
-       // private readonly ShaderProperty.Feature TOP_DOWN_LIGHT_AND_SHADOW = new("TOP_DOWN_LIGHT_AND_SHADOW");
         private readonly ShaderProperty.TextureValue TOP_DOWN_RESULT = new("_RayTracing_TopDownBuffer");
         private readonly ShaderProperty.VectorValue TOP_DOWN_RENDERER_POSITION = new("_RayTracing_TopDownBuffer_Position");
 
+        [NonSerialized] private RenderTexture _renderTexture;
+
+        private RenderTexture GetRenderTexture() 
+        {
+            if (_renderTexture)
+                return _renderTexture;
+
+            _renderTexture = new RenderTexture(1024, 1024, depth: 0, RenderTextureFormat.ARGBHalf)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                useMipMap = false,
+                depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None,
+            };
+
+            return _renderTexture;
+        }
+
+        void RenderViaCommandBuffer() 
+        {
+            CommandBuffer command = new();
+
+            command.SetViewMatrix(Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one));
+            command.SetProjectionMatrix(Matrix4x4.Ortho(-_orthoSize, _orthoSize, -_orthoSize, _orthoSize, 0.03f, 50));
+
+            command.SetRenderTarget(GetRenderTexture());
+
+            Graphics.ExecuteCommandBuffer(command);
+        }
+        
+
+        void UpdateCamera() 
+        {
+            if (!Application.isPlaying)
+                return;
+
+            if (!_orthogonalCamera)
+            {
+                Debug.LogError("Top Down camera is not assigned");
+                return;
+            }
+
+            _orthogonalCamera.orthographicSize = _orthoSize;
+
+            _orthogonalCamera.transform.localPosition = new Vector3(0,_height,0);
+            _orthogonalCamera.nearClipPlane = 0.03f;
+            _orthogonalCamera.farClipPlane = _height * 2;
+            _orthogonalCamera.SetMaskRemoveOthers(layerIndex: _renderLayer);
+
+            _orthogonalCamera.targetTexture = GetRenderTexture();
+
+            TOP_DOWN_RESULT.GlobalValue = _orthogonalCamera.targetTexture;
+
+            _orthogonalCamera.enabled = true;
+
+            UpdatePosition();
+        }
+
+        protected void UpdatePosition() 
+        {
+            TOP_DOWN_RENDERER_POSITION.GlobalValue = transform.position.ToVector4(0.5f / _orthoSize);
+        }
+
+      
+
+        private readonly Gate.Vector3Value _positionGate = new();
+
+        public void SetPosition(Vector3 newPosition) 
+        {
+            transform.position = new Vector3(Mathf.Round(newPosition.x), newPosition.y, Mathf.Round(newPosition.z));
+            UpdatePosition();
+        }
+
+        void LateUpdate() 
+        {
+            if (_positionGate.TryChange(transform.position)) 
+            {
+                UpdatePosition();
+            }
+        }
 
         #region Inspector
         public override string InspectedCategory => nameof(RayTracing);
@@ -25,17 +105,17 @@ namespace QuizCanners.RayTracing
         {
             var changed = pegi.ChangeTrackStart();
 
-            if (_orthogonalCamera) 
+            if (_orthogonalCamera)
             {
                 Icon.Refresh.Click(toolTip: "Refresh Camera stuff");
 
-                if (!_orthogonalCamera.targetTexture)
+                if (Application.isPlaying && !_orthogonalCamera.targetTexture)
                     "Target texture is not found. Shders will not recieve the result".PegiLabel().WriteWarning();
 
-                if (_orthogonalCamera.orthographic == false) 
+                if (_orthogonalCamera.orthographic == false)
                     "{0} Camera is not orthographic".F(_orthogonalCamera.gameObject.name).PegiLabel().WriteWarning();
 
-                if (_orthogonalCamera.clearFlags != CameraClearFlags.SolidColor || _orthogonalCamera.backgroundColor != Color.clear) 
+                if (_orthogonalCamera.clearFlags != CameraClearFlags.SolidColor || _orthogonalCamera.backgroundColor != Color.clear)
                 {
                     "Camera need Solid Color Clear Flags".PegiLabel().WriteWarning();
                     if ("Set Clear Black".PegiLabel().Click().Nl())
@@ -44,13 +124,13 @@ namespace QuizCanners.RayTracing
                         _orthogonalCamera.backgroundColor = Color.clear;
                     }
                 }
-            } 
-            else 
+            }
+            else
             {
                 "Camera".PegiLabel(50).Edit_IfNull(ref _orthogonalCamera, gameObject).Nl();
             }
 
-            "Size".PegiLabel(50).Edit(ref _orthoSize).Nl().OnChanged(()=> _orthoSize = Mathf.Max(1, _orthoSize));
+            "Size".PegiLabel(50).Edit(ref _orthoSize).Nl().OnChanged(() => _orthoSize = Mathf.Max(1, _orthoSize));
 
             "Height".PegiLabel(60).Edit(ref _height, 0.2f, (float)_orthoSize).Nl();
 
@@ -60,40 +140,16 @@ namespace QuizCanners.RayTracing
                 UpdateCamera();
         }
 
+        public override string NeedAttention()
+        {
+            if (_orthogonalCamera && !Application.isPlaying && _orthogonalCamera.enabled)
+                return "Disable Orthagonal camera";
+
+            return base.NeedAttention();
+        }
+
         #endregion
 
-        void RenderViaCommandBuffer() 
-        {
-            CommandBuffer command = new CommandBuffer();
-
-            command.SetViewMatrix(Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one));
-            command.SetProjectionMatrix(Matrix4x4.Ortho(-_orthoSize, _orthoSize, -_orthoSize, _orthoSize, 0.03f, 50));
-
-            command.SetRenderTarget(_orthogonalCamera.targetTexture);
-
-            // command.ClearRenderTarget(true, true, Color.clear);
-          
-            //command.DrawMesh()
-
-            Graphics.ExecuteCommandBuffer(command);
-        }
-
-        void UpdateCamera() 
-        {
-            if (!_orthogonalCamera)
-                return;
-
-            _orthogonalCamera.orthographicSize = _orthoSize;
-
-            _orthogonalCamera.transform.localPosition = new Vector3(0,_height,0);
-            _orthogonalCamera.nearClipPlane = 0.03f;
-            _orthogonalCamera.farClipPlane = _height * 2;
-            _orthogonalCamera.SetMaskRemoveOthers(layerIndex: _renderLayer);
-
-            TOP_DOWN_RESULT.GlobalValue = _orthogonalCamera.targetTexture;
-            TOP_DOWN_RENDERER_POSITION.GlobalValue = transform.position.ToVector4(0.5f/_orthoSize);
-
-        }
 
         protected override void OnAfterEnable()
         {
@@ -101,7 +157,7 @@ namespace QuizCanners.RayTracing
 
             QcUnity.SetLayerMaskForSceneView(_renderLayer, false);
 
-           // TOP_DOWN_LIGHT_AND_SHADOW.Enabled = true;
+            // TOP_DOWN_LIGHT_AND_SHADOW.Enabled = true;
 
             UpdateCamera();
         }
@@ -109,17 +165,13 @@ namespace QuizCanners.RayTracing
         protected override void OnBeforeOnDisableOrEnterPlayMode(bool afterEnableCalled)
         {
             base.OnBeforeOnDisableOrEnterPlayMode(afterEnableCalled);
-           // TOP_DOWN_LIGHT_AND_SHADOW.Enabled = false;
-        }
-
-        private readonly Gate.Vector3Value _positionGate = new();
-
-        void Update() 
-        {
-            if (_positionGate.TryChange(transform.position)) 
+   
+            if (_renderTexture)
             {
-                UpdateCamera();
+                _renderTexture.DestroyWhatever();
+                _renderTexture = null;
             }
+            // TOP_DOWN_LIGHT_AND_SHADOW.Enabled = false;
         }
 
     }

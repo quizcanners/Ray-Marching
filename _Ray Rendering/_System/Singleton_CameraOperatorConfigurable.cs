@@ -3,24 +3,48 @@ using QuizCanners.Lerp;
 using QuizCanners.Migration;
 using System;
 using UnityEngine;
-
+ 
 namespace QuizCanners.Utils
 {
 
+    [AddComponentMenu("Quiz ñ'Anners/Camera Operator Configurable")]
     public class Singleton_CameraOperatorConfigurable : Singleton_CameraOperatorGodMode, ICfgCustom, ILinkedLerping
     {
-        [SerializeField] private QcUtils.DynamicRangeFloat _height = new(0.001f, 10, 0.2f);
+        [SerializeField] private QcMath.DynamicRangeFloat _height = new(0.001f, 10, 0.2f);
         [SerializeField] private DepthTextureMode _depthTextureMode = DepthTextureMode.None;
         [SerializeField] private bool _overrideDepthTextureMode;
 
-        private LinkedLerp.TransformLocalPosition _positionLerp;// = new LinkedLerp.TransformLocalPosition("Position");
-        private LinkedLerp.TransformLocalRotation _rotationLerp;// = new LinkedLerp.TransformLocalRotation("Rotation");
+        private LinkedLerp.TransformLocalPosition _positionLerp;
+        private LinkedLerp.TransformLocalRotation _rotationLerp;
         private readonly LinkedLerp.FloatValue _heightLerp = new(name: "Height");
+
+        private readonly Gate.Frame _cameraControlsGate = new();
+        private UnityEngine.Object _externalCameraController;
 
         public enum Mode { FPS = 0, STATIC = 1, LERP = 2 }
         public Mode mode;
 
-        [NonSerialized] public IGodModeCameraController controller;
+
+        private bool IsControlledExternally => !_cameraControlsGate.IsFramesPassed(5);
+
+        public void SetDepthTexture(DepthTextureMode mode, bool isOn) 
+        {
+            _overrideDepthTextureMode = true;
+            if (isOn) 
+            {
+                _depthTextureMode |= mode;
+            } else 
+            {
+                _depthTextureMode &= ~mode;
+            }
+
+            if (_depthTextureMode == DepthTextureMode.MotionVectors)
+            {
+                _depthTextureMode |= DepthTextureMode.Depth;
+            }
+
+            _mainCam.depthTextureMode = _depthTextureMode;
+        }
 
         protected override void OnAfterEnable()
         {
@@ -44,6 +68,9 @@ namespace QuizCanners.Utils
             get => _height.Value;
             set 
             {
+                if (_height.Value == value)
+                    return;
+
                 _height.Value = value;
                 _heightLerp.CurrentValue = value;
             }
@@ -56,11 +83,17 @@ namespace QuizCanners.Utils
             return val;
         }
 
-        private float CameraClipDistance
+        public float CameraClipDistance
         {
             get => _mainCam.farClipPlane - CameraWindowNearClip();
-            set => _mainCam.farClipPlane = CameraWindowNearClip() + value;
+            set
+            {
+                _mainCam.farClipPlane = CameraWindowNearClip() + value;
+                AdjsutCamera();
+            }
         }
+
+        private Vector3 _adjustePosition;
 
         protected virtual void AdjsutCamera()
         {
@@ -70,10 +103,13 @@ namespace QuizCanners.Utils
                 return;
 
             float clip = CameraWindowNearClip();
-            camTf.position = transform.position - camTf.forward * clip;
+            _adjustePosition = transform.position - camTf.forward * clip;
+            camTf.position = _adjustePosition;
             _mainCam.nearClipPlane = clip * Mathf.Clamp(1 - offsetClip, 0.01f, 0.99f);
-            _mainCam.farClipPlane = clip + CameraClipDistance;
+            _mainCam.farClipPlane = clip + _mainCam.farClipPlane - clip;// CameraClipDistance;
         }
+
+
 
         #region Encode & Decode
 
@@ -85,8 +121,8 @@ namespace QuizCanners.Utils
                 .Add("sp", speed);
 
             if (_mainCam)
-                cody.Add("rot", _mainCam.transform.localRotation)
-                    .Add("depth", (int)_mainCam.depthTextureMode);
+                cody.Add("rot", _mainCam.transform.localRotation);
+                   // .Add("depth", (int)_mainCam.depthTextureMode);
 
             return cody;
         }
@@ -99,7 +135,7 @@ namespace QuizCanners.Utils
                 case "rot": _rotationLerp.TargetValue = data.ToQuaternion(); break;
                 case "h": _heightLerp.TargetValue = data.ToFloat(); break;
                 case "sp": speed = data.ToFloat(); break;
-                case "depth": _mainCam.depthTextureMode = (DepthTextureMode)data.ToInt(); break;
+               // case "depth": _mainCam.depthTextureMode = (DepthTextureMode)data.ToInt(); break;
             }
         }
 
@@ -155,24 +191,23 @@ namespace QuizCanners.Utils
 
         #endregion
 
+        public IDisposable ExternalUpdateStart(UnityEngine.Object controller) 
+        {
+            return QcSharp.DisposableAction(() =>
+            {
+                _externalCameraController = controller;
+                _cameraControlsGate.TryEnter();
+                AdjsutCamera();
+            });
+        }
+
         protected override void OnUpdateInternal()
         {
-            if (controller != null && QcUnity.IsNullOrDestroyed_Obj(controller))
-                controller = null;
+            if (_mainCam && _mainCam.depthTextureMode != _depthTextureMode)
+                _mainCam.depthTextureMode = _depthTextureMode;
 
-            if (controller != null)
+            if (!IsControlledExternally)
             {
-                var trg = controller.GetTargetPosition();
-                transform.position = trg + controller.GetCameraOffsetPosition();
-
-                if (controller.TryGetCameraHeight(out var height))
-                    CameraHeight = height;
-
-                _mainCam.transform.LookAt(trg, Vector3.up);
-            }
-            else
-            {
-
                 switch (mode)
                 {
                     case Mode.FPS:
@@ -187,46 +222,56 @@ namespace QuizCanners.Utils
 
                             Lerp(_lerpData, canSkipLerp: false);
 
-                            if (_lerpData.Done)
+                            if (_lerpData.IsDone)
                             {
                                 mode = Mode.FPS;
                                 lerpYourself = false;
                             }
                         }
-
                         break;
                 }
-            }
 
-            AdjsutCamera();
+                AdjsutCamera();
+            } 
         }
 
+
+        #region Inspector
         public override void Inspect()
         {
-            switch (mode)
+            if (IsControlledExternally)
             {
-                case Mode.FPS:
-                    pegi.FullWindow.DocumentationClickOpen(() =>
-                       "WASD - move {0} Q, E - Dwn, Up {0} Shift - faster {0} {1} {0} MMB - Orbit Collider".F(
-                           pegi.EnvironmentNl,
-                           _disableRotation ? "" : (rotateWithoutRmb ? "RMB - rotation" : "Mouse to rotate")
-                       ));
-                    break;
+                "Camera is controlled Externally by {0}".F(_externalCameraController).PegiLabel(pegi.Styles.WarningText).Write();
+                pegi.ClickHighlight(_externalCameraController).Nl();
+            }
+            else
+            {
+
+                switch (mode)
+                {
+                    case Mode.FPS:
+                        pegi.FullWindow.DocumentationClickOpen(() =>
+                           "WASD - move {0} Q, E - Dwn, Up {0} Shift - faster {0} {1} {0} MMB - Orbit Collider".F(
+                               pegi.EnvironmentNl,
+                               _disableRotation ? "" : (rotateWithoutRmb ? "RMB - rotation" : "Mouse to rotate")
+                           ));
+                        break;
 
 
-                case Mode.STATIC:
+                    case Mode.STATIC:
 
-                    "Not Lerping himself".PegiLabel().WriteWarning();
+                        "Not Lerping himself".PegiLabel().WriteWarning();
 
-                    if ("Lepr Yourself".PegiLabel().Click().Nl())
-                        lerpYourself = true;
+                        if ("Lepr Yourself".PegiLabel().Click().Nl())
+                            lerpYourself = true;
 
-                    if ("Enable first-person controls".PegiLabel().Click().Nl())
-                        mode = Mode.FPS;
-                    break;
-                case Mode.LERP:
-                    "IS LERPING".PegiLabel().Write();
-                    break;
+                        if ("Enable first-person controls".PegiLabel().Click().Nl())
+                            mode = Mode.FPS;
+                        break;
+                    case Mode.LERP:
+                        "IS LERPING".PegiLabel().Write();
+                        break;
+                }
             }
 
             base.Inspect();
@@ -243,7 +288,6 @@ namespace QuizCanners.Utils
                         {
                             if ("Add Empty Child".PegiLabel().Click().Nl())
                             {
-
                                 var go = new GameObject("Advanced Camera");
                                 var tf = go.transform;
                                 tf.SetParent(transform, false);
@@ -256,8 +300,7 @@ namespace QuizCanners.Utils
                     {
                         if ("Try Fix".PegiLabel().Click().Nl())
                         {
-                            transform.position = MainCam.transform.position;
-                            transform.rotation = MainCam.transform.rotation;
+                            transform.SetPositionAndRotation(MainCam.transform.position, MainCam.transform.rotation);
                             MainCam.transform.parent = transform;
                         }
                     }
@@ -278,31 +321,40 @@ namespace QuizCanners.Utils
                     pegi.Nl();
 
                     if ("Clip Range".PegiLabel(90).Edit_Delayed(ref clipDistance).Nl())
-                        clipDistance = Mathf.Clamp(clipDistance, 0.03f, 100000);
+                        CameraClipDistance = Mathf.Clamp(clipDistance, 0.03f, 100000);
 
                     "Clip Distance (Debug): {0}".F(CameraWindowNearClip()).PegiLabel().Nl();
 
                     "Offset Clip".PegiLabel(90).Edit(ref offsetClip, 0.01f, 0.99f).Nl();
 
-                    if (changes)
-                    {
-                        CameraClipDistance = clipDistance;
-                        AdjsutCamera();
-                    } 
+              
 
                 }
 
-                var depth = _mainCam.depthTextureMode;
+                DepthTextureMode depth = _mainCam.depthTextureMode;
 
                 "Override Depth Mode ({0})".F(depth).PegiLabel().ToggleIcon(ref _overrideDepthTextureMode, hideTextWhenTrue: true);
 
                 if (_overrideDepthTextureMode)
                 {
-                    if (depth != _depthTextureMode)
-                        _mainCam.depthTextureMode = _depthTextureMode;
+                    if (depth != _depthTextureMode && "Set to {0}".F(_depthTextureMode).PegiLabel().Click().Nl())
+                        SetDepthMode(_depthTextureMode);
 
-                    if ("Depth".PegiLabel(55).Edit_Enum(ref _depthTextureMode))
-                        _mainCam.depthTextureMode = _depthTextureMode;
+                    if ("Depth".PegiLabel(55).Edit_EnumFlags(ref depth))
+                        SetDepthMode(depth);
+
+
+                    void SetDepthMode(DepthTextureMode newMode) 
+                    {
+                        if (newMode == DepthTextureMode.MotionVectors) 
+                        {
+                            newMode |= DepthTextureMode.Depth;
+                        }
+
+                        _depthTextureMode = newMode;
+
+                        _mainCam.depthTextureMode = newMode;
+                    }
                 }
 
                 pegi.Nl();
@@ -314,12 +366,9 @@ namespace QuizCanners.Utils
                         RenderSettings.skybox = skybox;
                 }
             }
-
-            if (controller != null)
-            {
-                "Controller Assigned".PegiLabel().Write(); pegi.ClickHighlight(controller as UnityEngine.Object).Nl();
-            }
         }
+
+        #endregion
 
         protected override void OnRegisterServiceInterfaces()
         {

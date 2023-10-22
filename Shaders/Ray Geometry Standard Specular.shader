@@ -3,35 +3,68 @@ Shader "RayTracing/Geometry/Standard Specular"
 	Properties
 	{
 		_MainTex("Albedo (RGB)", 2D) = "white" {}
+		_SpecularMap("R-Metalic G-Ambient _ A-Specular", 2D) = "black" {}
+		[KeywordEnum(OFF, PLASTIC, METAL, LAYER, MIXED_METAL, PAINTED_METAL)] _REFLECTIVITY("Reflective Material Type", Float) = 0
+		[KeywordEnum(OFF, ON, INVERTEX, MIXED)] _PER_PIXEL_REFLECTIONS("Traced Reflections", Float) = 0
+		_Reflectivity("Added Reflectiveness (Mat)", Range(0,1)) = 0.33
 
-		_SpecularMap("Specular", 2D) = "gray" {}
+		_BumpMap("Normal Map", 2D) = "bump" {}
 
-		[KeywordEnum(Nonmetal, Metal)] _SURFACE("Surface", Float) = 0
-
-		_TintColor("Reflection Color", Color) = (1,1,1,1)
-
-		[KeywordEnum(None, Regular, Combined)] _BUMP("Combined Map", Float) = 0
-		_Map("Bump/Combined Map (or None)", 2D) = "gray" {}
-	
-		[Toggle(_AMBIENT)] useAmbient("Use Ambient Map", Float) = 0
+		[KeywordEnum(None, MADS, Separate, MADSandSeparate)] _AO("AO Source", Float) = 0
 		_OcclusionMap("Ambient Map", 2D) = "white" {}
 
+		[Toggle(_AMBIENT_IN_UV2)] ambInuv2("Ambient mapped to UV2", Float) = 0
 		[Toggle(_COLOR_R_AMBIENT)] colAIsAmbient("Vert Col is Ambient", Float) = 0
+		[Toggle(_FRESNEL_FADE_AO)] fresFadeAo("Fresnel fades AO", Float) = 0
+		//[Toggle(_SDF_AMBIENT)] sdfAmbient("SDF Ambient", Float) = 0
+
+		[Toggle(_EMISSIVE)] emissiveTexture("Emissive Texture", Float) = 0
+		_Emissive("Emissive", 2D) = "clear" {}
+
+		[KeywordEnum(NONE, ON, LAYER)] _MICRODETAIL("Microdetail", Float) = 0
+		_MicrodetailMap("Microdetail Map", 2D) = "white" {}
+		_MicrodetailBump("Microdetail Bump", 2D) = "bump" {}
+
+		[Toggle(_SECOND_LAYER)] usingLayers("Second Layer", Float) = 0
+		_MainTex2("Albedo (RGB)", 2D) = "black" {}
+		_SpecularMap2("R-Metalic G-Ambient _ A-Specular", 2D) = "black" {}
+		_BumpMap2("Normal Map 2", 2D) = "bump" {}
+
+		[Toggle(_SIMPLIFY_SHADER)] simplifyShader("Simplify Shader", Float) = 0
+
+		[Toggle(_PARALLAX)] parallax("Parallax", Float) = 0
+		_ParallaxForce("Parallax Amount", Range(0.001,0.01)) = 0.01
+
+		[Toggle(_OFFSET_BY_HEIGHT)] heightOffset("Offset By Height", Float) = 0
+		_HeightOffset("Height Offset", Range(0.01,0.3)) = 0.2
+
+		[Toggle(_DAMAGED)] isDamaged("_DAMAGED", Float) = 0
+		[NoScaleOffset] _Damage_Tex("DAMAGE (_UV1 for Beveled)", 2D) = "black" {}
+		_DamDiffuse("Damaged Diffuse", 2D) = "white" {}
+		[NoScaleOffset]_BumpD("Bump Damage", 2D) = "gray" {}
+		_DamDiffuse2("Damaged Diffuse Deep", 2D) = "white" {}
+		[NoScaleOffset]_BumpD2("Bump Damage 2", 2D) = "gray" {}
+
+		_BloodPattern("Blood Pattern", 2D) = "gray" {}
+		_MudColor("Water Mud Color", Color) = (0.5, 0.5, 0.5, 0.5)
+		_MetalColor("Metal Color", Color) = (0.5, 0.5, 0.5, 0)
+
+		[Toggle(_DYNAMIC_OBJECT)] dynamic("Dynamic Object", Float) = 0
 	}
 
 	Category
 	{
+		Tags
+		{
+			"Queue" = "Geometry"
+			"RenderType" = "Opaque"
+			"LightMode" = "ForwardBase"
+		}
+
 		SubShader
 		{
 			Pass
 			{
-				Tags
-				{
-					"Queue" = "Geometry"
-					"RenderType" = "Opaque"
-					"LightMode" = "ForwardBase"
-				}
-
 				ColorMask RGBA
 				Cull Back
 
@@ -39,28 +72,57 @@ Shader "RayTracing/Geometry/Standard Specular"
 
 				#define RENDER_DYNAMICS
 
-				#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-				#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-				#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-				#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
-
 				#pragma vertex vert
 				#pragma fragment frag
+				//#pragma target 3.0
 				#pragma multi_compile_instancing
+
 				#pragma multi_compile_fwdbase
-				#pragma multi_compile LIGHTMAP_OFF LIGHTMAP_ON
-				#pragma shader_feature_local _BUMP_NONE  _BUMP_REGULAR _BUMP_COMBINED 
-				#pragma shader_feature_local _SURFACE_NONMETAL _SURFACE_METAL   
+				#pragma skip_variants LIGHTPROBE_SH LIGHTMAP_ON DIRLIGHTMAP_COMBINED DYNAMICLIGHTMAP_ON SHADOWS_SHADOWMASK LIGHTMAP_SHADOW_MIXING
 
-				#pragma shader_feature_local ___ _AMBIENT
-				#pragma shader_feature_local ___ _SHOWUVTWO
+				//LIGHTPROBE_SH
+				//DIRECTIONAL  - to receive shadows
+				//LIGHTMAP_ON 
+				//DIRLIGHTMAP_COMBINED 
+				//DYNAMICLIGHTMAP_ON 
+				//SHADOWS_SCREEN - to receive shadows
+				//SHADOWS_SHADOWMASK 
+				//LIGHTMAP_SHADOW_MIXING 
+				
 
+				#pragma multi_compile ___ _qc_USE_RAIN 
+				#pragma multi_compile qc_NO_VOLUME qc_GOT_VOLUME 
+				#pragma multi_compile ___ _qc_IGNORE_SKY 
+				//#pragma multi_compile LIGHTMAP_OFF LIGHTMAP_ON
+
+
+				#pragma shader_feature_local ___ _OFFSET_BY_HEIGHT
+				#pragma shader_feature_local _PER_PIXEL_REFLECTIONS_OFF _PER_PIXEL_REFLECTIONS_ON _PER_PIXEL_REFLECTIONS_INVERTEX  _PER_PIXEL_REFLECTIONS_MIXED
+				#pragma shader_feature_local _REFLECTIVITY_OFF _REFLECTIVITY_PLASTIC _REFLECTIVITY_METAL _REFLECTIVITY_LAYER  _REFLECTIVITY_MIXED_METAL  _REFLECTIVITY_PAINTED_METAL
+
+
+				#pragma shader_feature_local _MICRODETAIL_NONE  _MICRODETAIL_ON  _MICRODETAIL_LAYER
+
+				#pragma shader_feature_local ___ _AMBIENT_IN_UV2
+				#pragma shader_feature_local _AO_NONE _AO_MADS _AO_SEPARATE  _AO_MADSANDSEPARATE
 				#pragma shader_feature_local ___ _COLOR_R_AMBIENT
+				#pragma shader_feature_local ___ _PARALLAX
+				#pragma shader_feature_local ___ _DAMAGED
+				#pragma shader_feature_local ___ _SECOND_LAYER
+				#pragma shader_feature_local ___ _FRESNEL_FADE_AO
+				#pragma shader_feature_local ___ _DYNAMIC_OBJECT
+				#pragma shader_feature_local ___ _SHOWUVTWO
+				#pragma shader_feature_local ___ _SIMPLIFY_SHADER
+				#pragma shader_feature_local ___ _EMISSIVE
+			//	#pragma shader_feature_local ___ _SDF_AMBIENT
 
-				#pragma multi_compile ___ _qc_Rtx_MOBILE
-			
+	
 
-				struct v2f {
+				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+
+
+				struct v2f 
+				{
 					float4 pos			: SV_POSITION;
 					float2 texcoord		: TEXCOORD0;
 					float2 texcoord1	: TEXCOORD1;
@@ -69,215 +131,397 @@ Shader "RayTracing/Geometry/Standard Specular"
 					float4 wTangent		: TEXCOORD4;
 					float3 viewDir		: TEXCOORD5;
 					SHADOW_COORDS(6)
-					float2 topdownUv : TEXCOORD7;
-					float2 lightMapUv : TEXCOORD8;
+					float3 tangentViewDir : TEXCOORD7;
+					float4 traced : TEXCOORD8;
+#if LIGHTMAP_ON
+					float2 lightMapUv : TEXCOORD9;
+#endif
 					fixed4 color : COLOR;
 				};
 
-				sampler2D _MainTex_ATL_UvTwo;
-				float4 _MainTex_ATL_UvTwo_TexelSize;
-
-				sampler2D _MainTex;
-				#if _AMBIENT
-				sampler2D _OcclusionMap;
-				#endif
-				float4 _MainTex_ST;
-				float4 _MainTex_TexelSize;
-				sampler2D _Bump;
-
-				sampler2D _Map;
-				sampler2D _SpecularMap;
-				float4 _Map_ST;
-				
-				v2f vert(appdata_full v) {
+				v2f vert(appdata_full v) 
+				{
 					v2f o;
 					UNITY_SETUP_INSTANCE_ID(v);
 
 					float4 worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1));
 
 					o.pos = UnityObjectToClipPos(v.vertex);
-					o.texcoord = TRANSFORM_TEX(v.texcoord, _MainTex);
+					o.texcoord = v.texcoord;
 					o.texcoord1 = v.texcoord1;
 					o.worldPos = worldPos;
 					o.normal.xyz = UnityObjectToWorldNormal(v.normal);
 					o.color = v.color;
 					o.viewDir = WorldSpaceViewDir(v.vertex);
+#if LIGHTMAP_ON
 					o.lightMapUv = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
+#endif
 
+					o.traced = GetTraced_Mirror_Vert(o.worldPos, normalize(o.viewDir.xyz), o.normal.xyz);
 
+					TRANSFER_TANGENT_VIEW_DIR(o);
 					TRANSFER_WTANGENT(o)
-					TRANSFER_TOP_DOWN(o);
 					TRANSFER_SHADOW(o);
 
 					return o;
 				}
 
+				sampler2D _MainTex;
+				float4 _MainTex_ST;
+				float4 _MainTex_TexelSize;
 
-				float4 _TintColor;
+
+				sampler2D _BumpMap;
+				sampler2D _SpecularMap;
+
+#if _AO_SEPARATE || _AO_MADSANDSEPARATE
+				sampler2D _OcclusionMap;
+#endif
+
+	#if _EMISSIVE
+				sampler2D _Emissive;
+	#endif
+
+#			if _SECOND_LAYER
+				sampler2D _MainTex2;
+				float4 _MainTex2_TexelSize;
+				float4 _MainTex2_ST;
+				sampler2D _BumpMap2;	
+				sampler2D _SpecularMap2;
+#			endif
 
 
-				float4 frag(v2f o) : COLOR
-				{
+#if !_MICRODETAIL_NONE
+#if  !_DAMAGED && !_SECOND_LAYER
+				sampler2D _MicrodetailMap;
+				float4 _MicrodetailMap_ST;
+				#endif
+				sampler2D _MicrodetailBump;
+				float4 _MicrodetailBump_ST;
+				#endif
 
-					#if _qc_Rtx_MOBILE
-						float oob;
-						float4 vlm =  SampleVolume(o.worldPos, oob);
-						return tex2D(_MainTex, o.texcoord.xy) * lerp(vlm,1,oob) * o.color;
+
+				float _HeightOffset;
+				float _ParallaxForce;
+				float4 _BloodPattern_ST;
+				sampler2D _BloodPattern;
+				float4 _MudColor;
+				float4 _MetalColor;
+				float _Reflectivity;
+
+
+#				if _DAMAGED
+					sampler2D _Damage_Tex;
+					float4 _Damage_Tex_TexelSize;
+					sampler2D _DamDiffuse;
+					float4 _DamDiffuse_TexelSize;
+					
+					
+
+					#if !_SECOND_LAYER && _MICRODETAIL_NONE
+
+					sampler2D _DamDiffuse2;
+					float4 _DamDiffuse2_TexelSize;
+
+					sampler2D _BumpD;
+					sampler2D _BumpD2;
 					#endif
+#				endif
 
 
-					float3 viewDir = normalize(o.viewDir.xyz);
-					float rawFresnel = smoothstep(1,0, dot(viewDir, o.normal.xyz));
+
+#if _OFFSET_BY_HEIGHT
+				FragColDepth frag(v2f i)
+#else 
+				float4 frag(v2f i) : COLOR
+#endif
+				{
+					// ***************** NON - SIMPLIFY SHADER
+
+					float3 viewDir = normalize(i.viewDir.xyz);
+					float rawFresnel = saturate(1- dot(viewDir, i.normal.xyz));
 
 					
-					float2 uv = o.texcoord.xy;
 
-					float4 bumpMap;
-					float3 tnormal;
-					SampleBumpMap(_Map, bumpMap, tnormal, uv);
+					float2 uv = TRANSFORM_TEX(i.texcoord.xy, _MainTex);
+			
+					// **************** Albedo & Masks
 
-					#if !_BUMP_COMBINED
-						bumpMap.b = 0.1;
-						bumpMap.a = 1;
-					#endif
+					float offsetAmount = (1 + rawFresnel * rawFresnel * 4);
 
-#if _AMBIENT
-						bumpMap.a *= tex2D(_OcclusionMap, uv).r;
+					float4 madsMap = tex2D(_SpecularMap, uv);
+
+					float displacement = madsMap.b;
+
+					i.tangentViewDir = normalize(i.tangentViewDir);
+					i.tangentViewDir.xy /= i.tangentViewDir.z; // abs(i.tangentViewDir.z + 0.42);
+					float deOff = _ParallaxForce / offsetAmount;
+
+#if _PARALLAX || _DAMAGED
+					CheckParallax(uv, madsMap, _SpecularMap, i.tangentViewDir, deOff, displacement);
 #endif
+
+					float3 tnormal = UnpackNormal(tex2D(_BumpMap, uv));
+				
+			// ******************** MICRODETAIL
+#if !_MICRODETAIL_NONE && !_DAMAGED && !_SECOND_LAYER
+					float2 microdetailUV = TRANSFORM_TEX(uv, _MicrodetailMap);
+					float microdetSample = (tex2D(_MicrodetailMap, microdetailUV).a - 0.5) * 2;
+					float2 microdetailUVbump = TRANSFORM_TEX(uv, _MicrodetailBump);
+
+					float3 microNorm = UnpackNormal(tex2D(_MicrodetailBump, microdetailUVbump));
+
+					tnormal = lerp(tnormal,microNorm, 0.5);
+
+					microdetSample = max(0,microdetSample);
+#endif
+
+					float water = 0;
+
+					// ************** Ambient Occlusion
+
+					float ao = 1;
+						
+#if _AO_SEPARATE || _AO_MADSANDSEPARATE
+#	if _AMBIENT_IN_UV2
+					ao *= tex2D(_OcclusionMap, i.texcoord1.xy).r;
+#	else
+					ao *= tex2D(_OcclusionMap, i.texcoord.xy).r;
+#	endif
+#endif
+
+#if _AO_MADS || _AO_MADSANDSEPARATE
+					ao *= madsMap.g;
+#endif
+					
+				#if _FRESNEL_FADE_AO
+					ao = lerp(ao,1, rawFresnel); // * (1-ao);
+				#endif
 
 #if _COLOR_R_AMBIENT
-						bumpMap.a *= o.color.r;
+					ao *= (0.25 + i.color.r * 0.75);
 #endif
-
-					uv -= tnormal.rg  *  _MainTex_TexelSize.xy;
-
-					float4 tex = tex2D(_MainTex, uv);// * o.color;
-				
-					float3 normal = o.normal.xyz;
-
-					ApplyTangent(normal, tnormal, o.wTangent);
-
-					float fresnel = saturate(dot(normal,viewDir));
-
-					float showReflected = 1 - fresnel;
-					//return fresnel;
-
-				
-
-					float smoothness = bumpMap.b;
-					//smoothness = lerp(smoothness, 1, showReflected);
-
-					//return smoothness;
-
-
-
-					float ambient = bumpMap.a;
-
-					float shadow = SHADOW_ATTENUATION(o) * SampleSkyShadow(o.worldPos);
-
-
-					float direct = shadow * smoothstep(1 - ambient, 1.5 - ambient * 0.5, dot(normal, _WorldSpaceLightPos0.xyz));
-					
-
-					float3 lightColor = _LightColor0.rgb * direct;
-
-
-					// LIGHTING
-
-					float4 specularMap = tex2D(_SpecularMap, uv);
-
-					float specular = specularMap.a;
-					float metal = specularMap.r;
 
 	
 
-					float4 bake;
-					float outOfBounds;
-					float gotVolume;
 
-#if LIGHTMAP_ON
-					float3 lightMap = DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, o.lightMapUv));
-					bake.rgb = lightMap;
-					bake.a = 0;
-					outOfBounds = 0;
-					gotVolume = 1;
-#else 
+float shadow = 1;
 
 
-					float3 avaragedAmbient = GetAvarageAmbient(normal);
+#	if _DAMAGED
 
-					float3 volumePos = o.worldPos + (normal) 
-						* lerp(0.5, showReflected, smoothness) * 0.5
-						* _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w;
+			float4 mask = tex2D(_Damage_Tex, i.texcoord1);// .r;// -mask.g;
+#	endif
 
-					outOfBounds;
-					bake = SampleVolume(volumePos, outOfBounds);
+			float4 tex = tex2D(_MainTex, uv);
 
-					gotVolume = bake.a * (1- outOfBounds);
-					outOfBounds = 1 - gotVolume;
+// ******************* SECOND LAYER
+
+
+#	if _SECOND_LAYER
+					float2 uv2 = TRANSFORM_TEX(i.texcoord.xy, _MainTex2);
+
+					//uv2 += float2(i.worldPos.x + i.worldPos.y,i.worldPos.y - i.worldPos.z) * 0.01;
+
+					const float LAYER_PARALAX = 0.002;
+
+				//	float2 layerNoise = Noise3D(i.worldPos* 0.01);
+
+					float2 offsetUv = uv2 + i.tangentViewDir.xy * LAYER_PARALAX;
+
+
+					float fade = 0 //Noise3D(i.worldPos* 0.2).x * 0.65
+#			if _DAMAGED
+					+ mask.a 
+#			endif
+					;
+
+					float4 tex2 = tex2D(_MainTex2, offsetUv);
+
+					float layerAlpha = smoothstep(0.33, 0.4, tex2.a - displacement * 0.5
+					- fade 
+					);
+
+					madsMap = lerp(madsMap, tex2D(_SpecularMap2, offsetUv), layerAlpha);
+					tex = lerp(tex, tex2, layerAlpha);
+					displacement += madsMap.b * (1-displacement) * layerAlpha;
+					tnormal = lerp(tnormal, UnpackNormal(tex2D(_BumpMap2, offsetUv)), layerAlpha);
+
+					float2 coef = _MainTex2_TexelSize.zw * 4; // Optional
+
+					float2 px = coef.x * ddx(uv2);
+					float2 py = coef.y * ddy(uv2);
+
+					float uvmip = (max(0, 0.5 * log2(max(dot(px, px), dot(py, py)))));
+
+					float offsetShadow = smoothstep(1,0.1, tex2Dlod(_MainTex2, float4(uv2 - i.tangentViewDir.xy * LAYER_PARALAX * (1-displacement*2),0,uvmip)).a 
+					- fade*2
+					 );
+
+					ao *= (1+offsetShadow) * 0.5;
+					ao = lerp(ao, madsMap.g, layerAlpha);
+
+					shadow *= lerp(offsetShadow, 1, layerAlpha);
+#	endif
+
+
+// ******************* DAMAGE
+float showRed =0;
+
+#				if _DAMAGED
+
+					float2 damUV = i.texcoord;
+
+					//return smoothstep(0.9, 1, Noise3D(i.worldPos * 0.5));
+
+					float noise = tex2Dlod(_BloodPattern, float4(damUV * _BloodPattern_ST.xy,0,12*mask.b)).r;
+
+					// R - Blood
+					// G - Damage
+
+					float2 damPix = _Damage_Tex_TexelSize.xy;
+
+					//float2 maskUv = i.texcoord1 + i.tangentViewDir.xy * (-damDepth) * 2 * deOff;
+
+					//float4 mask = tex2D(_Damage_Tex, i.texcoord1);// .r;// -mask.g;
+					float4 maskY = tex2D(_Damage_Tex, i.texcoord1 + float2(0, damPix.y));
+					float4 maskX = tex2D(_Damage_Tex, i.texcoord1 + float2(damPix.x, 0));
+
+					float3 damBump = normalize(float3(maskX.g - mask.g, maskY.g - mask.g, 0.1));
+
+					mask.rga *= (1 + noise);
+
+					float damDepth = mask.g * 2 - displacement;
+
+					damUV -= i.tangentViewDir.xy * damDepth * deOff * 0.25;
+
+					damDepth += mask.g - noise;
+
+					float damAlpha = smoothstep(0, 0.5, damDepth);
+					float damAlpha2 = smoothstep(1, 1.5, damDepth);
+
+					float4 dam = tex2D(_DamDiffuse, damUV*4);
 				
-					bake.rgb = lerp(bake.rgb, avaragedAmbient, outOfBounds); // Up 
+
+				
+
+#if !_SIMPLIFY_SHADER && !_SECOND_LAYER && _MICRODETAIL_NONE
+
+					float3 damTnormal = UnpackNormal(tex2D(_BumpD, damUV *4));
+					float3 damTnormal2 = UnpackNormal(tex2D(_BumpD2, damUV));
+					float4 dam2 = tex2D(_DamDiffuse2, damUV);
+				
+					damTnormal = lerp(damTnormal, damTnormal2, damAlpha2);
+
+					tnormal = lerp(tnormal, damBump + damTnormal, damAlpha);
+#else 
+					tnormal = lerp(tnormal, damBump, damAlpha);
+					float4 dam2 = tex2D(_DamDiffuse, damUV);
 #endif
 
-				
-					ApplyTopDownLightAndShadow(o.topdownUv, normal, bumpMap, o.worldPos, gotVolume, fresnel, bake);
+					dam = lerp(dam, dam2, damAlpha2);
+					tex = lerp(tex, dam, damAlpha);
 
+					float damHole = smoothstep(4, 0, damDepth);
 
-
-					/*
-
-					float3 col = lightColor + bake.rgb * ambient;
+					ao = lerp(ao, damHole, damAlpha);
+					water = lerp(water, 0, damAlpha);
+					displacement = lerp(displacement, 0.2 * (1- damAlpha2), damAlpha);
+					madsMap = lerp(madsMap, float4(0.3, 0, 0, 0), damAlpha);
+					shadow = lerp(shadow,1,damAlpha);
+					mask *= smoothstep(0,1, (2 - damHole + noise));
 					
+					water += mask.b * 2;
 
-					ColorCorrect(tex.rgb);
-					col.rgb *=tex.rgb;*/
+					showRed = ApplyBlood(mask, water, tex.rgb, madsMap, displacement);
+					_MudColor = lerp(_MudColor, _qc_BloodColor, showRed);
+#				endif
 
-					float showReflection = smoothstep(0.5, 1, specular);
+	float3 normal = i.normal.xyz;
 
-					float3 bakeReflected;
+	ApplyTangent(normal, tnormal, i.wTangent);
+					
+	shadow *= SHADOW_ATTENUATION(i);
 
-					if (showReflection > 0.001) 
-					{
-						float3 reflectionPos;
-						float outOfBoundsRefl;
-						bakeReflected = SampleReflection(o.worldPos, viewDir, normal, shadow, reflectionPos, outOfBoundsRefl);
-					}
-					else
-						bakeReflected = 0;
+	
+// ********************** WATER
 
-					float3 reflection = reflect(-_WorldSpaceLightPos0.xyz, normal);
-					float dott = saturate(dot(reflection, viewDir));
-					float power = 5/(1.001- specular);
-					float specularReflection = pow(dott, power);
+//float glossLayer = 0;
 
-					float showGloss = specular * specular;// pow(specular, 2);
+#if _qc_USE_RAIN || _DAMAGED
 
-					ColorCorrect(tex.rgb);
+					float rain = GetRain(i.worldPos, normal, i.normal, shadow);
 
-					float3 reflectionColor = specularReflection * lightColor + bakeReflected * showReflection;
+					//glossLayer =  
+					ApplyWater(water, rain, ao, displacement, madsMap, tnormal, i.worldPos, i.normal.y);
 
-#if _SURFACE_METAL
-					reflectionColor *= lerp(1, _TintColor, metal);
+					#if _DAMAGED
+						madsMap.r = lerp(madsMap.r, 1, showRed);
+					#endif
+
+					normal = i.normal.xyz;
+					ApplyTangent(normal, tnormal, i.wTangent);
 #endif
 
-					float3 col = lerp(tex.rgb * (lightColor + bake), reflectionColor * ambient, showGloss);
+	float3 worldPosAdjusted = i.worldPos;
+	ao *= SampleContactAO_OffsetWorld(worldPosAdjusted, normal);
 
-#if _SURFACE_NONMETAL  
 
-#else 
-					//bakeReflected *= 
-					//col = lerp(col, _TintColor * (lightColor * specularReflection * specularReflection * 10 + bakeReflected) * ambient, metal);
+					// **************** light
+
+					float metal = madsMap.r;
+					float fresnel = GetFresnel_FixNormal(normal, i.normal.xyz, viewDir) * ao;//GetFresnel(normal, viewDir) * ao;
+
+					float specular = GetSpecular(madsMap.a, fresnel * _Reflectivity , metal);
+					
+				/*
+#if _qc_USE_RAIN || _DAMAGED
+					ModifyColorByWetness(tex.rgb, water,madsMap.a, _MudColor);
 #endif
+*/
 
-
+					MaterialParameters precomp;
+					
+					precomp.shadow = shadow;
+					precomp.ao = ao;
+					precomp.fresnel = fresnel;
+					precomp.tex = tex;
 				
+					precomp.reflectivity = _Reflectivity;
+					precomp.metal = metal;
+					precomp.traced = i.traced;
+					precomp.water = water;
+					precomp.smoothsness = specular;
 
-		//	#endif
+					precomp.microdetail = _MudColor;
+					precomp.metalColor = lerp(tex, _MetalColor, _MetalColor.a);
+
+					#if !_MICRODETAIL_NONE && !_DAMAGED && !_SECOND_LAYER
+						precomp.microdetail.a *= microdetSample;
+					#else
+						precomp.microdetail.a = 0;
+					#endif
+
+					float3 col = GetReflection_ByMaterialType(precomp, normal, i.normal.xyz, viewDir, worldPosAdjusted);
 
 
-					ApplyBottomFog(col, o.worldPos.xyz, viewDir.y);
+					#if _EMISSIVE
+						col.rgb += tex2D(_Emissive, uv).rgb;
+					#endif
 
+
+					ApplyBottomFog(col, i.worldPos.xyz, viewDir.y);
+
+#if _OFFSET_BY_HEIGHT
+					FragColDepth result;
+					result.depth = calculateFragmentDepth(i.worldPos + (displacement - 0.5) * offsetAmount * viewDir * _HeightOffset);
+					result.col =  float4(col, 1);
+
+					return result;
+#else 
 					return float4(col,1);
+#endif
+
 
 				}
 				ENDCG
@@ -288,4 +532,6 @@ Shader "RayTracing/Geometry/Standard Specular"
 		}
 		Fallback "Diffuse"
 	}
+
+	CustomEditor "QuizCanners.RayTracing.MatDrawer_RayGeometryStandardSpecular"
 }

@@ -13,29 +13,30 @@ MonoBehaviour:
   m_Name: Ray Renderer Light Config
   m_EditorClassIdentifier: 
   configurations:
+  - name: Space
+    data:
+      _value: col|35|r|5|0.505|g|5|0.667|b|1|1|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.722135|y|9|-0.277622|z|8|0.265087|w|8|0.575478|||Rain|1|0|Amb|29|r|5|0.193|g|5|0.114|b|4|0.34||VolFog|1|0|SunInten|4|1.25|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|1||ArtLights|1|y|hdr|5|Space|
   - name: Blue Sky
     data:
-      _value: col|36|r|1|1|g|5|0.975|b|5|0.788|a|5|1.753||sky|36|r|5|0.291|g|5|0.461|b|5|0.557|a|1|1||fog|35|r|5|0.577|g|5|0.708|b|4|0.64|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||liDir|26|y|8|0.775386|z|8|0.631488||intn|8|1.752607|stars|1|0|UniStorm|30|weather
-        type|13|Mostly Cloudy||Shad|1|0|SnM|23|t|5|0.419|i|8|1.752607||
+      _value: col|27|r|1|1|g|1|1|b|1|1|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.722331|y|9|-0.277935|z|8|0.265425|w|8|0.574926|||Rain|1|0|Amb|30|r|5|0.613|g|5|0.779|b|5|0.962||VolFog|1|0|SunInten|4|1.28|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|4.05||ArtLights|1|n|hdr|7|Daytime|
   - name: Night
     data:
-      _value: col|38|r|4|0.07|g|5|0.205|b|5|0.302|a|4|1.22||sky|35|r|5|0.065|g|4|0.12|b|5|0.179|a|1|1||fog|35|r|4|0.07|g|5|0.123|b|5|0.189|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||liDir|26|y|8|0.987906|z|8|0.155055||intn|7|1.21952|stars|1|1|Shad|5|0.542|SnM|22|t|5|0.503|i|7|1.21952||uStrm|1|n|
+      _value: col|39|r|5|0.417|g|5|0.428|b|5|0.783|a|4|0.75||fog|35|r|4|0.07|g|5|0.123|b|5|0.189|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|5|0.542|SnM|61|rot|53|x|8|0.911066|y|9|-0.162171|z|8|0.334871|w|8|0.177543|||Rain|1|0|Amb|29|r|5|0.202|g|4|0.31|b|5|0.472||VolFog|5|0.742|SunInten|4|0.98|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|0.45||ArtLights|1|y|hdr|5|Night|
   - name: Mid Day
     data:
-      _value: col|35|r|5|0.635|g|4|0.71|b|5|0.736|a|1|1||sky|35|r|5|0.487|g|4|0.66|b|5|0.764|a|1|1||fog|35|r|5|0.252|g|5|0.286|b|4|0.34|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||liDir|26|y|8|0.867766|z|8|0.496974||intn|1|1|stars|1|0|Shad|1|0|SnM|16|t|5|0.445|i|1|1||uStrm|1|n|
+      _value: col|40|r|5|0.896|g|5|0.882|b|5|0.723|a|5|0.287||fog|36|r|5|0.344|g|5|0.585|b|5|0.736|a|1|1||maxFrms|3|500|ml|39|r|5|0.151|g|5|0.151|b|5|0.151|a|4|0.49||stars|1|0|Shad|1|0|SnM|59|rot|51|x|8|0.165901|y|8|0.205684|z|9|-0.240059|w|6|0.9341|||Rain|1|0|Amb|30|r|5|0.607|g|5|0.691|b|5|0.736||VolFog|1|0|SunInten|3|1.3|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|3||ArtLights|1|n|hdr|7|Daytime|
   - name: Rainy Day
     data:
-      _value: col|36|r|5|0.653|g|5|0.669|b|5|0.689|a|1|1||sky|36|r|5|0.466|g|5|0.476|b|5|0.498|a|1|1||fog|36|r|5|0.446|g|5|0.494|b|5|0.567|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||liDir|38|x|8|0.173648|y|8|0.980043|z|7|0.09676||intn|8|1.049961|stars|1|0|UniStorm|66|time|9|0.5434474|weather
-        type|10|Heavy Rain|light|12|Shadows|1|0|||Shad|1|1|
+      _value: col|28|r|1|1|g|1|1|b|1|1|a|5|0.293||fog|36|r|5|0.446|g|5|0.494|b|5|0.567|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|61|rot|53|x|8|0.369236|y|9|-0.241149|z|8|0.126197|w|8|0.888587|||Rain|5|0.331|Amb|40|r|5|0.501|g|5|0.822|b|5|0.849|a|5|0.506||VolFog|5|0.852|SunInten|3|0.8|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|3||ArtLights|1|n|hdr|0||
   - name: Contrast Test
     data:
-      _value: col|36|r|5|0.664|g|5|0.383|b|5|0.237|a|1|1||sky|35|r|5|0.453|g|4|0.51|b|5|0.546|a|1|1||fog|35|r|5|0.303|g|4|0.34|b|5|0.387|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||liDir|39|x|8|0.173648|y|8|0.242904|z|8|0.954381||intn|8|1.752333|stars|1|0|UniStorm|69|time|9|0.7381127|weather
-        type|13|Partly Cloudy|light|12|Shadows|1|1|||
+      _value: col|40|r|5|0.664|g|5|0.383|b|5|0.237|a|5|1.752||fog|35|r|5|0.303|g|4|0.34|b|5|0.387|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|60|rot|52|x|8|0.197402|y|7|0.85955|z|9|-0.192665|w|8|0.430216|||Rain|1|0|Amb|30|r|5|0.575|g|5|0.443|b|5|0.274||VolFog|1|0|SunInten|3|1.3|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|1.73||ArtLights|1|n|hdr|6|Sunset|
   - name: Directional Only
     data:
-      _value: col|36|r|5|0.674|g|5|0.368|b|5|0.211|a|1|1||sky|36|r|5|0.434|g|5|0.494|b|5|0.532|a|1|1||fog|36|r|5|0.284|g|5|0.319|b|5|0.362|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||liDir|39|x|8|0.173648|y|8|0.218227|z|8|0.960325||intn|8|1.751993|stars|1|1|UniStorm|69|time|9|0.7422211|weather
-        type|13|Mostly Cloudy|light|12|Shadows|1|1|||
-  - name: Foggy
+      _value: col|40|r|5|0.814|g|5|0.787|b|5|0.731|a|5|1.489||fog|36|r|5|0.284|g|5|0.319|b|5|0.362|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|60|rot|52|x|8|0.197402|y|7|0.85955|z|9|-0.192665|w|8|0.430216|||Rain|1|0|Amb|0||VolFog|1|0|SunInten|3|1.3|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|1||ArtLights|1|n|hdr|5|Weird|
+  - name: Blade Runner
     data:
-      _value: col|36|r|5|0.683|g|5|0.354|b|5|0.186|a|1|1||sky|36|r|5|0.416|g|5|0.478|b|5|0.517|a|1|1||fog|36|r|5|0.265|g|5|0.299|b|5|0.339|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||liDir|38|x|8|0.173648|y|7|0.19375|z|8|0.965561||intn|8|1.751625|stars|1|1|UniStorm|69|time|9|0.7462677|weather
-        type|13|Mostly Cloudy|light|12|Shadows|1|0|||
+      _value: col|39|r|4|0.83|g|5|0.522|b|5|0.364|a|5|1.752||fog|36|r|5|0.265|g|5|0.299|b|5|0.339|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|61|rot|53|x|8|0.187717|y|8|0.856866|z|9|-0.151679|w|8|0.455561|||Rain|1|0|Amb|40|r|5|0.632|g|5|0.396|b|5|0.092|a|5|0.878||VolFog|5|0.971|SunInten|4|1.35|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|0||ArtLights|1|n|hdr|6|Cloudy|
+  - name: Pitch Black
+    data:
+      _value: col|39|r|5|0.103|g|5|0.221|b|5|0.292|a|4|0.91||fog|35|r|4|0.07|g|5|0.123|b|5|0.189|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|60|rot|52|x|7|0.18768|y|8|0.857204|z|9|-0.151551|w|8|0.454982|||Rain|1|0|Amb|6|a|1|1||VolFog|1|0|SunInten|1|0|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|0||ArtLights|1|y|hdr|0||

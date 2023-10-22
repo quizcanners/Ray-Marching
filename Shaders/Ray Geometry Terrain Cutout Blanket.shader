@@ -17,10 +17,10 @@ Category
 
 				CGINCLUDE
 
-				#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-				#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-				#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-				#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
+				#include "Assets/Ray-Marching/Shaders/Savage_Sampler.cginc"
+				//#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
+				//#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
+				//#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
 				#include "Assets\The-Fire-Below\Common\Shaders\qc_terrain_cg.cginc"
 
 				float3 ModifyPosition(float3 worldPos)
@@ -52,7 +52,7 @@ Category
 				#pragma multi_compile_fwdbase
 				#pragma shader_feature_local _BUMP_NONE  _BUMP_REGULAR _BUMP_COMBINED 
 				#pragma shader_feature_local _SURFACE_NONMETAL _SURFACE_METAL _SURFACE_GLASS  
-
+				#pragma multi_compile ___ QC_MERGING_TERRAIN
 
 				struct v2f {
 					float4 pos			: SV_POSITION;
@@ -93,9 +93,11 @@ Category
 
 					float4 worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1));
 
+#if QC_MERGING_TERRAIN
 					worldPos.xyz = ModifyPosition(worldPos.xyz);
 
 					v.vertex = mul(unity_WorldToObject, float4(worldPos.xyz, v.vertex.w));
+#endif
 
 					o.pos = UnityObjectToClipPos(v.vertex);
 					o.texcoord = TRANSFORM_TEX(v.texcoord, _MainTex);
@@ -166,24 +168,20 @@ Category
 
 					#if _SURFACE_NONMETAL  
 
-
-					float4 normalAndDist = SdfNormalAndDistance(o.worldPos);
-					
-					float3 volumePos = o.worldPos + (normal + normalAndDist.xyz * saturate(normalAndDist.w)) 
+					float3 volumePos = o.worldPos + normal
 						* lerp(0.5, 1 - fresnel, smoothness) * 0.5
 						* _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w;
 
 					float outOfBounds;
 					float4 bakeRaw = SampleVolume(volumePos, outOfBounds);
 
-					float gotVolume = bakeRaw.a * (1- outOfBounds);
-					outOfBounds = 1 - gotVolume;
+		
 					float3 avaragedAmbient = GetAvarageAmbient(normal);
 					bakeRaw.rgb = lerp(bakeRaw.rgb, avaragedAmbient, outOfBounds); // Up 
 
 					float4 bake = bakeRaw;
 
-					ApplyTopDownLightAndShadow(o.topdownUv,  normal,  bumpMap,  o.worldPos,  gotVolume, fresnel, bake);
+					ApplyTopDownLightAndShadow(o.topdownUv,  normal,  bumpMap,  o.worldPos,  1- outOfBounds, fresnel, bake);
 
 					float3 col = lightColor 
 					+ bake.rgb * ambient;
@@ -272,8 +270,13 @@ Category
 					v2f o;
 
 						float4 worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1));
+
+
+#if QC_MERGING_TERRAIN
 					worldPos.xyz = ModifyPosition(worldPos.xyz);
 					v.vertex = mul(unity_WorldToObject, float4(worldPos.xyz, v.vertex.w));
+#endif
+
 
 					UNITY_SETUP_INSTANCE_ID(v);
 					UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);

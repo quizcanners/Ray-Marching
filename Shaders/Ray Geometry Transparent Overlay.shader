@@ -2,13 +2,15 @@ Shader "RayTracing/Geometry/With Transparent Overlay"
 {
 	Properties
 	{
-		_Diffuse("Albedo (RGB)", 2D) = "white" {}
+		_MainTex("Albedo (RGB)", 2D) = "white" {}
+		_SpecularMap("R-Metalic G-Ambient _ A-Specular", 2D) = "black" {}
 
-		[KeywordEnum(Nonmetal, Metal, Glass)] _SURFACE("Surface", Float) = 0
+		[KeywordEnum(OFF, PLASTIC, METAL, LAYER, MIXED_METAL, PAINTED_METAL)] _REFLECTIVITY("Reflective Material Type", Float) = 0
+		[KeywordEnum(OFF, ON, INVERTEX, MIXED)] _PER_PIXEL_REFLECTIONS("Traced Reflections", Float) = 0
 
-		[KeywordEnum(None, Regular, Combined)] _BUMP("Combined Map", Float) = 0
-		_Map("Bump/Combined Map (or None)", 2D) = "gray" {}
-	
+		_Reflectivity("Added Reflectiveness (Mat)", Range(0,1)) = 0.33
+
+		_BumpMap("Normal Map", 2D) = "bump" {}
 
 		_Overlay("Overlay Mask (RGB)", 2D) = "white" {}
 		_OverlayTexture("Overlay Texture (RGB)", 2D) = "white" {}
@@ -18,6 +20,8 @@ Shader "RayTracing/Geometry/With Transparent Overlay"
 		[Toggle(_SUB_SURFACE)] subSurfaceScattering("SubSurface Scattering", Float) = 0
 		_SubSurface("Sub Surface Scattering", Color) = (1,0.5,0,0)
 		_SkinMask("Skin Mask (_UV2)", 2D) = "white" {}
+
+		_MudColor("Water Color", Color) = (0.5, 0.5, 0.5, 0.5)
 	}
 
 	Category
@@ -27,22 +31,26 @@ Shader "RayTracing/Geometry/With Transparent Overlay"
 			CGINCLUDE
 
 				#define RENDER_DYNAMICS
-				#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-				#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-				#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-				#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
+
+				#pragma multi_compile ___ _qc_IGNORE_SKY
+				#pragma multi_compile __ _qc_USE_RAIN 
 
 				#pragma multi_compile LIGHTMAP_OFF LIGHTMAP_ON
-				#pragma multi_compile ___ _qc_Rtx_MOBILE
+				#pragma shader_feature_local _PER_PIXEL_REFLECTIONS_OFF _PER_PIXEL_REFLECTIONS_ON _PER_PIXEL_REFLECTIONS_INVERTEX  _PER_PIXEL_REFLECTIONS_MIXED
+				#pragma shader_feature_local _REFLECTIVITY_OFF _REFLECTIVITY_PLASTIC _REFLECTIVITY_METAL _REFLECTIVITY_LAYER  _REFLECTIVITY_MIXED_METAL  _REFLECTIVITY_PAINTED_METAL
+
+				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+
+				float4 _MudColor;
 
 				sampler2D _MainTex_ATL_UvTwo;
 				float4 _MainTex_ATL_UvTwo_TexelSize;
 
-				sampler2D _Diffuse;
+				sampler2D _MainTex;
 				sampler2D _Bump;
 				sampler2D _SkinMask;
-				float4 _Diffuse_ST;
-				float4 _Diffuse_TexelSize;
+				float4 _MainTex_ST;
+				float4 _MainTex_TexelSize;
 				float4 _SubSurface;
 
 				float4 _Overlay_ST;
@@ -53,6 +61,35 @@ Shader "RayTracing/Geometry/With Transparent Overlay"
 
 				sampler2D _Map;
 				float4 _Map_ST;
+
+				float GetOverlayAlpha(float3 worldPos, float3 normal)
+				{
+					float2 uv = worldPos.xz;
+					float2 uv2 = TRANSFORM_TEX(uv, _Overlay);
+
+					float4 mask = tex2D(_Overlay, uv2).r;
+					return mask * smoothstep(0.75, 1, normal.y);
+				}
+
+				float GetOverlayTexture(float3 worldPos, float3 normal)
+				{
+					float2 uv = worldPos.xz;
+					float2 uv1 = TRANSFORM_TEX(uv, _OverlayTexture);
+					float4 tex = tex2D(_OverlayTexture, uv1); 
+					return tex.a;
+				}
+
+				float4 GetOverlay(float3 worldPos, float3 normal)
+				{
+					float2 uv = worldPos.xz;
+					float2 uv1 = TRANSFORM_TEX(uv, _OverlayTexture);
+					float2 uv2 = TRANSFORM_TEX(uv, _Overlay);
+
+					float4 tex = tex2D(_OverlayTexture, uv1); 
+					float4 mask = tex2D(_Overlay, uv2).r;
+					tex.a = mask * tex.a * smoothstep(0.75, 1, normal.y);
+					return tex;
+				}
 
 			ENDCG
 
@@ -76,7 +113,6 @@ Shader "RayTracing/Geometry/With Transparent Overlay"
 				#pragma multi_compile_instancing
 				#pragma multi_compile_fwdbase
 				#pragma shader_feature_local _BUMP_NONE  _BUMP_REGULAR _BUMP_COMBINED 
-				#pragma shader_feature_local _SURFACE_NONMETAL _SURFACE_METAL _SURFACE_GLASS  
 
 				#pragma shader_feature_local ___ _SUB_SURFACE
 				#pragma shader_feature_local ___ _SHOWUVTWO
@@ -91,8 +127,8 @@ Shader "RayTracing/Geometry/With Transparent Overlay"
 					float3 viewDir		: TEXCOORD5;
 					SHADOW_COORDS(6)
 
-					float2 topdownUv : TEXCOORD7;
-					float2 lightMapUv : TEXCOORD8;
+					float2 lightMapUv : TEXCOORD7;
+					float4 traced : TEXCOORD8;
 					fixed4 color : COLOR;
 				};
 
@@ -103,178 +139,115 @@ Shader "RayTracing/Geometry/With Transparent Overlay"
 					float4 worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1));
 
 					o.pos = UnityObjectToClipPos(v.vertex);
-					o.texcoord = TRANSFORM_TEX(v.texcoord, _Diffuse);
+					o.texcoord = TRANSFORM_TEX(v.texcoord, _MainTex);
 					o.texcoord1 = v.texcoord1;
 					o.worldPos = worldPos;
 					o.normal.xyz = UnityObjectToWorldNormal(v.normal);
 					o.color = v.color;
 					o.viewDir = WorldSpaceViewDir(v.vertex);
 					
-					 o.lightMapUv = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
+					o.lightMapUv = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
 
-					TRANSFER_WTANGENT(o)
-					TRANSFER_TOP_DOWN(o);
+					o.traced = GetTraced_Mirror_Vert(o.worldPos, normalize(o.viewDir.xyz), o.normal.xyz);
+
+					TRANSFER_WTANGENT(o);
 					TRANSFER_SHADOW(o);
 
 					return o;
 				}
 
+				sampler2D _BumpMap;
+				sampler2D _SpecularMap;
 
-				float4 frag(v2f o) : COLOR
+				float _Reflectivity;
+
+				float4 frag(v2f i) : COLOR
 				{
-					float2 uv = o.texcoord.xy;
+					float2 uv = i.texcoord.xy;
 
-					#if _qc_Rtx_MOBILE
+					float3 viewDir = normalize(i.viewDir.xyz);
+					float rawFresnel = smoothstep(1,0, dot(viewDir, i.normal.xyz));
 
-							float4 mobTex = tex2D(_Diffuse, uv);
+					float4 tex = tex2D(_MainTex, uv);
+					float4 madsMap = tex2D(_SpecularMap, uv);
+					float3 tnormal = UnpackNormal(tex2D(_BumpMap, uv));
+					//uv -= tnormal.rg * _MainTex_TexelSize.xy;
 
-						#if LIGHTMAP_ON
-							mobTex.rgb *= DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, o.lightMapUv));
-						#else 
+					float water = 0;
+				
+					float3 normal = i.normal.xyz;
 
-							float oobMob;
-							mobTex.rgb *= SampleVolume(o.worldPos, oobMob).rgb;
+					ApplyTangent(normal, tnormal, i.wTangent);
 
-						#endif
+					float ao = madsMap.g;
+					float displacement = madsMap.b;
 
-						return mobTex;
+					float overlayAmbient = GetOverlayAlpha(i.worldPos, i.normal.xyz);
 
+					float overlayMask =	GetOverlayTexture(i.worldPos, i.normal.xyz) * overlayAmbient;
+		
+					float overlayShadow = (1-overlayMask);// * 0.5;
+
+					float shadow = SHADOW_ATTENUATION(i) * overlayShadow;
+
+
+				#if _qc_USE_RAIN
+
+					float rain = GetRain(i.worldPos, normal, i.normal, shadow);
+
+					//glossLayer =  
+					ApplyWater(water, rain, ao, displacement, madsMap, tnormal, i.worldPos, i.normal.y);
+
+					normal = i.normal.xyz;
+					ApplyTangent(normal, tnormal, i.wTangent);
+
+				#endif
+
+					float specular = madsMap.a; 
+					
+
+		
+
+					#if _qc_USE_RAIN 
+						ModifyColorByWetness(tex.rgb, water,madsMap.a, _MudColor);
 					#endif
-
-					float3 viewDir = normalize(o.viewDir.xyz);
-					float rawFresnel = smoothstep(1,0, dot(viewDir, o.normal.xyz));
 
 				
 
-					float4 bumpMap;
-					float3 tnormal;
-					SampleBumpMap(_Map, bumpMap, tnormal, uv);
+					ao *= (1 - overlayAmbient);// * 0.5;
 
-					float4 tex = tex2D(_Diffuse, uv - tnormal.rg  *  _Diffuse_TexelSize.xy);// * o.color;
-				
-					float3 normal = o.normal.xyz;
 
-					ApplyTangent(normal, tnormal, o.wTangent);
 
-					float fresnel = saturate(dot(normal,viewDir));
+					float fresnel = GetFresnel(normal, viewDir) * ao;
 
-					float smoothness = 
-					#if _BUMP_COMBINED
-					bumpMap.b;
-					#else 
-					0.1;
-					#endif
-
-					float ambient = 
-					#if _BUMP_COMBINED
-					 bumpMap.a;
-					#else 
-					1;
-					#endif
-
-					float overlayMask = tex2Dlod(_Overlay, float4(o.texcoord,0,0)).r;
-					
-					float overlayShadow = (4 - overlayMask) * 0.25;
-
-					float shadow = SHADOW_ATTENUATION(o) * overlayShadow;
-
-					ambient *= overlayShadow;
-
-					float direct = shadow * smoothstep(1 - ambient, 1.5 - ambient * 0.5, dot(normal, _WorldSpaceLightPos0.xyz));
-					
-					float3 lightColor =GetDirectional() * direct;
+				//	return overlayShadow;
 
 					// LIGHTING
 
-					#if _SURFACE_NONMETAL  
-
-					float4 normalAndDist = SdfNormalAndDistance(o.worldPos);
+					MaterialParameters precomp;
 					
-					float3 volumePos = o.worldPos + (normal + normalAndDist.xyz * saturate(normalAndDist.w)) 
-						* lerp(0.5, 1 - fresnel, smoothness) * 0.5
-						* _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w;
+					precomp.shadow = shadow;
+					precomp.ao = ao;
+					precomp.fresnel = fresnel;
+					precomp.tex = tex;
+				
+					precomp.reflectivity = _Reflectivity;
+					precomp.metal = madsMap.r;
+					precomp.traced = i.traced;
+					precomp.water = water;
+					precomp.smoothsness = specular;
 
-					float outOfBounds;
-					float4 bakeRaw = SampleVolume(volumePos, outOfBounds);
+					precomp.microdetail = _MudColor;
 
-					float gotVolume = bakeRaw.a * (1- outOfBounds);
-					outOfBounds = 1 - gotVolume;
+					precomp.microdetail.a = 0;
+		
+				//	return ao;
 
-					#if LIGHTMAP_ON
-						float3 lightMap = DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, o.lightMapUv));
-						bakeRaw.rgb = lightMap; 
-					#else 
-						bakeRaw.rgb = lerp(bakeRaw.rgb, GetAvarageAmbient(normal), outOfBounds);
-					#endif
-
-					float4 bake = bakeRaw;
-
-					ApplyTopDownLightAndShadow(o.topdownUv,  normal,  bumpMap,  o.worldPos,  gotVolume, fresnel, bake);
-
-#					if _SUB_SURFACE
-
-					float2 damUv = o.texcoord1.xy;
-					float4 mask = tex2D(_MainTex_ATL_UvTwo, damUv);
-
-					float skin = tex2D(_SkinMask, damUv);
-					float subSurface = _SubSurface.a * skin * (1-mask.g)  * (1+rawFresnel) * 0.5;
-#					endif
-
-					float3 col = lightColor * (1 + outOfBounds) 
-					+ bake.rgb * ambient;
-					
-					col.rgb *=tex.rgb;
-
-					AddGlossToCol(lightColor);
-
-#					if _SUB_SURFACE
-					col *= 1-subSurface;
-					TopDownSample(o.worldPos, bakeRaw.rgb, outOfBounds);
-					col.rgb += subSurface * _SubSurface.rgb * (_LightColor0.rgb * shadow + bakeRaw.rgb);
-#					endif
-
-#			elif _SURFACE_METAL
-
-			
-				float3 reflectionPos;
-				float outOfBoundsRefl;
-				float3 bakeReflected = SampleReflection(o.worldPos, viewDir, normal, shadow, reflectionPos, outOfBoundsRefl);
-
-				TopDownSample(reflectionPos, bakeReflected, outOfBoundsRefl);
-
-				float3 col =  tex.rgb * bakeReflected;
-
-#			elif _SURFACE_GLASS
+					float3 col = GetReflection_ByMaterialType(precomp, normal, i.normal.xyz, viewDir, i.worldPos);
 
 
-				float3 reflectionPos;
-				float outOfBoundsRefl;
-				float3 bakeReflected = SampleReflection(o.worldPos, viewDir, normal, shadow, reflectionPos, outOfBoundsRefl);
 
-				TopDownSample(reflectionPos, bakeReflected, outOfBoundsRefl);
-
-				float outOfBounds;
-				float3 straightHit;
-				float3 bakeStraight = SampleRay(o.worldPos, normalize(-viewDir - normal*0.5), shadow, straightHit, outOfBounds );
-
-				TopDownSample(straightHit, bakeStraight, outOfBounds);
-
-			//	return fresnel;
-
-				float showReflected = 1 - fresnel;
-
-				float3 col;
-
-				col = lerp (bakeStraight,
-				bakeReflected , showReflected);
-
-			//	col.r = lerp(bakeStraight.r, bakeReflected.r, pow(showReflected,3));
-			//	col.g = lerp(bakeStraight.g, bakeReflected.g, showReflected * showReflected);
-			//	col.b = lerp(bakeStraight.b, bakeReflected.b, pow(showReflected,0.5));
-#			endif
-
-
-					ApplyBottomFog(col, o.worldPos.xyz, viewDir.y);
+					ApplyBottomFog(col, i.worldPos.xyz, viewDir.y);
 
 					return float4(col,1);
 
@@ -313,15 +286,12 @@ Shader "RayTracing/Geometry/With Transparent Overlay"
 				struct v2f {
 					float4 pos			: SV_POSITION;
 					float2 texcoord		: TEXCOORD0;
-					float2 texcoord1	: TEXCOORD1;
-					float2 texcoord2	: TEXCOORD2;
 					float3 worldPos		: TEXCOORD3;
 					float3 normal		: TEXCOORD4;
 					float4 wTangent		: TEXCOORD5;
 					float3 viewDir		: TEXCOORD6;
 					SHADOW_COORDS(7)
 
-					float2 topdownUv : TEXCOORD8;
 					float4 screenPos : TEXCOORD9;
 					float2 lightMapUv : TEXCOORD10;
 					fixed4 color : COLOR;
@@ -334,10 +304,10 @@ Shader "RayTracing/Geometry/With Transparent Overlay"
 					float4 worldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1));
 
 					o.normal.xyz = UnityObjectToWorldNormal(v.normal);
-					o.texcoord = TRANSFORM_TEX(v.texcoord, _Diffuse);
-					o.texcoord1 = TRANSFORM_TEX(v.texcoord, _OverlayTexture);
-					o.texcoord2 = TRANSFORM_TEX(v.texcoord, _Overlay);
-					float4 tex = tex2Dlod(_Overlay, float4(o.texcoord,0,0));
+					o.texcoord = v.texcoord;
+				
+					float2 texUv = TRANSFORM_TEX(v.texcoord, _Overlay);
+					float4 tex = tex2Dlod(_Overlay, float4(texUv,0,0));
 
 					 float toCamera = length(_WorldSpaceCameraPos - worldPos.xyz) - _ProjectionParams.y;
 
@@ -352,98 +322,63 @@ Shader "RayTracing/Geometry/With Transparent Overlay"
 					o.viewDir = WorldSpaceViewDir(v.vertex);
 
 					 o.screenPos = ComputeScreenPos(o.pos);
-					  o.lightMapUv = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
+					 o.lightMapUv = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
 					COMPUTE_EYEDEPTH(o.screenPos.z);
 
 					TRANSFER_WTANGENT(o)
-					TRANSFER_TOP_DOWN(o);
 					TRANSFER_SHADOW(o);
 
 					return o;
 				}
 
 
+				
+
+
 				float4 frag(v2f o) : COLOR
 				{
 					float2 uv = o.texcoord.xy;
-
-					#if _qc_Rtx_MOBILE
-
-							float4 mobTex = tex2D(_OverlayTexture, o.texcoord1);
-
-						#if LIGHTMAP_ON
-							mobTex.rgb *= DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, o.lightMapUv));
-						//	return 0;
-						#else 
-
-							float oobMob;
-							mobTex.rgb *= SampleVolume(o.worldPos, oobMob).rgb;
-
-						#endif
-
-						return mobTex;
-
-					#endif
 
 					float2 screenUV = o.screenPos.xy / o.screenPos.w;
 					float3 viewDir = normalize(o.viewDir.xyz);
 					float rawFresnel = smoothstep(1,0, dot(viewDir, o.normal.xyz));
 
 					
-
-					float4 mask = tex2D(_Overlay, o.texcoord2).r;
-					float4 tex = tex2D(_OverlayTexture, o.texcoord1); 
-					tex.a = mask * tex.a; //smoothstep(0, 0.5, tex.a) ;
+					float4 tex = GetOverlay(o.worldPos, o.normal.xyz); 
+				
 
 					float3 normal = o.normal.xyz;
 					float fresnel = saturate(dot(normal,viewDir));
 					float smoothness = 0.5 * tex.a;
 					float ambient = 1;
 
-					float shadow = SHADOW_ATTENUATION(o) * SampleSkyShadow(o.worldPos);
+					float shadow = SHADOW_ATTENUATION(o);// * SampleSkyShadow(o.worldPos);
 
-					float direct = shadow * smoothstep(0.5, 1 , dot(normal, _WorldSpaceLightPos0.xyz));
+					float direct = shadow * max(0, dot(normal, _WorldSpaceLightPos0.xyz));
 					
 					float3 lightColor = GetDirectional() * direct;
 
 					// LIGHTING
 					
-					float4 normalAndDist = SdfNormalAndDistance(o.worldPos);
 					
-					float3 volumePos = o.worldPos + (normal + normalAndDist.xyz * saturate(normalAndDist.w)) 
-						* _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w;
-
-
-					//float3 avaragedAmbient = GetAvarageAmbient(normal);
-				//	bakeRaw.rgb = lerp(bakeRaw.rgb, avaragedAmbient, outOfBounds); // Up 
+					float3 volumePos = o.worldPos;
 
 					float4 bakeRaw = 0;
 
-					#if LIGHTMAP_ON
-
-						float outOfBounds = 0;
-						float3 lightMap = DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, o.lightMapUv));
-						bakeRaw.rgb = lightMap; 
-						//return bakeRaw;
-					#else 
-
 						float outOfBounds;
 						bakeRaw = SampleVolume(volumePos, outOfBounds);
-
-						float gotVolume = bakeRaw.a * (1- outOfBounds);
-						outOfBounds = 1 - gotVolume;
 						bakeRaw.rgb = lerp(bakeRaw.rgb, GetAvarageAmbient(normal), outOfBounds);
-					#endif
-
+	
 						float4 bake = bakeRaw;
 
-					ApplyTopDownLightAndShadow(o.topdownUv,  normal,  float4(0.5,0.5,0.5,0.5),  o.worldPos,  1-outOfBounds, fresnel, bake);
-
-					float3 col = lightColor * (1 + outOfBounds) + bake.rgb * ambient;
+		
+					float3 col = lightColor + bake.rgb * ambient;
 					
 					col.rgb *=tex.rgb;
 
-					AddGlossToCol(lightColor);
+					//AddGlossToCol(lightColor);
+
+					//return 0;
 
 					ApplyBottomFog(col, o.worldPos.xyz, viewDir.y);
 

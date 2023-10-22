@@ -52,6 +52,10 @@ float Shrapnel(float3 p)
 	return dot(sign(p), p) / 5.;
 }
 
+
+
+
+
 float sdRoundCone(in float3 p)
 {
     p.y = -p.y + 0.1;
@@ -87,6 +91,7 @@ float sdGyroid(float3 p, float scale, float bias, float thickness)
     float d = abs(dot(sin(p), cos(p.yzx)) + bias) - thickness;
     return d / scale;
 }
+
 
 float sdBoundingBox(float3 p, float3 b, float e)
 {

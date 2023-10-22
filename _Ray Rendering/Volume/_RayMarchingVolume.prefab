@@ -46,14 +46,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   framesToBake:
-    _maxCount: 300
+    _maxCount: 32
   volume: {fileID: 2851973443218338698}
+  cubeMapped:
+    IsActive: 1
+    _fistPassBaking:
+      FramesToBake:
+        _maxCount: 4
+      FramesToSmooth:
+        _maxCount: 2
+    _secondPassBaking:
+      FramesToBake:
+        _maxCount: 16
+      FramesToSmooth:
+        _maxCount: 2
   bakingShader: {fileID: 4800000, guid: 73833b5f1381bf640a70c83bf508ccfd, type: 3}
   offsetShader: {fileID: 4800000, guid: b6e5b6dfb5451424ea4529cfdfa0a5cb, type: 3}
   smoothingShader: {fileID: 4800000, guid: d0349496133b7e04196d735c9cd5e58d, type: 3}
+  PositionVersion: 0
   context:
     _currentlyEntered: -1
-  _editorTab: Baking
+  _editorTab: Debug
 --- !u!114 &2851973443218338698
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -66,7 +79,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 754cd620e778119429f67a22710c31c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hSlices: 6
+  DiscretePosition: 0
+  hSlices: 8
   size: 1
-  _texture: {fileID: 8400000, guid: ff228de16194c9c4ab6a5b37bdb7df3e, type: 2}
+  _texture: {fileID: 0}
+  cubeArray: {fileID: 0}
   _painter: {fileID: 0}

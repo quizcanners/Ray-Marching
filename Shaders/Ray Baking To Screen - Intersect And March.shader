@@ -29,11 +29,11 @@
 
 			#pragma vertex vert
 			#pragma fragment frag
-			//#pragma multi_compile __ RT_USE_DIELECTRIC
 			#pragma multi_compile __ RT_MOTION_TRACING
 			#pragma multi_compile __ RT_DENOISING
 			#pragma multi_compile __ _IS_RAY_MARCHING  _IS_PROGRESSIVE_MARCHING
 			#pragma multi_compile __ RT_PROGRESSIVE_BUFFER
+			#pragma multi_compile ___ _qc_IGNORE_SKY
 
 			struct v2f {
 				float4 pos : 		SV_POSITION;
@@ -103,9 +103,11 @@
 					// + float2(_SinTime.x, _CosTime.y));
 					tex2Dlod(_Global_Noise_Lookup, float4(o.noiseUV, 0, 0)); //screenUV * (123.12345678) + float2(_SinTime.x, _CosTime.y + screenUV.y) * 32.12345612, 0, 0));
 
+				noise.a = hash31(float3(screenUV, _Time.x));// ((noise.r + noise.b) * 2) % 1;
+
 				float aaCoef = (min(_ScreenParams.z, _ScreenParams.w) - 1); 
 
-				float3 rand = normalize(noise.rgb - 0.5) * noise.a * noise.a;
+				float3 rand = normalize(noise.rgb - 0.5) * noise.a;// *noise.a;
 
 				// AA
 				float3 rd = rayDirection + rand * aaCoef;

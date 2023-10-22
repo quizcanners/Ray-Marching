@@ -7,6 +7,7 @@ using UnityEngine;
 namespace QuizCanners.RayTracing
 {
     [ExecuteAlways]
+    [AddComponentMenu("Quiz ñ'Anners/Ray Tracing/Camera And Output")]
     internal class Singleton_RayRenderingCameraAndOutput : Singleton.BehaniourBase
     {
         public Camera WorldCamera;

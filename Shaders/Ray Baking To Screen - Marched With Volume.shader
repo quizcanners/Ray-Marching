@@ -31,6 +31,8 @@
 			#pragma multi_compile_fwdbase // useful to have shadows 
 			#pragma shader_feature_local ____ _DEBUG 
 
+			#pragma multi_compile ___ _qc_IGNORE_SKY
+
 			#pragma target 3.0
 
 			struct v2f {
@@ -59,6 +61,9 @@
 				float3 position = volumeUVtoWorld(o.texcoord.xy, _RayMarchingVolumeVOLUME_POSITION_N_SIZE, _RayMarchingVolumeVOLUME_H_SLICES); //VOLUME_POSITION_N_SIZE_BRUSH, VOLUME_H_SLICES_BRUSH);
 
 				float3 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.texcoord.xy * 13.5 + float2(_SinTime.w, _CosTime.w) * 32, 0, 0)).rgb - 0.5;
+
+			//	noise.a = ((noise.r + noise.b) * 2) % 1;
+
 
 				float3 direction = normalize(noise);
 
@@ -193,14 +198,17 @@
 
 						//return shadow;
 
+					float3 skCol = SampleSkyBox(reflectedNormal);
+
 					col.rgb += (1 + dott) * 0.5 *  (
 						reflCol * (1 - reflectedSky) +
-						_RayMarchSkyColor.rgb * reflectedSky +
+						skCol *
+						reflectedSky +
 						lightRelected * 64 * shadow
 						) * unity_FogColor.rgb * bake.a;
 
 
-					col.rgb = col.rgb * deFog + _RayMarchSkyColor.rgb *(1 - deFog);
+					col.rgb = col.rgb * deFog + skCol.rgb *(1 - deFog);
 
 					col.rgb += noise.rgb*col.rgb*0.2;
 

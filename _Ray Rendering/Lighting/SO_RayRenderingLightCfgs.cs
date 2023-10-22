@@ -20,7 +20,7 @@ namespace QuizCanners.RayTracing
 
         protected override Configuration ActiveConfig_Internal
         {
-            get { return ActiveConfig; }
+            get => ActiveConfig; 
             set
             {
                 ActiveConfig = value;

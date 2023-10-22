@@ -30,6 +30,7 @@
 			#pragma fragment frag
 			#pragma multi_compile __ RT_MOTION_TRACING
 			#pragma multi_compile __ RT_DENOISING
+			#pragma multi_compile ___ _qc_IGNORE_SKY
 
 			struct v2f {
 				float4 pos : 		SV_POSITION;
@@ -63,8 +64,11 @@
 
 				float2 screenUV = o.screenPos.xy / o.screenPos.w;
 
-				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(screenUV * (123.12345678) - _RayTraceTransparency * 12  
+				float4 noise = 0.5;
+				tex2Dlod(_Global_Noise_Lookup, float4(screenUV * (123.12345678) - _RayTraceTransparency * 12  
 					+ float2(_SinTime.w, _CosTime.w) * 32.12345612, 0, 0));
+
+				noise.a = hash31(float3(screenUV, _Time.x)); 
 
 				float aaCoef = (_ScreenParams.z - 1) * 2;
 
@@ -83,7 +87,7 @@
 				//	ro += _ProjectionParams.y * rayDirection;
 
 
-					float4 col = render(ro, rd, noise);
+					float4 col = render(ro, rd, noise.gbar);
 
 					
 

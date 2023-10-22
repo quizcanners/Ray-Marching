@@ -123,14 +123,14 @@
 
 				float outOfBounds;
 				float4 vol = SampleVolume(i.worldPos.xyz + normal * (smoothness + 0.5) * 0.5 * _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w, outOfBounds);
-				float gotVolume = smoothstep(0.5, 0, outOfBounds);
-				float fogged = 1 - gotVolume;
+				float insideBounds = smoothstep(0.5, 0, outOfBounds);
+				float fogged = 1 - insideBounds;
 
 				float direct = saturate((dot(normal, _WorldSpaceLightPos0.xyz)));
 
 				direct = saturate(direct * shadow - (1 - ambient) * (1 - direct));
 
-				float3 ambientCol = lerp(GetAvarageAmbient(normal), vol, gotVolume);
+				float3 ambientCol = lerp(GetAvarageAmbient(normal), vol, insideBounds);
 
 				float3 lightColor = GetDirectional() * direct;
 

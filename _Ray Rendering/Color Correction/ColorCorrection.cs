@@ -5,12 +5,12 @@ using UnityEngine;
 
 namespace QuizCanners.RayTracing
 {
-    internal partial class Singleton_RayRendering
+    public static partial class RayRendering
     {
         [Serializable]
         public class ColorManager : IPEGI
         {
-            private readonly ShaderProperty.ColorFloat4Value COLOR_CORRECT_COLOR = new("_qc_ColorCorrection_Color", Color.white);
+            private readonly ShaderProperty.ColorValue COLOR_CORRECT_COLOR = new("_qc_ColorCorrection_Color", Color.white);
             private readonly ShaderProperty.VectorValue COLOR_CORRECT_PARAMETERS = new("_qc_ColorCorrection_Params");
 
             private float Shadow 

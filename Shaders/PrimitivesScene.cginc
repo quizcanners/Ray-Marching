@@ -14,20 +14,36 @@
 
 // CUBES
 
-#define ARRAY_SIZE 10
-#define ARRAY_BOX_COUNT 2
+#define ARRAY_BOX_COUNT 8
+#define ARRAY_SIZE 64
+#define QC_NATIVE_SHADOW_DISTANCE 50
 //1e10
 
 
-uniform float4 RAY_FLOOR_Mat;
+//uniform float4 RAY_FLOOR_Mat;
+//RayMarchCube_Unrotated
+uniform float4 RayMarchUnRot[ARRAY_SIZE];
+uniform float4 RayMarchUnRot_Size[ARRAY_SIZE];
+uniform float4 RayMarchUnRot_Mat[ARRAY_SIZE];
+//uniform float4 RayMarchUnRot_Rot[ARRAY_SIZE];
 
+uniform float4 RayMarchUnRot_BoundPos[ARRAY_BOX_COUNT];
+uniform float4 RayMarchUnRot_BoundSize[ARRAY_BOX_COUNT];
+
+uniform float4 RayMarchUnRot_BoundPos_All;
+uniform float4 RayMarchUnRot_BoundSize_All;
+
+// Rotated Cubes
 uniform float4 RayMarchCube[ARRAY_SIZE];
 uniform float4 RayMarchCube_Size[ARRAY_SIZE];
 uniform float4 RayMarchCube_Mat[ARRAY_SIZE];
 uniform float4 RayMarchCube_Rot[ARRAY_SIZE];
 
-uniform float4 RayMarchCube_BoundPos[ARRAY_SIZE];
-uniform float4 RayMarchCube_BoundSize[ARRAY_SIZE];
+uniform float4 RayMarchCube_BoundPos[ARRAY_BOX_COUNT];
+uniform float4 RayMarchCube_BoundSize[ARRAY_BOX_COUNT];
+
+uniform float4 RayMarchCube_BoundPos_All;
+uniform float4 RayMarchCube_BoundSize_All;
 
 // Dynamics
 
@@ -70,30 +86,93 @@ uniform float4 RayMarchLight_0;
 uniform float4 RayMarchLight_0_Mat;
 uniform float4 RayMarchLight_0_Size;
 
-uniform float4 _RayMarchSkyColor;
+//uniform float4 _RayMarchSkyColor;
 uniform float4 _RayMarthMinLight;
 
+uniform samplerCUBE  Qc_SkyBox;
 
+uniform float4 _qc_AmbientColor;
+uniform float4 _qc_PointLight_Position;
+uniform float4 _qc_PointLight_Color;
+
+uniform float _qc_SunVisibility;
+//_qc_USE_SUN
+
+uniform float qc_VolumeAlpha;
+sampler2D Qc_SDF_Volume;
+uniform float Qc_SDF_Visibility;
 
 #define MAX_VOLUME_ALPHA 10500//1e10
 #define MATCH_RAY_TRACED_SUN_COEFFICIENT 0.5
 #define MATCH_RAY_TRACED_SKY_COEFFICIENT 0.5
 #define MATCH_RAY_TRACED_SUN_LIGH_GLOSS 0.2
 
+#define LAMBERTIAN 0.
+#define METAL 1.
+#define DIELECTRIC 2.
+#define GLASS 3.
+#define EMISSIVE 4.
+#define SUBTRACTIVE 5.
 
-inline float4 SampleVolume(float3 pos, out float outOfBounds)
+inline float3 GetAmbientLight()
 {
-	float4 bake = SampleVolume(_RayMarchingVolume, pos
+	return _qc_AmbientColor.rgb;
+}
+
+float4 SampleVolume(float3 pos, out float outOfBounds)
+{
+	#if !qc_NO_VOLUME
+		float4 bake = SampleVolume(_RayMarchingVolume, pos
+			, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
+			, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
+
+		return bake;
+	#endif
+
+	outOfBounds = 1;
+	return 0;
+	
+}
+
+float4 SampleSDF(float3 pos, out float outOfBounds)
+{
+	if (Qc_SDF_Visibility == 0)
+	{
+		outOfBounds = 1;
+		return 0;
+	}
+
+	float4 bake = SampleVolume(Qc_SDF_Volume, pos
 		, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
 		, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
 	return bake;
 }
 
+float4 SampleVolume(sampler2D tex, float3 pos, out float outOfBounds)
+{
+	float4 bake = SampleVolume(tex, pos
+		, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
+		, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
 
+	return bake;
+}
+
+inline float3 GetDirectional()
+{
+	#if _qc_IGNORE_SKY
+		return 0;
+	#endif
+
+	return _LightColor0.rgb * _qc_SunVisibility;// *MATCH_RAY_TRACED_SUN_COEFFICIENT;// * smoothstep(0, 0.1, _WorldSpaceLightPos0.y);
+}
 
 float getShadowAttenuation(float3 worldPos)
 {
+	#if _qc_IGNORE_SKY
+		return 0;
+	#endif
+
 #if defined(SHADOWS_CUBE)
 	{
 		unityShadowCoord3 shadowCoord = worldPos - _LightPositionRange.xyz;
@@ -121,33 +200,61 @@ float getShadowAttenuation(float3 worldPos)
 #endif  
 }
 
-// Scenes
-float3 getSkyColor(float3 rd) 
+
+float3 SampleSkyBox(float3 rd)
 {
-	float3 col = Mix(unity_FogColor.rgb, _RayMarchSkyColor.rgb, smoothstep(0,0.13, rd.y));// 0.5 + 0.5 * rd.y);
-
-	// _qc_AMBIENT_SIMULATION will use incorrec values to speed up baking
-	#if defined(_qc_AMBIENT_SIMULATION)
-		
-		float sun = saturate(dot(_WorldSpaceLightPos0.xyz, rd));
-		col.rgb += _LightColor0.rgb * (smoothstep(0.995 - 0.01, 3, sun) * 1000000 + pow(sun, 8));
-	//	col *= smoothstep(-0.025, 0, rd.y);
-	#else
-
-		float sun =  smoothstep(1,0, dot(_WorldSpaceLightPos0.xyz, rd));
-		col.rgb += _LightColor0.rgb * (1 / (0.01 + sun*3000));// (smoothstep(0.995 - 0.01, 3, sun) * 1000000 + pow(sun, 8));
-
-	//	float3 skyColor = lerp(unity_FogColor.rgb, mat.rgb, smoothstep(0,0.23, ray.y));
-
+	#if _qc_IGNORE_SKY
+		return 0;
 	#endif
 
-	col *= smoothstep(-0.025, 0, rd.y);
+	return lerp(texCUBElod(Qc_SkyBox, float4(rd,0)).rgb, GetAmbientLight(), _qc_AmbientColor.a); //GetDirectional();
+}
+
+float3 SampleSkyBox(float3 rd, float smoothness)
+{
+	#if _qc_IGNORE_SKY
+		return 0;
+	#endif
+
+	return lerp(texCUBElod(Qc_SkyBox, float4(rd,(1-smoothness) * 5)).rgb, GetAmbientLight(), _qc_AmbientColor.a); //GetDirectional();
+}
+
+
+// Scenes
+float3 getSkyColor(float3 rd, float shadow)
+{
+	#if _qc_IGNORE_SKY
+		return 0;
+	#endif
+
+	float3 col = SampleSkyBox(rd);
+
+	if (_qc_SunVisibility<=0.01)
+	{
+		return col; //float4(0,0,0,distance);
+	}
+
+#if defined(_qc_AMBIENT_SIMULATION)
+#else
+	float sun = smoothstep(1, 0, dot(_WorldSpaceLightPos0.xyz, rd));
+	col.rgb += GetDirectional() 
+	* shadow * (1 / (0.01 + sun * 6000));
+#endif
 
 	return col;
 }
 
+float3 getSkyColor(float3 rd) 
+{
+	#if _qc_IGNORE_SKY
+		return 0;
+	#endif
 
-inline float SceneSdf_Dynamic(float3 position, float smoothness, float edges)
+	return getSkyColor(rd, 1);
+}
+
+
+float SceneSdf_Dynamic(float3 position, float smoothness, float edges)
 {
 	float dist = 9999;
 
@@ -164,57 +271,167 @@ inline float SceneSdf_Dynamic(float3 position, float smoothness, float edges)
 }
 
 
-inline float SceneSdf(float3 position, float smoothness) 
+float SceneSdf(float3 position, float smoothness) 
 {
 	float edges = _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w * 0.5 * smoothness;
 
-	float s0 = SphereDistance(position, float4(RayMarchSphere_0.xyz, RayMarchSphere_0_Size.x));
-	float s1 = SphereDistance(position, float4(RayMarchSphere_1.xyz, RayMarchSphere_1_Size.x));
+	//float s0 = SphereDistance(position, float4(RayMarchSphere_0.xyz, RayMarchSphere_0_Size.x));
+	//float s1 = SphereDistance(position, float4(RayMarchSphere_1.xyz, RayMarchSphere_1_Size.x));
 
-	float dist = CubicSmin(s0, s1, edges);
+	float dist = 999999;//CubicSmin(s0, s1, edges);
 
 	#define ADD(d) dist = CubicSmin(dist, d, edges)
 
-	for (int i = 0; i < ARRAY_SIZE; i++) 
+	float boxDetection = 1 + edges * 2;
+
+
+	//RayMarchUnRot
+	float toBound = CubeDistance_Inernal(position - RayMarchUnRot_BoundPos_All.xyz, RayMarchUnRot_BoundSize_All.xyz);
+
+	UNITY_BRANCH
+	if (toBound < boxDetection)
+	{		
+		for (int b = 0; b < ARRAY_BOX_COUNT; b++)
+		{
+			float4 pos = RayMarchUnRot_BoundPos[b];
+			float4 size = RayMarchUnRot_BoundSize[b];
+
+			toBound = CubeDistance_Inernal(position - pos.xyz, size.xyz);
+
+			UNITY_BRANCH
+			if (toBound < boxDetection)
+			{
+				for (int i = pos.w; i < size.w; i++)
+					ADD(CubeDistance(position, RayMarchUnRot[i], RayMarchUnRot_Size[i].xyz, edges));
+					//TRACE_BOX_ROT(RayMarchCube[i], RayMarchCube_Rot[i], RayMarchCube_Size[i], RayMarchCube_Mat[i]);
+			} else 
+			{
+				dist = min(dist, toBound + boxDetection * 1.1);
+			}
+		}
+	} else 
 	{
-		ADD(CubeDistanceRot(position, RayMarchCube_Rot[i] ,RayMarchCube[i], RayMarchCube_Size[i].xyz, edges));
+		dist = min(dist, toBound + boxDetection*1.1);
+	}
+
+	// Cube Rotated
+	toBound = CubeDistance_Inernal(position - RayMarchCube_BoundPos_All.xyz, RayMarchCube_BoundSize_All.xyz);
+	
+	UNITY_BRANCH
+	if (toBound < boxDetection)
+	{		
+		for (int b = 0; b < ARRAY_BOX_COUNT; b++)
+		{
+			float4 pos = RayMarchCube_BoundPos[b];
+			float4 size = RayMarchCube_BoundSize[b];
+
+			toBound = CubeDistance_Inernal(position - pos.xyz, size.xyz);
+
+			UNITY_BRANCH
+			if (toBound < boxDetection)
+			{
+				for (int i = pos.w; i < size.w; i++)
+					ADD(CubeDistanceRot(position, RayMarchCube_Rot[i], RayMarchCube[i], RayMarchCube_Size[i].xyz, edges));
+					//TRACE_BOX_ROT(RayMarchCube[i], RayMarchCube_Rot[i], RayMarchCube_Size[i], RayMarchCube_Mat[i]);
+			} else 
+			{
+				dist = min(dist, toBound + boxDetection * 1.1);
+			}
+		}
+	} else 
+	{
+		dist = min(dist, toBound + boxDetection*1.1);
 	}
 
 	#if defined(RAYMARCH_DYNAMICS)
 	ADD(SceneSdf_Dynamic(position, smoothness, edges));
 	#endif
 
+	/*
 	float sub0 = CubeDistance(position, RayMarchSubtractiveCube_0, RayMarchSubtractiveCube_0_Size.xyz, edges);
 	float sub1 = CubeDistance(position, RayMarchSubtractiveCube_1, RayMarchSubtractiveCube_1_Size.xyz, edges); 
 	float sub2 = CubeDistance(position, RayMarchSubtractiveCube_2, RayMarchSubtractiveCube_2_Size.xyz, edges);
+	*/
 
+	/*
 	#if !defined(IGNORE_FLOOR)
-	float plane = Plane(position);
+	float plane = Plane(position); 
 
 	ADD(plane);
 	#endif
-
+	*/
+	/*
 	dist = OpSmoothSubtraction(dist, sub0, edges);
 	dist = OpSmoothSubtraction(dist, sub1, edges);
 	dist = OpSmoothSubtraction(dist, sub2, edges);
+	*/
 
 	return dist;
 }
 
-inline float SceneSdf(float3 position)
+float SceneSdf(float3 position)
 {
 	return SceneSdf(position, _RayMarchSmoothness);
 }
 
-float3 opU(float3 d, float iResult, float4 newMat, inout float4 currentMat, float type) 
+float3 opU(float3 d, float distance, float4 newMat, inout float4 currentMat, float type) 
 {
-	currentMat = d.y > iResult ? newMat : currentMat;
-	return d.y > iResult ? float3(d.x, iResult, type) : d; // if closer make new result
+	currentMat = d.y > distance ? newMat : currentMat;
+	return d.y > distance ? float3(d.x, distance, type) : d; // if closer make new result
 }
 
+/*
+float SampleBoxRotated(in float3 ro, in float3 rd, in float4 q, in float2 distBound, inout float3 normal, in float3 boxSize) 
+{
+	rd = Rotate(rd, q);
+	ro = Rotate(ro, q);
 
-#define TRACE_BOUNDS(pos, size) IsHitBox(ro - pos.xyz, rd, size.xyz, m)
-#define TRACE_BOX(posNmat,rot, size,objmat) d = opU(d, iBox(ro - posNmat.xyz, rd, d.xy, normal, size.xyz, m), objmat, mat, posNmat.w)
+	float3 absRd = abs(rd) + 0.000001f;
+	float3 signRd = rd / absRd;
+	float3 m = signRd / (absRd);
+	float3 n = m * ro;
+	float3 k = abs(m) * boxSize;
+
+	float3 t1 = -n - k;
+	float3 t2 = -n + k;
+
+	float tN = max(max(t1.x, t1.y), t1.z);
+	float tF = min(min(t2.x, t2.y), t2.z);
+
+	if (tN > tF || tF <= 0.0)
+	{
+		return MAX_DIST;
+	}
+	else 
+	{
+		if (tN >= distBound.x && tN <= distBound.y) 
+		{
+			normal = -signRd * step(t1.yzx, t1.xyz) * step(t1.zxy, t1.xyz);
+			normal = Rotate(normal, float4(-q.x,-q.y,-q.z, q.w));
+			return tN;
+		}
+		else if (tF >= distBound.x && tF <= distBound.y)
+		{
+			normal = -signRd * step(t2.xyz, t2.yzx) * step(t2.xyz, t2.zxy);
+			normal = Rotate(normal, float4(-q.x, -q.y, -q.z, q.w));
+			return tF;
+		}
+		else 
+		{
+			return MAX_DIST;
+		}
+	}
+}
+*/
+
+#define IS_HIT_BOX(pos, size) IsHitBox(ro - pos.xyz, rd, size.xyz, d.xy, m)
+#define IS_HIT_SPHERE(pos, radius) isHitSphere(ro - pos.xyz, rd, radius, d.xy)
+#define IS_HIT_BOX_ROT(pos, rot, size) isHitBoxRot(ro - pos.xyz, rd, rot, size.xyz, d.xy)
+#define IS_HIT_BOX_ROT_DEPTH(pos, rot, size) IsHitBoxRot_ModifyDepth(ro - pos.xyz, rd, rot, size.xyz, dTmp.xy)
+
+#define IS_HIT_CAPSULE_ROT(pos, rot, size) isHitCapsuleRot(ro - pos.xyz, rd, rot, d.xy, size.y, size.x)
+
+#define TRACE_BOX(posNmat, size,objmat) d = opU(d, iBox(ro - posNmat.xyz, rd, d.xy, normal, size.xyz, m), objmat, mat, posNmat.w)
 #define TRACE_BOX_ROT(posNmat, rot, size,objmat) d = opU(d, iBoxRot(ro - posNmat.xyz, rd, rot, d.xy, normal, size.xyz), objmat, mat, posNmat.w)
 #define TRACE_CAPSULE_ROT(posNmat, rot, size,objmat) d = opU(d, iCapsuleRot(ro - posNmat.xyz, rd, rot, d.xy, normal, size.y, size.x), objmat, mat, posNmat.w)
 
@@ -224,7 +441,7 @@ float3 opU(float3 d, float iResult, float4 newMat, inout float4 currentMat, floa
 
 void WorldHit_Dynamic(float3 ro, in float3 rd, inout float3 d, inout float3 normal, inout float4 mat, in float3 m) 
 {
-	if (TRACE_BOUNDS(DYNAMIC_PRIM_BoundPos, DYNAMIC_PRIM_BoundSize))
+	if (IS_HIT_BOX(DYNAMIC_PRIM_BoundPos, DYNAMIC_PRIM_BoundSize))
 	{
 		for (int i=0; i< DYNAMIC_PRIM_COUNT; i++)
 			TRACE_CAPSULE_ROT(DYNAMIC_PRIM[i], DYNAMIC_PRIM_Rot[i], DYNAMIC_PRIM_Size[i], DYNAMIC_PRIM_Mat[i]);
@@ -232,38 +449,353 @@ void WorldHit_Dynamic(float3 ro, in float3 rd, inout float3 d, inout float3 norm
 }
 
 
+bool Raycast(float3 ro, in float3 rd, in float2 dist) {
+
+	rd += 0.001; // rd * 0.01;
+
+	float3 d = float3(dist, 0.);
+
+	/*
+#if !defined(IGNORE_FLOOR)
+	if (isPlane(ro, rd, float3(0, 1, 0), d.xy))
+		return true;
+#endif
+*/
+
+	float3 m = sign(rd) / max(abs(rd), 0.00001);//1e-8);
+
+	UNITY_BRANCH
+	if (IS_HIT_BOX(RayMarchCube_BoundPos_All, RayMarchCube_BoundSize_All))
+	{
+		for (int b = 0; b < ARRAY_BOX_COUNT; b++)
+		{
+			float4 pos = RayMarchCube_BoundPos[b];
+			float4 size = RayMarchCube_BoundSize[b];
+
+			UNITY_BRANCH
+			if (IS_HIT_BOX(pos, size))
+			{
+				for (int i = pos.w; i < size.w; i++) 
+				{
+					float4 posNmat = RayMarchCube[i];
+					float type = posNmat.w;
+					if (type < GLASS && IS_HIT_BOX_ROT(posNmat, RayMarchCube_Rot[i], RayMarchCube_Size[i]))
+						return true;//(isBoxRotHit(RayMarchCube[i], RayMarchCube_Rot[i], RayMarchCube_Size[i], RayMarchCube_Mat[i]);
+				}
+			}
+		}
+	}
+
+
+	// Unrotated Cubes
+	UNITY_BRANCH
+	if (IS_HIT_BOX(RayMarchUnRot_BoundPos_All, RayMarchUnRot_BoundSize_All))
+	{
+		for (int b = 0; b < ARRAY_BOX_COUNT; b++)
+		{
+			float4 pos = RayMarchUnRot_BoundPos[b];
+			float4 size = RayMarchUnRot_BoundSize[b];
+
+			UNITY_BRANCH
+			if (IS_HIT_BOX(pos, size))
+			{
+				for (int i = pos.w; i < size.w; i++) 
+				{
+					float4 posNmat = RayMarchUnRot[i];
+					float type = posNmat.w;
+					if (type < GLASS && IS_HIT_BOX(posNmat, RayMarchUnRot_Size[i]))
+						return true;//(isBoxRotHit(RayMarchCube[i], RayMarchCube_Rot[i], RayMarchCube_Size[i], RayMarchCube_Mat[i]);
+				}
+			}
+		}
+	}
+
+	/*
+	if (IS_HIT_SPHERE(RayMarchSphere_0, RayMarchSphere_0_Size.x))
+		return true;
+
+	if (IS_HIT_SPHERE(RayMarchSphere_1, RayMarchSphere_1_Size.x))
+		return true;
+*/
+	//d = opU(d, iSphere(ro - RayMarchSphere_0.xyz, rd, d.xy, normal, RayMarchSphere_0_Size.x), RayMarchSphere_0_Mat, mat, RayMarchSphere_0.w);
+	//d = opU(d, iSphere(ro - RayMarchSphere_1.xyz, rd, d.xy, normal, RayMarchSphere_1_Size.x), RayMarchSphere_1_Mat, mat, RayMarchSphere_1.w);
+
+	
+#if defined(RENDER_DYNAMICS)
+
+	UNITY_BRANCH
+	if (IS_HIT_BOX(DYNAMIC_PRIM_BoundPos, DYNAMIC_PRIM_BoundSize))
+	{
+		for (int i = 0; i < DYNAMIC_PRIM_COUNT; i++)
+			if (IS_HIT_CAPSULE_ROT(DYNAMIC_PRIM[i], DYNAMIC_PRIM_Rot[i], DYNAMIC_PRIM_Size[i]))
+				return true;
+			//TRACE_CAPSULE_ROT(DYNAMIC_PRIM[i], DYNAMIC_PRIM_Rot[i], DYNAMIC_PRIM_Size[i], DYNAMIC_PRIM_Mat[i]);
+	}
+#endif
+
+	return false;
+}
+
+bool Raycast(float3 start, in float3 end)
+{
+	float3 dir = end.xyz - start;
+
+	float distance = length(dir);
+
+	float2 MIN_MAX = float2(0.0001, distance);
+
+	return Raycast(start , normalize(dir), MIN_MAX);
+}
+
+bool RaycastStaticPhisics(float3 ro, in float3 rd, in float2 dist) {
+
+	rd += 0.001; // rd * 0.01;
+
+	float3 d = float3(dist, 0.);
+
+	/*
+#if !defined(IGNORE_FLOOR)
+	if (isPlane(ro, rd, float3(0, 1, 0), d.xy))
+		return true;
+#endif
+*/
+
+	float3 m = sign(rd) / max(abs(rd), 0.0001);//1e-8);
+
+	UNITY_BRANCH
+	if (IS_HIT_BOX(RayMarchCube_BoundPos_All, RayMarchCube_BoundSize_All))
+	{
+		for (int b = 0; b < ARRAY_BOX_COUNT; b++)
+		{
+			float4 pos = RayMarchCube_BoundPos[b];
+			float4 size = RayMarchCube_BoundSize[b];
+
+			UNITY_BRANCH
+			if (IS_HIT_BOX(pos, size))
+			{
+				for (int i = pos.w; i < size.w; i++)
+				{
+					float4 posNmat = RayMarchCube[i];
+					float type = posNmat.w;
+					if (IS_HIT_BOX_ROT(posNmat, RayMarchCube_Rot[i], RayMarchCube_Size[i]))
+						return true;//(isBoxRotHit(RayMarchCube[i], RayMarchCube_Rot[i], RayMarchCube_Size[i], RayMarchCube_Mat[i]);
+				}
+			}
+		}
+	}
+
+	UNITY_BRANCH
+	if (IS_HIT_BOX(RayMarchUnRot_BoundPos_All, RayMarchUnRot_BoundSize_All))
+	{
+		for (int b = 0; b < ARRAY_BOX_COUNT; b++)
+		{
+			float4 pos = RayMarchUnRot_BoundPos[b];
+			float4 size = RayMarchUnRot_BoundSize[b];
+
+			UNITY_BRANCH
+			if (IS_HIT_BOX(pos, size))
+			{
+				for (int i = pos.w; i < size.w; i++)
+				{
+					float4 posNmat = RayMarchUnRot[i];
+					float type = posNmat.w;
+					if (IS_HIT_BOX(posNmat, RayMarchUnRot_Size[i]))
+						return true;//(isBoxRotHit(RayMarchCube[i], RayMarchCube_Rot[i], RayMarchCube_Size[i], RayMarchCube_Mat[i]);
+				}
+			}
+		}
+	}
+
+	/*
+	if (IS_HIT_SPHERE(RayMarchSphere_0, RayMarchSphere_0_Size.x))
+		return true;
+
+	if (IS_HIT_SPHERE(RayMarchSphere_1, RayMarchSphere_1_Size.x))
+		return true;
+		*/
+	return false;
+}
+
+
+
+
+float3 GetPointLight(float3 position, float3 normal, float ao)
+{
+	if (_qc_PointLight_Color.a==0)
+	{
+		return 0;
+	}
+
+	float3 lightDir = _qc_PointLight_Position.xyz - position;
+
+	float distance = length(lightDir);
+
+	lightDir = normalize(lightDir);
+
+	float2 MIN_MAX = float2(0.0001, distance);
+
+	bool isHit = RaycastStaticPhisics(position + normal * 0.01 , lightDir, MIN_MAX);
+
+	if (isHit) 
+		return 0;
+	
+	float distFade = 1/(distance + 1);
+	float distFadeSquare =  distFade * distFade;
+	float direct = smoothstep( -ao * distFadeSquare, 1.5 - ao * 0.5, saturate(dot(normal, lightDir)));
+	direct = lerp(direct, 1, distFadeSquare);
+	
+	float3 col = _qc_PointLight_Color.rgb * direct * distFadeSquare;
+
+	return col;
+}
+
+float3 GetPointLight(float3 position, float3 normal, float ao, float3 viewDir, float gloss, inout float3 lightSpecular)
+{
+	if (_qc_PointLight_Color.a==0)
+	{
+		return 0;
+	}
+
+	float3 lightDir = _qc_PointLight_Position.xyz - position;
+	float distance = length(lightDir);
+	lightDir = normalize(lightDir);
+
+	float2 MIN_MAX = float2(0.0001, distance);
+
+	bool isHit = Raycast(position + normal * 0.01 , lightDir, MIN_MAX);
+
+	if (isHit) 
+		return 0;
+	
+	float distFade = 1/(distance + 1);
+	float distFadeSquare =  distFade * distFade;
+
+	float direct = smoothstep( -ao * distFadeSquare, 1.5 - ao * 0.5, saturate(dot(normal, lightDir)));
+
+	direct = lerp(direct, 1, distFadeSquare);
+	
+	float3 col = _qc_PointLight_Color.rgb * direct * distFadeSquare;
+
+	float3 toCamera = normalize(_qc_PointLight_Position.xyz - _WorldSpaceCameraPos.xyz);
+	 float3 reflectedRay = reflect(-viewDir,normal);
+	float power = pow(gloss + 0.001,8) ;
+    float specularTerm = pow(max(dot(lightDir,reflectedRay),0), power* 92) * power * distFade; 
+	lightSpecular += specularTerm * _qc_PointLight_Color.rgb;
+
+	return col;
+}
+
+float3 GetPointLight_Specualr(float3 position, float3 reflectedRay, float gloss)
+{
+	if (_qc_PointLight_Color.a==0)
+	{
+		return 0;
+	}
+
+	float3 lightDir = _qc_PointLight_Position.xyz - position;
+	float distance = length(lightDir);
+	lightDir = normalize(lightDir);
+
+	float2 MIN_MAX = float2(0.0001, distance);
+
+	bool isHit = Raycast(position, lightDir, MIN_MAX);
+
+	if (isHit) 
+		return 0;
+	float distFade = 1/(distance + 1);
+	float power = pow(gloss + 0.001,8) ;
+    float specularTerm = pow(max(dot(lightDir,reflectedRay),0), power* 92) * power * distFade; 
+	return specularTerm * _qc_PointLight_Color.rgb;
+
+}
+
 float3 worldhit(float3 ro, in float3 rd, in float2 dist, out float3 normal, inout float4 mat) {
 
 	ro += rd * 0.01;
 	// d.z <= z causes to show sky   d.z is material
 	float3 d = float3(dist, 0.);
-	const float floorRoughness = 0.99;
-	const float floorMaterial = 0.5;
+	//const float floorRoughness = 0.99;
+	//const float floorMaterial = 0.1;
 	//const float3 FLOOR_COLOR = float3(0.01, 0.5, 0.01);
+	//const float4 RAY_FLOOR_Mat = float4(0.3, 0.3, 0.3, 0.2);
 
+	normal = -rd;
+
+	/*
 	#if !defined(IGNORE_FLOOR)
 
-	d = opU(d, iPlane(ro, rd, d.xy, normal, float3(0, 1, 0), 0.), RAY_FLOOR_Mat, mat, floorMaterial);
+	d = opU(d, iPlane(ro, rd, d.xy, normal, float3(0, 1, 0)), RAY_FLOOR_Mat, mat, floorMaterial);
 
 	#endif
+	*/
 
 	float3 m = sign(rd) / max(abs(rd), 1e-8);
 
+	int boxHit = -1;
 
+	float3 dTmp = d;
 
-	if (TRACE_BOUNDS(RayMarchCube_BoundPos[0], RayMarchCube_BoundSize[0]))
+	UNITY_BRANCH
+	if (IS_HIT_BOX(RayMarchCube_BoundPos_All, RayMarchCube_BoundSize_All))
 	{
-		for (int i=0; i< ARRAY_SIZE; i++)
-			TRACE_BOX_ROT(RayMarchCube[i], RayMarchCube_Rot[i], RayMarchCube_Size[i], RayMarchCube_Mat[i]);
+		for (int b = 0; b < ARRAY_BOX_COUNT; b++) 
+		{
+			float4 pos = RayMarchCube_BoundPos[b];
+			float4 size = RayMarchCube_BoundSize[b];
+
+			UNITY_BRANCH
+			if (IS_HIT_BOX(pos, size))
+			{
+				for (int i = pos.w; i < size.w; i++)
+				{
+					/*
+					float4 posNmat = RayMarchCube[i];
+					float type = posNmat.w;
+					if (IS_HIT_BOX_ROT_DEPTH(posNmat, RayMarchCube_Rot[i], RayMarchCube_Size[i])) 
+					{
+						boxHit = i;
+					}*/
+						
+					TRACE_BOX_ROT(RayMarchCube[i], RayMarchCube_Rot[i], RayMarchCube_Size[i], RayMarchCube_Mat[i]);
+				}
+			}
+		}
+	}
+	/*
+	if (boxHit>-1)
+	{
+		TRACE_BOX_ROT(RayMarchCube[boxHit], RayMarchCube_Rot[boxHit], RayMarchCube_Size[boxHit], RayMarchCube_Mat[boxHit]);
+	}*/
+
+	// Unrotated
+	UNITY_BRANCH
+	if (IS_HIT_BOX(RayMarchUnRot_BoundPos_All, RayMarchUnRot_BoundSize_All))
+	{
+		for (int b = 0; b < ARRAY_BOX_COUNT; b++) 
+		{
+			float4 pos = RayMarchUnRot_BoundPos[b];
+			float4 size = RayMarchUnRot_BoundSize[b];
+
+			UNITY_BRANCH
+			if (IS_HIT_BOX(pos, size))
+			{
+				for (int i = pos.w; i < size.w; i++)
+				{
+					TRACE_BOX(RayMarchUnRot[i], RayMarchUnRot_Size[i],RayMarchUnRot_Mat[i]);
+				}
+			}
+		}
 	}
 
+	/*
 	d = opU(d, iSphere(ro - RayMarchSphere_0.xyz, rd, d.xy, normal, RayMarchSphere_0_Size.x), RayMarchSphere_0_Mat, mat, RayMarchSphere_0.w);
 	d = opU(d, iSphere(ro - RayMarchSphere_1.xyz, rd, d.xy, normal, RayMarchSphere_1_Size.x), RayMarchSphere_1_Mat, mat, RayMarchSphere_1.w);
 
+	
 	d = opU(d, iBox(ro - RayMarchSubtractiveCube_0.xyz, rd, d.xy, normal, RayMarchSubtractiveCube_0_Size.xyz, m), RayMarchSubtractiveCube_0_Mat, mat, RayMarchSubtractiveCube_0.w);
 	d = opU(d, iBox(ro - RayMarchSubtractiveCube_1.xyz, rd, d.xy, normal, RayMarchSubtractiveCube_1_Size.xyz, m), RayMarchSubtractiveCube_1_Mat, mat, RayMarchSubtractiveCube_1.w);
 	d = opU(d, iBox(ro - RayMarchSubtractiveCube_2.xyz, rd, d.xy, normal, RayMarchSubtractiveCube_2_Size.xyz, m), RayMarchSubtractiveCube_2_Mat, mat, RayMarchSubtractiveCube_2.w);
-
+	*/
 	#if defined(RENDER_DYNAMICS)
 
 	WorldHit_Dynamic(ro, rd, d, normal, mat, m);
@@ -287,25 +819,57 @@ float worldhitSubtractive(float3 ro, in float3 rd, in float2 dist)
 	return distance;
 }
 
+float SampleRayShadowAndAttenuation(float3 pos, float3 normal)
+{
+	#if _qc_IGNORE_SKY
+		return 0;
+	#endif
+
+	if (_qc_SunVisibility == 0)
+			return 0;
+
+	float2 MIN_MAX = float2(0.0001, MAX_DIST_EDGE);
+
+	bool isHit = Raycast(pos + normal * 0.0001, _WorldSpaceLightPos0.xyz, MIN_MAX);
+
+	return isHit ? 0 : smoothstep(0, 1, dot(normalize(_WorldSpaceLightPos0.xyz), normal));
+}
+
+float SampleRayShadow(float3 pos)
+{
+	#if _qc_IGNORE_SKY
+		return 0;
+	#endif
+
+	UNITY_BRANCH
+	if (_qc_SunVisibility == 0){
+			return 0;
+			}
+	else 
+	{
+
+		float2 MIN_MAX = float2(0.0001, MAX_DIST_EDGE);
+
+		bool isHit = Raycast(pos, _WorldSpaceLightPos0.xyz, MIN_MAX);
+
+		return isHit ? 0 : 1;
+	}
+}
+
 
 // ****************** Intersections
 
-
 #if RT_MOTION_TRACING
-#define PATH_LENGTH 6
+	#define PATH_LENGTH 2
+#elif _qc_IGNORE_SKY
+	#define PATH_LENGTH 6
 #else
-#define PATH_LENGTH 8
+	#define PATH_LENGTH 4
 #endif
 
-
-#define LAMBERTIAN 0.
-#define METAL 1.
-#define DIELECTRIC 2.
-#define GLASS 3.
-#define EMISSIVE 4.
-#define SUBTRACTIVE 5.
-
 float3 modifyDirectionWithRoughnessFast(in float3 normal, in float3 refl, in float roughness, in float4 seed) {
+
+	return lerp(normalize(normal + seed.wzx), refl, step(seed.y, roughness));
 
 	float2 r = seed.wx;//hash2(seed);
 
@@ -328,7 +892,7 @@ float3 modifyDirectionWithRoughnessFast(in float3 normal, in float3 refl, in flo
 
 float4 render(in float3 ro, in float3 rd, in float4 seed) 
 {
-	const float MIN_DIST = 0.0001;
+	const float MIN_DIST = 0.000001;
 
 	float3 albedo, normal;
 	float3 col = 1;
@@ -336,10 +900,14 @@ float4 render(in float3 ro, in float3 rd, in float4 seed)
 
 	float isFirst = 1;
 	float distance = MAX_DIST_EDGE;
+	float4 mat = 0;
 
-	for (int i = 0; i < PATH_LENGTH; ++i) 
+#if !RT_DENOISING && !RT_TO_CUBEMAP
+	for (int i = 0; i < PATH_LENGTH; ++i)
 	{
-		float4 mat = 0;
+#endif
+		
+		//rd = normalize(rd);
 
 		float3 res = worldhit(ro, rd, float2(MIN_DIST, MAX_DIST_EDGE), normal, mat);
 		roughness = mat.a;
@@ -349,31 +917,115 @@ float4 render(in float3 ro, in float3 rd, in float4 seed)
 		// res.y = dist
 		// res.z = material
 
-		if (res.z > 0.) 
-		{
-			ro += rd * res.y;
-
-			
 #if RT_DENOISING
-			distance = isFirst > 0.5 ?
-				res.y +
-				dot(rd, normal)
-				: distance;
-			isFirst = 0;
+
+		distance = isFirst > 0.5 ?
+			res.y +
+			dot(rd, normal)
+			: distance;
+		isFirst = 0;
 #endif
 
+		if (res.z <= 0.)
+		{
+			#if _qc_IGNORE_SKY
+				return float4(0,0,0, distance);
+			#endif
+
+			float3 skyCol = getSkyColor(rd);
+			return float4(col * skyCol, distance);
+		}
+
+		ro += rd * res.y;
+
+
+#if RT_TO_CUBEMAP && _qc_IGNORE_SKY
+	
+	UNITY_FLATTEN
+	if (type < EMISSIVE + 1 &&  type >= EMISSIVE ) 
+	{	
+		return float4(col * albedo * 4, distance);
+	} else 
+	{
+		float outOfBounds1;
+		col = SampleVolume(_RayMarchingVolume, ro + normal * min(distance * 0.5, _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w)
+		, outOfBounds1).rgb * (1 - outOfBounds1);
+			
+		return float4(col * albedo, distance);
+	}
+
+#endif
+
+
+
+
+
+			/*
+#define LAMBERTIAN 0.
+#define METAL 1.
+#define DIELECTRIC 2.
+
+
+#define GLASS 3.
+#define EMISSIVE 4.
+#define SUBTRACTIVE 5.*/
+
+UNITY_BRANCH
+if (type < DIELECTRIC + 0.5)
+{
+			UNITY_BRANCH
 			if (type < LAMBERTIAN + 0.5) 
 			{ 
-					col *= albedo;
-					rd = cosWeightedRandomHemisphereDirection(normal, seed);
+				col *= albedo;
+				rd = cosWeightedRandomHemisphereDirection(normal, seed);
+
+				#if !_qc_IGNORE_SKY
+				if (_qc_SunVisibility > 0)
+				{
+					float attenuation = smoothstep(0, 1, dot(normalize(_WorldSpaceLightPos0.xyz), normal));
+
+					if (attenuation > (seed.x) && !Raycast(ro + normal*0.001, _WorldSpaceLightPos0.xyz + (seed.zyx-0.5)*0.3, float2(0.0001, MAX_DIST_EDGE)))
+					{
+						col.rgb *= GetDirectional() * attenuation;
+						return float4(col, distance);
+					}
+				}
+				#endif
 			}
 			else
-			if (type < METAL + 0.5) { // MEtal
+			if (type < METAL + 0.5) 
+			{ 
 				col *= albedo;
 				rd = modifyDirectionWithRoughness(normal, reflect(rd, normal), roughness, seed);
+			} else  //if (type < DIELECTRIC + 0.5)
+			{
+			
+					ro += rd * 0.25;// +(seed.zyx - 0.5) * 0.1;
+					normal = -normal;
+					
+					rd = cosWeightedRandomHemisphereDirection(normal, seed);
+
+					#if !_qc_IGNORE_SKY
+					if (_qc_SunVisibility > 0) 
+					{
+						if (!Raycast(ro + normal * 0.001, _WorldSpaceLightPos0.xyz + (seed.zyx - 0.5) * 0.3, float2(0.0001, MAX_DIST_EDGE)))
+						{
+							float toSUn = smoothstep(0, -1, dot(_WorldSpaceLightPos0.xyz, normal));
+						
+							col *= albedo;
+							col.rgb *= GetDirectional() * (1 + toSUn * 16);
+							return float4(col, distance);
+						}
+					}
+					#endif
 			}
+} 
+else  
+{
 //#if RT_USE_DIELECTRIC
-			else if (type < GLASS + 0.5) //DIELECTRIC + GLASS
+
+			UNITY_BRANCH
+			if (type < GLASS + 0.5) //DIELECTRIC + GLASS
 			{ 
 				float3 normalOut;
 				float3 refracted = 0;
@@ -413,33 +1065,38 @@ float4 render(in float3 ro, in float3 rd, in float4 seed)
 					ro += (dist + 0.001) * rd;
 				}
 			}
-		}
-		else {
+}
 		
-			float3 skyCol = getSkyColor(rd);
 
-			//float fog = smoothstep(5, 100, length(ro - _WorldSpaceCameraPos.xyz));
-
-			//col.rgb = col.rgb * (1- fog) + fog * ((_RayMarchSkyColor.rgb + unity_FogColor.rgb)*0.5);*/
-
-			return float4(col * skyCol, distance);
-		}
+#if !RT_DENOISING && !RT_TO_CUBEMAP
 	}
-
-#ifdef _qc_AMBIENT_SIMULATION
-	float outOfBounds;
-	float4 vol = SampleVolume(ro, outOfBounds);
-
-	return vol * 0.5 * (1- outOfBounds);
 #endif
 
-	return 0;
+	float3 light = 0; 
+	
+	#if !qc_NO_VOLUME
+		float outOfBounds;
+		light += SampleVolume(_RayMarchingVolume, ro + normal *  min(distance * 0.5, _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w), outOfBounds).rgb * (1 - outOfBounds);
+	#endif
+
+	#if !_qc_IGNORE_SKY
+	if (_qc_SunVisibility>0) 
+	{
+		float shadow = SampleRayShadowAndAttenuation(ro, normal);
+		light += GetDirectional() * shadow;
+	}
+	#endif
+	
+	col.rgb *= light;
+
+	return float4(col, distance);
+
 }
 
 // ****************** SDF
 
 
-inline float Softshadow(float3 start, float3 direction, float mint, float k, float maxSteps)
+float Softshadow(float3 start, float3 direction, float mint, float k, float maxSteps)
 {
 	float res = 1.0;
 	float ph = 1e20;
@@ -467,7 +1124,7 @@ inline float Softshadow(float3 start, float3 direction, float mint, float k, flo
 	return res;
 }
 
-inline float Softshadow2(float3 start, float3 direction, float mint, float maxt, float k, int maxSteps)
+float Softshadow2(float3 start, float3 direction, float mint, float maxt, float k, int maxSteps)
 {
 	float t = mint;
 	float res = 1.0;
@@ -484,7 +1141,7 @@ inline float Softshadow2(float3 start, float3 direction, float mint, float maxt,
 }
 
 
-inline float Reflection(float3 start, float3 direction, float mint, float k, out float totalDist, out float3 pos, float maxSteps)
+float Reflection(float3 start, float3 direction, float mint, float k, out float totalDist, out float3 pos, float maxSteps)
 {
 
 	float closest = mint;
@@ -509,11 +1166,26 @@ inline float Reflection(float3 start, float3 direction, float mint, float k, out
 	return  closest / mint;
 }
 
-inline float4 NormalAndDistance(float3 pos) {
+float4 NormalAndDistance(float3 pos, float smoothness) {
 
 	float EPSILON = 0.01f;
 
-	float center = SceneSdf(float3(pos.x, pos.y, pos.z));
+	float center = SceneSdf(pos, smoothness);
+
+	float3 normal = normalize(float3(
+		center - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z), smoothness),
+		center - SceneSdf(float3(pos.x, pos.y - EPSILON, pos.z), smoothness),
+		center - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON), smoothness)
+		));
+
+	return float4(normal, center);
+}
+
+float4 NormalAndDistance(float3 pos) {
+
+	float EPSILON = 0.01f;
+
+	float center = SceneSdf(pos);
 
 	float3 normal = normalize(float3(
 		center - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z)),
@@ -521,14 +1193,14 @@ inline float4 NormalAndDistance(float3 pos) {
 		center - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON))
 		));
 
-	return float4(normal, max(0,center));
+	return float4(normal, center);
 }
 
-inline float3 EstimateNormal(float3 pos, float smoothness) {
+float3 EstimateNormal(float3 pos, float smoothness) {
 
 	float EPSILON = 0.01f;
 
-	float center = SceneSdf(float3(pos.x, pos.y, pos.z), smoothness);
+	float center = SceneSdf(pos, smoothness);
 
 	return normalize(float3(
 		center - SceneSdf(float3(pos.x - EPSILON, pos.y, pos.z), smoothness),
@@ -536,13 +1208,13 @@ inline float3 EstimateNormal(float3 pos, float smoothness) {
 		center - SceneSdf(float3(pos.x, pos.y, pos.z - EPSILON), smoothness)
 		));
 }
-inline float3 EstimateNormal(float3 pos) 
+float3 EstimateNormal(float3 pos) 
 {
 	return EstimateNormal(pos, _RayMarchSmoothness);
 }
 
 
-inline float4 SdfNormalAndDistance(float3 pos, float smoothness) {
+float4 SdfNormalAndDistance(float3 pos, float smoothness) {
 
 	float EPSILON = 0.01f;
 
@@ -555,13 +1227,13 @@ inline float4 SdfNormalAndDistance(float3 pos, float smoothness) {
 		)), center);
 }
 
-inline float4 SdfNormalAndDistance(float3 pos)
+float4 SdfNormalAndDistance(float3 pos)
 {
 	//_RayMarchSmoothness
 	return SdfNormalAndDistance(pos, _RayMarchSmoothness);
 }
 
-inline float4 renderSdfProgression(in float3 ro, in float3 rd, float pixelScale)
+float4 renderSdfProgression(in float3 ro, in float3 rd, float pixelScale)
 {
 	float totalDistance = 0;
 	float dist = 0;
@@ -588,7 +1260,7 @@ inline float4 renderSdfProgression(in float3 ro, in float3 rd, float pixelScale)
 	return float4(EstimateNormal(ro), totalDistance);
 }
 
-inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
+float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	float dist = 0;
 
@@ -699,11 +1371,15 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 
 	float3 reflCol = (RayMarchLight_0_Mat.rgb * reflectedShadow * lightAttenRef * (lightBrightnessReflected + 1));
 
+
+	float3 skyCol = getSkyColor(lerp( -rd, -reflected, saturate(reflectedSky)), 1);
+
+	//return float4(skyCol,1);
 	
 	float3 fresnelReflection = //(1 + dott * 0.5)
 		//*
 		(reflCol * (1 - reflectedSky) +
-			_RayMarchSkyColor.rgb * reflectedSky +
+			skyCol * reflectedSky +
 			lightRelected * shadow
 			);
 
@@ -711,7 +1387,7 @@ inline float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 	col.rgb = lerp(col.rgb, fresnelReflection, fresnel);
 
 
-	col.rgb = lerp(_RayMarchSkyColor.rgb, col.rgb, deFog);
+	col.rgb = lerp(skyCol, col.rgb, deFog);
 	
 	return 	max(0, col);
 

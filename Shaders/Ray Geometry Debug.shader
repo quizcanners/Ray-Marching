@@ -62,13 +62,8 @@
 
 				float2 screenUV = o.screenPos.xy / o.screenPos.w;
 
-				float4 normalAndDist = SdfNormalAndDistance(o.worldPos); //o.normal.xyz *
-
-				float distToCenter = max(0, -(normalAndDist.w) * scale);
-
-				float internal = min(distToCenter, 1);
-
-				float deepIndide = min(1, 1 / (distToCenter*0.1 + 1)) ;
+	
+		
 
 				float outOfBounds;
 				float4 col = SampleVolume(o.worldPos, outOfBounds);

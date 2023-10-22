@@ -6,6 +6,7 @@ using UnityEngine.UI;
 namespace QuizCanners.RayTracing
 {
     [ExecuteAlways]
+    [AddComponentMenu("Quiz ñ'Anners/Ray Rendering/Output")]
     internal class Singleton_RayRendering_UiScreenSpaceOutput : Singleton.BehaniourBase
     {
         public RawImage RawImage;
@@ -35,10 +36,7 @@ namespace QuizCanners.RayTracing
         public override void Inspect()
         {
             "Ray Rendering Ui Screen Space Output".PegiLabel(pegi.Styles.ListLabel).Nl();
-
             "Raw Image".PegiLabel().Edit(ref RawImage).Nl();   
-            
-
         }
 
         public override string ToString() => "Output";

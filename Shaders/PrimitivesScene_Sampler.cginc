@@ -1,7 +1,17 @@
 #include "Assets/Ray-Marching/Shaders/PrimitivesScene.cginc"
 
-float4 _RayTracing_TopDownBuffer_Position;
-sampler2D _RayTracing_TopDownBuffer;
+/*
+sampler2D _RayMarchingVolume_UP;
+sampler2D _RayMarchingVolume_DOWN;
+sampler2D _RayMarchingVolume_LEFT;
+sampler2D _RayMarchingVolume_RIGHT;
+sampler2D _RayMarchingVolume_BACK;
+sampler2D _RayMarchingVolume_FRONT;
+*/
+
+uniform float qc_KWS_FogAlpha;
+
+UNITY_DECLARE_TEX2DARRAY(_RayMarchingVolume_CUBE);
 
 sampler2D _qc_CloudShadows_Mask;
 float _qc_Rtx_CloudShadowsVisibility;
@@ -9,7 +19,11 @@ float _qc_Rtx_CloudShadowsVisibility;
 float4 _qc_ColorCorrection_Color;
 float4 _qc_ColorCorrection_Params;
 
-inline void ColorCorrect(inout float3 col)
+float _qc_FogVisibility;
+
+float _RT_CubeMap_FadeIn;
+
+void ColorCorrect(inout float3 col)
 {
 	return;
 	// X-fade shadow
@@ -54,12 +68,18 @@ inline void ColorCorrect(inout float3 col)
 	//col *= _qc_ColorCorrection_Color;
 }
 
-
-inline float SampleSkyShadow(float3 pos)
+float SampleSkyShadow(float3 pos)
 {
+	#if _qc_IGNORE_SKY
+		return 0;
+	#endif
+
 	//#if _qc_CLOUD_SHADOWS
 		
-		return smoothstep(0, _qc_Rtx_CloudShadowsVisibility, tex2Dlod(_qc_CloudShadows_Mask, float4(pos.xz * 0.0002 + _Time.x*0.2,0,0)).r);
+		if (_qc_SunVisibility<0.01)
+			return 0;
+
+		return  smoothstep(0, _qc_Rtx_CloudShadowsVisibility, tex2Dlod(_qc_CloudShadows_Mask, float4(pos.xz * 0.0002 + _Time.x*0.2,0,0)).r);
 
 	//#else
 
@@ -68,169 +88,281 @@ inline float SampleSkyShadow(float3 pos)
 //	#endif
 }
 
-
-inline void ApplyBottomFog(inout float3 col, float3 worldPos, float viewDirY)
+float3 GetAvarageAmbient(float3 normal)
 {
+
+#if _qc_IGNORE_SKY
+	return 0;
+	#endif
+
+	return GetAmbientLight() * lerp(0.5,1,smoothstep(-1,0,normal.y));
+
+	//	float4 ambFog = unity_FogColor * 0.2;
+
+	//float isUp = smoothstep(0, 1, normal.y);
+	//float isVert = abs(normal.y);
+
+	//normal.y = -abs(normal.y) - 0.1;
+
+	//return 
+	//ambFog //* smoothstep(1, 0, isVert) + 
+		//SampleSkyBox(normal);
+		// *isUp;// *isUp;// getSkyColor(normal, 1) * isUp;// +SampleSkyShadow(float3(0, -1, 0)) * isUp;
+}
+
+void ApplyBottomFog(inout float3 col, float3 worldPos, float viewDirY)
+{
+
+	#if _qc_IGNORE_SKY
+		return;
+	#endif
+
+	if (_qc_FogVisibility == 0)
+	{
+		return;
+	}
+
 	float bottomFog = smoothstep(-0.35, -0.02, viewDirY);
-	float dist01 =  smoothstep(1,0,(_ProjectionParams.z - length(worldPos - _WorldSpaceCameraPos.xyz)) * _ProjectionParams.w) ;
 
-	col.rgb = lerp(col.rgb, lerp(_RayMarchSkyColor.rgb , unity_FogColor.rgb, bottomFog ), dist01);
+	float3 diff = worldPos - _WorldSpaceCameraPos.xyz;
 
-	col.rgb = lerp(col.rgb, unity_FogColor.rgb, smoothstep(0, -300, worldPos.y) );
+	float fromCamera = length(diff);
 
+	float dist01 =  smoothstep(0,1, fromCamera * _ProjectionParams.w) ;
+
+	float minFog = smoothstep(50, 150, fromCamera) * smoothstep(fromCamera*0.2, 0, worldPos.y);
+
+	float byHeight = smoothstep(0, -300, worldPos.y);
+
+	float3 fogCol = GetAvarageAmbient(normalize(diff));
+
+	col.rgb = lerp(col.rgb, fogCol, smoothstep(0,1,minFog * 0.5 + byHeight + dist01 * bottomFog * bottomFog) * _qc_FogVisibility);// smoothstep(0, 1, 1)); // dist01* bottomFog + minFog + byHeight));
+	
 }
 
-inline float3 GetAvarageAmbient(float3 normal)
+
+float4 SampleCubemap_Internal(float4 uvs, float upperFraction, int depth)
 {
-	float4 ambFog = unity_FogColor * 0.2;
-
-	float isUp = smoothstep(0, 1, normal.y);
-	float isVert = abs(normal.y);
-
-	float3 avaragedAmbient =
-		ambFog * (0.7 - isVert * 0.1) +
-		_LightColor0.rgb * MATCH_RAY_TRACED_SUN_COEFFICIENT * 0.2 * (1 - isUp) + // Light bounced from floor
-		_RayMarchSkyColor  * 0.5 * (1 + isUp);
-
-	return avaragedAmbient;
+	float4 bake = UNITY_SAMPLE_TEX2DARRAY_LOD(_RayMarchingVolume_CUBE, float3(uvs.xy, depth),0); //tex2Dlod(volume, float4(uvs.xy, 0, 0));
+	float4 bakeUp = UNITY_SAMPLE_TEX2DARRAY_LOD(_RayMarchingVolume_CUBE, float3(uvs.zw, depth),0); //tex2Dlod(volume, float4(uvs.zw, 0, 0));
+	return lerp(bake, bakeUp, upperFraction);
 }
 
-float3 GetDirectional()
+float3 SampleVolume_CubeMap(float3 pos, float3 normal)
 {
-	return _LightColor0.rgb;// *MATCH_RAY_TRACED_SUN_COEFFICIENT;// * smoothstep(0, 0.1, _WorldSpaceLightPos0.y);
+	float3 avgAmb = GetAvarageAmbient(normal);
+
+	#if qc_NO_VOLUME
+		return avgAmb;
+	#endif
+	
+	/*
+	if (qc_VolumeAlpha < 0.1) 
+	{
+		return avgAmb;
+	}*/
+
+	//float3 offsetPosition = pos;
+
+	float outOfBounds;
+
+	float upperFraction;
+	float4 uvs = WorldPosToVolumeUV(pos, _RayMarchingVolumeVOLUME_POSITION_N_SIZE, _RayMarchingVolumeVOLUME_H_SLICES, upperFraction, outOfBounds);
+
+	float3 bake = SampleVolume_Internal(_RayMarchingVolume, uvs, upperFraction).rgb * 2; // To compensate brightness
+		
+//#if RT_FROM_CUBEMAP
+	
+	//if (_RT_CubeMap_FadeIn > 0.1)
+	//{
+		float3 absDir = abs(normal + 0.01);
+
+		float isLeft = step(normal.x, 0);
+		float isDown = step(normal.y, 0);
+		float isBack = step(normal.z, 0);
+
+		//absDir = absDir * 0.9 + 0.1; //lerp(absDir, 0.1, 0.1);
+
+		float4 toAddX = SampleCubemap_Internal(uvs, upperFraction, isLeft);
+		float4 toAddY = SampleCubemap_Internal(uvs, upperFraction, 2 + isDown);
+		float4 toAddZ = SampleCubemap_Internal(uvs, upperFraction, 4 + isBack);
+
+		float3 cubeBake = 0;
+		cubeBake += absDir.x * lerp(bake, toAddX.rgb, smoothstep(0, 100, toAddX.a));
+		cubeBake += absDir.y * lerp(bake, toAddY.rgb, smoothstep(0, 100, toAddY.a));
+		cubeBake += absDir.z * lerp(bake, toAddZ.rgb, smoothstep(0, 100, toAddZ.a));
+
+		//lerp(left, right, step(0, normal.x));
+
+
+		//float4 right = SampleCubemap_Internal(uvs, upperFraction, 0);
+		//float4 left = SampleCubemap_Internal(uvs, upperFraction, 1);
+
+		//float4 up = SampleCubemap_Internal(uvs, upperFraction, 2);
+		//float4 down = SampleCubemap_Internal(uvs, upperFraction, 3);
+
+		//float4 forward = SampleCubemap_Internal(uvs, upperFraction, 4);
+		//float4 back = SampleCubemap_Internal(uvs, upperFraction, 5);
+
+		/*
+		float4 right = SampleVolume_Internal(_RayMarchingVolume_RIGHT, uvs, upperFraction);
+		float4 left = SampleVolume_Internal(_RayMarchingVolume_LEFT, uvs, upperFraction);
+
+		float4 up = SampleVolume_Internal(_RayMarchingVolume_UP, uvs, upperFraction);
+		float4 down = SampleVolume_Internal(_RayMarchingVolume_DOWN, uvs, upperFraction);
+
+		float4 forward = SampleVolume_Internal(_RayMarchingVolume_FRONT, uvs, upperFraction);
+		float4 back = SampleVolume_Internal(_RayMarchingVolume_BACK, uvs, upperFraction);
+
+		toAdd =  lerp(left, right, step(0, normal.x));
+		cubeBake += absDir.x * lerp(bake, toAdd, smoothstep(0, 100, toAdd.a));
+
+		toAdd =  lerp(down, up, step(0, normal.y));
+		cubeBake += absDir.y * lerp(bake, toAdd, smoothstep(0, 100, toAdd.a));
+
+		toAdd =  lerp(back, forward, step(0, normal.z));
+		cubeBake += absDir.z * lerp(bake, toAdd, smoothstep(0, 100, toAdd.a));
+		*/
+	
+		bake = lerp(bake, cubeBake, _RT_CubeMap_FadeIn); 
+
+	//}
+
+//#endif
+
+	
+
+	return lerp(bake, avgAmb, lerp(1, outOfBounds, qc_VolumeAlpha));
 }
 
 
-inline float4 SampleVolumeOffsetByNormal(float3 pos, float3 normal, out float outOfBounds)
-{
-	normal = normal * _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w * 0.15;
 
-	float4 bake = SampleVolume(_RayMarchingVolume, pos + normal
-		, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
-		, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
-
-	return bake;
-}
-
-inline float4 SampleVolume(sampler2D tex, float3 pos, out float outOfBounds)
-{
-	float4 bake = SampleVolume(tex, pos
-		, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
-		, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
-
-
-	return bake;
-}
-
-inline float3 volumeUVtoWorld(float2 uv) 
+float3 volumeUVtoWorld(float2 uv) 
 {
 	return volumeUVtoWorld(uv, _RayMarchingVolumeVOLUME_POSITION_N_SIZE, _RayMarchingVolumeVOLUME_H_SLICES);
 }
 
 
-
-inline void ApplyTopDownLightAndShadow(float2 topdownUv, float3 normal, float3 worldPos, float gotVolume, inout float4 bake)
-{
-
-	float4 tdUv = float4(topdownUv + normal.xz * _RayTracing_TopDownBuffer_Position.w * 2, 0, 0);
-
-	float4 topDown = tex2Dlod(_RayTracing_TopDownBuffer, tdUv);
-
-
-	float2 offUv = tdUv - 0.5;
-
-	float topDownVisible =
-		
-		 (1 - smoothstep(0.2, 0.25, length(offUv * offUv))) *
-		
-		//gotVolume * 
-		smoothstep(3, 0, abs(_RayTracing_TopDownBuffer_Position.y - worldPos.y));
-	topDown *= topDown;
-	float ambientBlock = max(0.25f, 1 - topDown.a);
-
-	float3 light = topDown.rgb;
-
-	bake *= ambientBlock;
-	bake.rgb += light;
-}
-
-inline void ApplyTopDownLightAndShadow(float2 topdownUv, float3 normal, float4 bumpMap, float3 worldPos, float gotVolume, float fresnel, inout float4 bake)
-{
-
-		float smoothness = bumpMap.b; 
-
-		float2 offset = normal.xz * _RayTracing_TopDownBuffer_Position.w;
-
-
-
-		float2 offUv = topdownUv - 0.5;
-		gotVolume = (1 - smoothstep(0.2, 0.25, length(offUv * offUv)));
-
-		float4 topDown = tex2D(_RayTracing_TopDownBuffer, topdownUv + offset * (0.2 + smoothness));
-		float4 topDownRefl = tex2Dlod(_RayTracing_TopDownBuffer, float4(topdownUv + offset * 4 , 0, 0));
-		float topDownVisible = gotVolume * (1 - fresnel*0.5) * smoothstep(3, 0, abs(_RayTracing_TopDownBuffer_Position.y - worldPos.y));
-		topDown *= topDownVisible;
-		topDownRefl *= topDownVisible;
-		float ambientBlock = max(0.25f, 1 - topDown.a);
-		//shadow *= ambientBlock;
-
-		float3 light = (topDown.rgb + topDownRefl.rgb * bumpMap.a) * bumpMap.a;
-
-		float3 mix = light.gbr + light.brg;
-
-		bake *= ambientBlock;
-		bake.rgb += light + mix * 0.2f;
-}
-
-
-
 #define AddGlossToCol(lCol)  // col += smoothness / (1.001 - smoothness + (1 - saturate(dot(normal, normalize(o.viewDir.xyz + _WorldSpaceLightPos0.xyz)))) * 64) * lCol * MATCH_RAY_TRACED_SUN_LIGH_GLOSS;
 
-#define TRANSFER_TOP_DOWN(o) o.topdownUv = (o.worldPos.xz - _RayTracing_TopDownBuffer_Position.xz) * _RayTracing_TopDownBuffer_Position.w + 0.5;
 
-#define TRANSFER_WTANGENT(o) o.wTangent.xyz = UnityObjectToWorldDir(v.tangent.xyz); o.wTangent.w = v.tangent.w * unity_WorldTransformParams.w;
 
-#define PrimitiveLight(directional, ambient, outOfBounds, pos, normal)								\
-	float  outOfBounds;																				\
-	float4 vol = SampleVolume(pos, outOfBounds);													\
-	float3 ambient = lerp(vol, _RayMarchSkyColor.rgb, outOfBounds);		\
-	float direct = saturate((dot(normal, _WorldSpaceLightPos0.xyz)));							\
+#define PrimitiveLight(directional, ambient, outOfBounds, pos, normal)\
+	float  outOfBounds;\
+	float4 vol = SampleVolume(pos, outOfBounds);\
+	float3 ambient = lerp(vol, 0.5, outOfBounds);\
+	float direct = saturate((dot(normal, _WorldSpaceLightPos0.xyz)));\
 	float3 directional = GetDirectional() * direct; \
 
-
-
-
-inline float3 SampleRay(float3 pos, float3 ray, float shadow, out float3 hitPos, out float outOfBounds)
+struct RaySamplerHit
 {
-	float4 mat = float4(getSkyColor(ray), 1); 
+	float3 Pos;
+	float3 Normal;
+	//float OutOfBounds;
+	float4 Material;
+};
+
+/*
+inline float3 SampleRay(float3 pos, float3 ray, float shadow, out RaySamplerHit hit)
+{
+	hit.Material = float4(getSkyColor(ray, shadow), 1);
 	float2 MIN_MAX = float2(0.0001, MAX_DIST_EDGE);
-	float3 normalTmp;
-	float3 res = worldhit(pos, ray, MIN_MAX, normalTmp, mat);
+	float3 res = worldhit(pos, ray, MIN_MAX, hit.Normal, hit.Material);
 	float distance = res.y;
-	hitPos = pos + ray * distance;
-	float3 col = SampleVolumeOffsetByNormal(hitPos, normalTmp, outOfBounds).rgb * mat.rgb;
+	hit.Pos = pos + ray * distance;
 
-	float3 skyColor = lerp(unity_FogColor.rgb, mat.rgb, smoothstep(0,0.23, ray.y));
-	float skyAmaunt = smoothstep(0, 1,distance/500); //smoothstep(0, 1, outOfBounds);
-	col = lerp(col, skyColor, skyAmaunt);
+	float type = res.z;
 
-	return col.rgb;
+	float3 col;
+
+	if (type > EMISSIVE)
+	{
+		return hit.Material.rgb;
+	}
+	else if (type>0)
+	{
+		float OutOfBounds;
+		col = SampleVolume(hit.Pos, OutOfBounds).rgb;
+		float showSunLight = SampleRayShadowAndAttenuation(hit.Pos, hit.Normal);
+		col += GetDirectional() * showSunLight;
+		col *= hit.Material.rgb;
+
+		ApplyBottomFog(col, hit.Pos, ray.y);
+		return col.rgb;
+	} else 
+	{
+		return hit.Material.rgb;
+	}	
+}*/
+
+inline float SampleContactAO(float3 pos, float3 normal)
+{
+	#if !qc_NO_VOLUME
+		float outsideVolume;
+		float4 scene = SampleSDF(pos , outsideVolume);
+
+		float coef = _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w;
+
+		//float sameNormal = smoothstep(-1, 1, dot(normal, scene.xyz));
+		return lerp(smoothstep(-2 * coef,2 * coef, scene.a + dot(normal, scene.xyz)*2 * coef),1, outsideVolume);
+	#else 
+		return 1;
+	#endif
 }
 
-inline float3 SampleReflection(float3 pos, float3 viewDir, float3 normal, float shadow, out float3 reflectionPos, out float outOfBoundsRefl)
+float3 SampleRay_NoSun_MipSky(float3 pos, float3 ray, float smoothness, out RaySamplerHit hit)
 {
-	float3 reflectedRay = reflect(-viewDir, normal);
-	return SampleRay(pos, reflectedRay, shadow, reflectionPos, outOfBoundsRefl);
-}
-
-inline float SampleShadow(float3 pos, float3 normal)
-{
+	hit.Material = float4(SampleSkyBox(ray, smoothness), 0);
 	float2 MIN_MAX = float2(0.0001, MAX_DIST_EDGE);
-	float3 normalTmp;
-	float4 mat = float4(0,0,0,1); 
-	float3 result = worldhit(pos + normal*0.1, _WorldSpaceLightPos0.xyz, MIN_MAX, normalTmp, mat);
 
-	float distance = result.y;
+	pos = pos + ray * 0.1;
+	//pos.y = abs(pos.y);
 
-	return smoothstep(MAX_DIST_EDGE -10, MAX_DIST_EDGE, distance);
+	float3 res = worldhit(pos , ray, MIN_MAX, hit.Normal, hit.Material);
+
+	float type = res.z;
+
+	float distance = res.y;
+
+	hit.Pos = pos + ray * distance;
+
+	float3 col;
+
+	#if _qc_IGNORE_SKY
+		UNITY_FLATTEN
+	#else
+		UNITY_BRANCH
+	#endif
+	if (type>0 && type < EMISSIVE)
+	{
+		//hit.Normal =  EstimateNormal(hit.Pos, length(distance) * 0.05);
+
+	//float3 pos, float3 normal, out float outOfBounds
+		float3 reflected = reflect(ray, hit.Normal);
+		
+		//float spec = hit.Material.a;
+
+		float3 bake = SampleVolume_CubeMap(hit.Pos, hit.Normal) * SampleContactAO(hit.Pos, hit.Normal);
+
+		col = (bake
+		#if !_qc_IGNORE_SKY
+			+ GetDirectional() * SampleRayShadowAndAttenuation(hit.Pos, hit.Normal)
+		#endif
+
+		) * hit.Material.rgb;
+
+	} else 
+	{
+		col =  hit.Material.rgb;
+	}
+	
+	col = lerp(col, GetAmbientLight(), qc_KWS_FogAlpha * smoothstep(0, 32, distance));
+
+	return col;
 }
+
+float3 SampleRay_NoSun(float3 pos, float3 ray, out RaySamplerHit hit) 
+{
+	return SampleRay_NoSun_MipSky(pos, ray, 1.0, hit);
+}
+

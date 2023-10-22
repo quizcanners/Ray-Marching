@@ -13,7 +13,7 @@ Shader "RayTracing/Geometry/Liquid Opaque"
 			{
 				Tags
 				{
-					"Queue" = "Geometry"
+					"Queue" = "Geometry+2"
 					"RenderType" = "Opaque"
 					"LightMode" = "ForwardBase"
 				}
@@ -25,10 +25,10 @@ Shader "RayTracing/Geometry/Liquid Opaque"
 
 				#define RENDER_DYNAMICS
 
-				#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-				#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-				#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-				#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
+				//#pragma multi_compile __ RT_FROM_CUBEMAP 
+				#pragma multi_compile ___ _qc_IGNORE_SKY
+
+				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
 
 
 
@@ -36,8 +36,6 @@ Shader "RayTracing/Geometry/Liquid Opaque"
 				#pragma fragment frag
 				#pragma multi_compile_instancing
 				#pragma multi_compile_fwdbase
-			
-				#pragma multi_compile ___ _qc_Rtx_MOBILE
 			
 
 				struct v2f {
@@ -48,7 +46,7 @@ Shader "RayTracing/Geometry/Liquid Opaque"
 					float3 viewDir		: TEXCOORD5;
 					SHADOW_COORDS(6)
 					float2 topdownUv : TEXCOORD7;
-					float2 lightMapUv : TEXCOORD8;
+					float4 traced : TEXCOORD8;
 					fixed4 color : COLOR;
 				};
 
@@ -65,7 +63,8 @@ Shader "RayTracing/Geometry/Liquid Opaque"
 					o.normal.xyz = UnityObjectToWorldNormal(v.normal);
 					o.color = v.color;
 					o.viewDir = WorldSpaceViewDir(v.vertex);
-					o.lightMapUv = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
+	
+					o.traced = GetTraced_Glassy_Vertex(o.worldPos, normalize(o.viewDir.xyz), o.normal.xyz);
 
 					TRANSFER_WTANGENT(o)
 					TRANSFER_TOP_DOWN(o);
@@ -77,72 +76,37 @@ Shader "RayTracing/Geometry/Liquid Opaque"
 
 				float4 _Color;
 
-
-				float4 frag(v2f o) : COLOR
+				float4 frag(v2f i) : COLOR
 				{
 
-					#if _qc_Rtx_MOBILE
-						float oob;
-						float4 vlm =  SampleVolume(o.worldPos, oob);
-						return vlm * _Color;
-					#endif
+					float3 viewDir = normalize(i.viewDir.xyz);
+				//	float rawFresnel = smoothstep(1,0, dot(viewDir, i.normal.xyz));
+
+					float3 normal = i.normal.xyz;
+
+					float shadow = SHADOW_ATTENUATION(i) * i.traced.a; //rayShadow;
+
+					float ao = 1;
+
+					float3 refractedRay =  refract(-viewDir, normal, 0.75);
+
+					//float translucentSun =  smoothstep(0.8,1, dot(_WorldSpaceLightPos0.xyz, refractedRay));//GetDirectionalSpecular(-normal, viewDir, specular * 0.95);// pow(dott, power) * brightness;
+
+					i.traced.rgb += GetTranslucent_Sun(refractedRay) * shadow; //translucentSun * shadow * GetDirectional() * 4; 
+
+					i.traced.rgb += GetDirectionalSpecular(normal, viewDir, 0.85) * GetDirectional();
 
 
-					float3 viewDir = normalize(o.viewDir.xyz);
-					float rawFresnel = smoothstep(1,0, dot(viewDir, o.normal.xyz));
+					float outsideVolume;
+				float4 scene = SampleSDF(i.worldPos , outsideVolume);
 
-					float3 normal = o.normal.xyz;
+				float far = smoothstep(0,1, scene.a);
 
-					float fresnel = saturate(dot(normal,viewDir));
+					float3 col = _qc_BloodColor.rgb * (1+ far) * 0.5 * i.traced.rgb;
 
-					float showReflected = 1 - fresnel;
-				
-					float shadow = SHADOW_ATTENUATION(o);// *SampleSkyShadow(o.worldPos);
+					ApplyBottomFog(col.rgb, i.worldPos, viewDir.y);
 
-					float outOfBounds;
-					float4 vol = SampleVolume(o.worldPos, outOfBounds);
-					TopDownSample(o.worldPos, vol.rgb, outOfBounds);
-
-					float3 ambientCol = lerp(vol, GetDirectional(), outOfBounds);
-
-					float direct = saturate((dot(normal, _WorldSpaceLightPos0.xyz)));
-					float3 lightColor = _LightColor0.rgb * direct;
-
-					float world = SceneSdf(o.worldPos, 0.1);
-					float farFromSurface = smoothstep(0.3, 1.2, world);
-
-					float4 col = 1;
-
-					col.rgb =
-						(ambientCol * 0.5
-							+ lightColor * shadow
-							);
-
-					float3 reflectionPos;
-					float outOfBoundsRefl;
-					float3 bakeReflected = SampleReflection(o.worldPos, viewDir, normal, shadow, reflectionPos, outOfBoundsRefl);
-					TopDownSample(reflectionPos, bakeReflected, outOfBoundsRefl);
-
-					float outOfBoundsStraight;
-					float3 straightHit;
-					float3 bakeStraight = SampleRay(o.worldPos, normalize(-viewDir - normal * 0.2), shadow, straightHit, outOfBoundsStraight);
-					TopDownSample(straightHit, bakeStraight, outOfBoundsStraight);
-
-				
-
-				//	return farFromSurface;
-
-					
-					float showStright = fresnel * fresnel;
-
-					col.rgb = _Color.rgb * col.rgb * 0.25
-						+ lerp(_Color.rgb * bakeReflected,  (_Color.rgb*0.75 + farFromSurface*0.25)  * bakeStraight, showStright);
-
-					ApplyBottomFog(col.rgb, o.worldPos, viewDir.y);
-
-
-
-					return col;
+					return float4(col,1);
 
 				}
 				ENDCG

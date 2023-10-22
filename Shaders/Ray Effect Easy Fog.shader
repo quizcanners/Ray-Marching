@@ -5,14 +5,14 @@ Shader "RayTracing/Effect/Easy Fog"
 		_MainTex("Mask (R)", 2D) = "white" {}
 		_BumpMap("Bump (Y-Flipped)", 2D) = "norm" {}
 		_Fade("Soft Particles Factor", Range(1,1000)) = 1.0
-		_FadeRange("Fade When Near", Range(0.1,100)) = 20
+		_FadeRange("Fade When near", Range(0.1,1000)) = 50
 		_NoiseTex("Noise (R)", 2D) = "white" {}
 	}
 
-		Category
-	  {
+	Category
+	{
 
-		  Tags
+		Tags
 		  {
 			  "Queue" = "Transparent"
 			  "IgnoreProjector" = "True"
@@ -33,19 +33,16 @@ Shader "RayTracing/Effect/Easy Fog"
 
 				  CGPROGRAM
 
-				  #include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-				  #include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-				  #include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-				  #include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
+			//	 #pragma multi_compile __ RT_FROM_CUBEMAP 
+				#define RENDER_DYNAMICS
+
+				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+			#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+				#pragma multi_compile ___ _qc_IGNORE_SKY
 
 
 				  #pragma vertex vert
 				  #pragma fragment frag
-
-		
-
-
-		
 
 				  struct v2f {
 					  float4 vertex : SV_POSITION;
@@ -71,7 +68,7 @@ Shader "RayTracing/Effect/Easy Fog"
 					  o.screenPos = ComputeScreenPos(o.vertex);
 					  COMPUTE_EYEDEPTH(o.screenPos.z);
 
-					  o.color = v.color * _TintColor;
+					  o.color = v.color *_TintColor;
 
 					  o.texcoord = TRANSFORM_TEX(v.texcoord.xy, _MainTex);
 
@@ -105,10 +102,19 @@ Shader "RayTracing/Effect/Easy Fog"
 					  float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, screenUV);
 					  float sceneZ = LinearEyeDepth(UNITY_SAMPLE_DEPTH(depth));
 					  float partZ = i.screenPos.z;
-					  float fade = smoothstep(0, _Fade, sceneZ - partZ) * smoothstep(0.1, _FadeRange, length(i.worldPos - _WorldSpaceCameraPos.xyz));
+
+					    float dott = dot(viewDir, i.normal.xyz);
+
+					  float fade = smoothstep(0.2, 0.5, abs(dott)) * smoothstep(0, _Fade, sceneZ - partZ) * smoothstep(0.1, _FadeRange, length(i.worldPos - _WorldSpaceCameraPos.xyz));
 
 					  
 					
+					
+
+					  float isBackface = smoothstep(0, -0.001, dott);
+
+					  i.normal.xyz = lerp(i.normal.xyz, -i.normal.xyz, isBackface);
+
 
 					  float4 bumpMap = tex2D(_BumpMap, i.texcoord);
 
@@ -128,21 +134,24 @@ Shader "RayTracing/Effect/Easy Fog"
 						//  float4 bake = SampleVolume(i.worldPos, outOfBounds);
 						//  i.worldPos.y *= 0.5;
 
-					float shadow = SampleSkyShadow(i.worldPos);
+					#if _qc_IGNORE_SKY
 
-					float direct = shadow * smoothstep(0, 1, dot(normal, _WorldSpaceLightPos0.xyz));
+						float3 lightColor = 0;
+
+					#else
+						float shadow = SampleSkyShadow(i.worldPos);
+
+						float direct = shadow * smoothstep(0, 1, dot(normal, _WorldSpaceLightPos0.xyz));
 					
-					float3 sunColor = GetDirectional();
+						float3 sunColor = GetDirectional();
 
-					float3 lightColor = sunColor * direct;
+						float3 lightColor = sunColor * direct;
+					#endif
 
 					//TopDownSample(i.worldPos, bake.rgb, outOfBounds);
 
-					float4 col = i.color;
-					
-					col.rgb *= GetAvarageAmbient(normal) + lightColor; // smoothstep(0, 1, col.rgb * (GetAvarageAmbient(normal) + lightColor));
-
-					
+		
+				
 
 					//float turblance = 1 / (0.1 +alpha);
 
@@ -154,9 +163,16 @@ Shader "RayTracing/Effect/Easy Fog"
 
 					float alpha = tex2D(_MainTex, i.texcoord + noise*0.02).r;
 
-					alpha *= lerp(1, noise*6, (1 - alpha*alpha));
+					alpha *= lerp(1, noise*7, (1 - alpha*alpha));
 
-					col.a = smoothstep(0,1, alpha * col.a * fade);
+					alpha = smoothstep(0,1, alpha * fade) * 0.5;
+
+								float3 col = //i.color;
+					
+					 GetAvarageAmbient(normal) + lightColor * 0.5; // smoothstep(0, 1, col.rgb * (GetAvarageAmbient(normal) + lightColor));
+
+
+				//	return float4(col, alpha);
 
 					ApplyBottomFog(col.rgb, i.worldPos.xyz, viewDir.y);
 
@@ -164,7 +180,7 @@ Shader "RayTracing/Effect/Easy Fog"
 
 					//col.rgb = direct;
 
-						  return col;
+						  return float4(col, alpha);
 					  }
 					  ENDCG
 				  }

@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace QuizCanners.RayTracing
 {
-    internal partial class Singleton_RayRendering
+    public static partial class RayRendering
     {
         [Serializable]
         internal class TracerManager : IPEGI, ILinkedLerping, ICfgCustom, IPEGI_ListInspect
@@ -22,7 +22,7 @@ namespace QuizCanners.RayTracing
 
             internal RayRenderingTarget Target
             {
-                get { return _target; }
+                get => _target;
                 set
                 {
                     _target = value;
@@ -40,8 +40,8 @@ namespace QuizCanners.RayTracing
             [Header("Ray-Marthing")]
             [SerializeField] private float _maxSteps = 50;
             [SerializeField] private float _maxDistance = 10000;
-            [NonSerialized] private QcUtils.DynamicRangeFloat smoothness = new(0.01f, 10, 1);
-            [NonSerialized] private QcUtils.DynamicRangeFloat shadowSoftness = new(0.01f, 10, 1);
+            [NonSerialized] private QcMath.DynamicRangeFloat smoothness = new(0.01f, 10, 1);
+            [NonSerialized] private QcMath.DynamicRangeFloat shadowSoftness = new(0.01f, 10, 1);
 
             private readonly ShaderProperty.FloatValue MAX_STEPS_IN_SHADER = new("_maxRayMarchSteps");
             private readonly ShaderProperty.FloatValue MAX_DISTANCE_IN_SHADER = new("_MaxRayMarchDistance");
@@ -49,7 +49,7 @@ namespace QuizCanners.RayTracing
             private readonly LinkedLerp.ShaderFloat RAY_MARCH_SHADOW_SMOOTHNESS = new("_RayMarchShadowSoftness", 1, 30);
 
             [Header("Ray-Tracing")]
-            [NonSerialized] private QcUtils.DynamicRangeFloat DOFdistance = new(min: 0.01f, max: 50, value: 1);
+            [NonSerialized] private QcMath.DynamicRangeFloat DOFdistance = new(min: 0.01f, max: 50, value: 1);
             [NonSerialized] private readonly LinkedLerp.ShaderFloat RAY_TRACE_DOF = new("_RayTraceDofDist", initialValue: 1f, maxSpeed: 100f); // x - distance 
             [NonSerialized] private readonly LinkedLerp.ShaderFloat DOF_STRENGTH = new("_RayTraceDOF", initialValue: 0.000001f, maxSpeed: 10);
 
@@ -146,6 +146,13 @@ namespace QuizCanners.RayTracing
                     OnConfigurationChanged();
             }
 
+            public void Inspect_Select() 
+            {
+                RayRenderingTarget trg = Target;
+                if (pegi.Edit_Enum(ref trg))
+                    Target = trg;
+            }
+
             public void InspectInList(ref int edited, int ind)
             {
                 if (Icon.Enter.Click())
@@ -153,9 +160,7 @@ namespace QuizCanners.RayTracing
 
                 if (!Configs)
                 {
-                    var trg = Target;
-                    if (pegi.Edit_Enum(ref trg))
-                        Target = trg;
+                    Inspect_Select();
 
                     "CFG".PegiLabel(60).Edit(ref Configs);
                 }

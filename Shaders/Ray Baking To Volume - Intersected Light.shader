@@ -6,9 +6,11 @@
 		[Toggle(_DEBUG)] debugOn("Debug", Float) = 0
 	}
 
-	SubShader{
+	SubShader
+	{
 
-		Tags{
+		Tags
+		{
 			"Queue" = "Geometry"
 			"RenderType" = "Opaque"
 		}
@@ -19,7 +21,8 @@
 		ZTest Off
 		Blend One One//One Zero 
 
-		Pass{
+		Pass
+		{
 
 			CGPROGRAM
 
@@ -29,8 +32,12 @@
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma multi_compile __ RT_DENOISING
+			#pragma multi_compile __ RT_TO_CUBEMAP 
+			#pragma multi_compile ___ _qc_IGNORE_SKY
+			#pragma multi_compile qc_NO_VOLUME qc_GOT_VOLUME 
 
-			struct v2f {
+			struct v2f 
+			{
 				float4 pos : 		SV_POSITION;
 				float2 texcoord : TEXCOORD0;
 				float3 viewDir: 	TEXCOORD1;
@@ -38,9 +45,9 @@
 			};
 
 			float4 _Effect_Time;
-			sampler2D _MainTex;
 	
-			v2f vert(appdata_full v) {
+			v2f vert(appdata_full v) 
+			{
 				v2f o;
 				UNITY_SETUP_INSTANCE_ID(v);
 
@@ -50,11 +57,16 @@
 
 				o.noiseUV = o.texcoord * (123.12345678) + float2(sin(_Effect_Time.x), cos(_Effect_Time.x*1.23)) * 123.12345612 * (1 + o.texcoord.y);
 
-
 				return o;
 			}
 
-			float4 frag(v2f o) : COLOR{
+
+			sampler2D _MainTex;
+			float4 _RT_CubeMap_Direction;
+
+
+			float4 frag(v2f o) : COLOR
+			{
 
 				float3 worldPos = volumeUVtoWorld(o.texcoord.xy 
 					, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
@@ -62,24 +74,51 @@
 
 				float4 noise = tex2Dlod(_Global_Noise_Lookup, float4(o.noiseUV, 0, 0));
 
-				float4 nrmDist = NormalAndDistance(worldPos);
+				noise.a = ((noise.r + noise.b) * 2) % 1;
 
-				float3 rayDirection = //normalize(
-					normalize(noise.rgb - 0.5); // +nrmDist.xyz * smoothstep(2, 0, nrmDist.w));
-	
-				float4 col = //(
-					render(worldPos, rayDirection, noise);
-					/* + render(worldPos, rayDirection, noise.yzwx)
-					+ render(worldPos, rayDirection, noise.zwxy)
-					+ render(worldPos, rayDirection, noise.wxyz)
-					) *0.25;*/
-		
+				float4 rand = (noise - 0.5) * 2;
+
+				float VOL_SIZE = _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w;
+
+
+				worldPos += rand.rga * 0.25 * VOL_SIZE;
+
+				/*
+				float4 nrmDist = NormalAndDistance(worldPos, VOL_SIZE * 2);
+
 				
+				if (nrmDist.w < 0)
+				{
+					return float4(0,0,0,1);
+				}*/
+
+			//	float sdfOffsetAmount = smoothstep(VOL_SIZE, 0, nrmDist.w);
+
+				float3 rayDirection;
+
+#if RT_TO_CUBEMAP
+				rayDirection = normalize(lerp(rand.xyz, _RT_CubeMap_Direction.xyz, abs(_RT_CubeMap_Direction.xyz)));
+#else 
+				rayDirection = normalize(rand.rgb);
+#endif
+
+				// + nrmDist.xyz * sdfOffsetAmount * 2;
+				
+				//worldPos += rand.rga * 0.45 * VOL_SIZE;
+				float outOfBounds;
+				float4 sdf = SampleSDF(worldPos + rayDirection * VOL_SIZE, outOfBounds);
+
+				float blackPixel = smoothstep(0.05, -0.01, sdf.a) * (1-outOfBounds);
+				
+				float4 col = render(worldPos, rayDirection, noise);
+
 #ifdef UNITY_COLORSPACE_GAMMA
 				col.rgb = pow(col.rgb, GAMMA_TO_LINEAR);
 #endif
 
 				col.a = 1;
+
+				col = lerp(col,0, blackPixel);
 
 				return col;
 			}

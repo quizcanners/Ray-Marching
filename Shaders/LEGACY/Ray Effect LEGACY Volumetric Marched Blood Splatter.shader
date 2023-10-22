@@ -28,8 +28,9 @@
 
 			CGPROGRAM
 
-			#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-			#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
+	#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+			#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+			//#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
 
 			#pragma vertex vert
 			#pragma fragment frag
@@ -48,7 +49,7 @@
 				fixed4 color : COLOR;
 			};
 
-			sampler2D_float _CameraDepthTexture;
+		//	sampler2D_float _CameraDepthTexture;
 			
 			float4 _Global_Noise_Lookup_TexelSize;
 
@@ -204,7 +205,7 @@
 				float outOfBounds;
 				float4 vol = SampleVolume(newPos, outOfBounds);
 
-				float3 ambientCol = lerp(vol, _RayMarchSkyColor.rgb * MATCH_RAY_TRACED_SKY_COEFFICIENT, outOfBounds);
+				float3 ambientCol = lerp(vol, GetAvarageAmbient(normal), outOfBounds);
 
 				float direct = saturate((dot(normal, _WorldSpaceLightPos0.xyz)));
 				float3 lightColor = _LightColor0.rgb * direct;
@@ -245,16 +246,15 @@
 				float reflectedDistance = res.y;
 				float3 reflectionPos = startPos + reflectedRay * reflectedDistance;
 
-				float4 sdfNnD = SdfNormalAndDistance(reflectionPos, reflectedDistance * 0.01);
+					float outOfBoundsSdf;
+					float4 sdfNnD = SampleSDF(reflectionPos, outOfBoundsSdf);
 				normalTmp = sdfNnD.rgb;
 
-				float outOfBoundsRefl;
-				float4 bakeReflected = SampleVolumeOffsetByNormal(reflectionPos, normalTmp, outOfBoundsRefl);
+				float3 bakeReflected = SampleVolume_CubeMap(reflectionPos, normalTmp);
 
-				float3 colorReflected = _RayMarchSkyColor * (1 + max(0, reflectedRay.y)) * 0.5;
+				float3 colorReflected = GetAvarageAmbient(normalTmp) * (1 + max(0, reflectedRay.y)) * 0.5;
 				float reflectedDirectional = max(0, dot(normalTmp, _WorldSpaceLightPos0.xyz));
 				colorReflected += (unity_FogColor) * 0.075;
-				bakeReflected.rgb = lerp(bakeReflected.rgb, sky, outOfBoundsRefl);
 
 				
 				topdownUv = (reflectionPos.xz - _RayTracing_TopDownBuffer_Position.xz) * _RayTracing_TopDownBuffer_Position.w + 0.5;
@@ -262,7 +262,7 @@
 				topDown =// (
 					tex2D(_RayTracing_TopDownBuffer, topdownUv); //+ tex2D(_RayTracing_TopDownBuffer, topdownUv)
 					//) * 0.5;
-				topDownVisible = (1 - outOfBoundsRefl) * smoothstep(3, 0, abs(_RayTracing_TopDownBuffer_Position.y - reflectionPos.y));
+				topDownVisible = smoothstep(3, 0, abs(_RayTracing_TopDownBuffer_Position.y - reflectionPos.y));
 				topDown *= topDownVisible;
 				ambientBlock = max(0.25f, 1 - topDown.a);
 				bakeReflected *= ambientBlock;

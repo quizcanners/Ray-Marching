@@ -6,8 +6,7 @@ using UnityEngine;
 
 namespace QuizCanners.RayTracing
 {
-
-    internal partial class Singleton_RayRendering
+    public static partial class RayRendering
     {
         [Serializable]
 
@@ -37,7 +36,7 @@ namespace QuizCanners.RayTracing
                 if (!_marchingIntermadiateBuffer || _marchingIntermadiateBuffer.width!= targetHeight || _marchingIntermadiateBuffer.height != targetHeight)
                 {
                     if (_marchingIntermadiateBuffer)
-                        Destroy(_marchingIntermadiateBuffer);
+                        UnityEngine.Object.Destroy(_marchingIntermadiateBuffer);
 
                     _marchingIntermadiateBuffer = new RenderTexture(width: targetWidth, height: targetHeight, depth: 0, RenderTextureFormat.ARGBFloat, mipCount: 0);
                 }
@@ -72,7 +71,7 @@ namespace QuizCanners.RayTracing
                     {
                         foreach (var t in _twoBuffers)
                         {
-                            Destroy(t);
+                            UnityEngine.Object.Destroy(t);
                         }
                     }
 
@@ -89,7 +88,6 @@ namespace QuizCanners.RayTracing
                         _twoBuffers[i] = new RenderTexture(width: Screen.width, height: Screen.height, depth: 0, RenderTextureFormat.ARGBFloat, mipCount: 0);
                     }
 
-                    Mgmt.SetBakingDirty(reason: "Resolution changed");
                     Debug.Log("Buffers Recreated on resolution change");
                     Mgmt.SetBakingDirty(reason: "Texture Buffers Changed");
                 }

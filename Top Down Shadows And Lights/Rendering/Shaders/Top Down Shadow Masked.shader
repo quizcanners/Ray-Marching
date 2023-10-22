@@ -1,10 +1,11 @@
-Shader "RayTracing/Top Down/Shadow"
+Shader "RayTracing/Top Down/Light And Shadow"
 {
 	Properties{
 		_MainTex("Albedo (RGB)", 2D) = "white" {}
-		_Color("Color", Color) = (1,1,1,1)
+		[HDR]_Color("Color", Color) = (1,1,1,1)
 		[KeywordEnum(Radiant, Sharp, Square)] _SHAPE("Shape", Float) = 0
 		[Toggle(_DEBUG)] debugOn("Debug", Float) = 0
+		_Range("Range", Range(1,10)) = 1
 	}
 
 	SubShader{
@@ -26,6 +27,7 @@ Shader "RayTracing/Top Down/Shadow"
 			CGPROGRAM
 
 			#include "UnityCG.cginc"
+			#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
 
 			#pragma vertex vert
 			#pragma fragment frag
@@ -38,6 +40,7 @@ Shader "RayTracing/Top Down/Shadow"
 
 			struct v2f {
 				float4 pos : 		SV_POSITION;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
 				float3 worldPos : 	TEXCOORD0;
 				//float3 normal : 	TEXCOORD1;
 				float2 texcoord : 	TEXCOORD2;
@@ -50,10 +53,16 @@ Shader "RayTracing/Top Down/Shadow"
 			uniform float4 _MainTex_ST;
 			sampler2D _MainTex;
 			float4 _Color;
+			float _Range;
+
+			/*UNITY_INSTANCING_BUFFER_START(Props)
+				UNITY_DEFINE_INSTANCED_PROP(float, _Distance)
+				UNITY_INSTANCING_BUFFER_END(Props)*/
 
 			v2f vert(appdata_full v) {
 				v2f o;
 				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_TRANSFER_INSTANCE_ID(v, o);
 
 				//o.normal.xyz = UnityObjectToWorldNormal(v.normal);
 				o.pos = UnityObjectToClipPos(v.vertex);
@@ -65,16 +74,28 @@ Shader "RayTracing/Top Down/Shadow"
 				return o;
 			}
 
+		
 
-			float4 frag(v2f o) : COLOR
+			float4 frag(v2f i) : COLOR
 			{
-				float2 uv = o.texcoord.xy - 0.5;
+				//UNITY_SETUP_INSTANCE_ID(i);
+				//float adddist = UNITY_ACCESS_INSTANCED_PROP(Props, _Distance);
+
+				//float dist = smoothstep(0,5, i.worldPos.y);
+
+				float2 uv = i.texcoord.xy - 0.5;
 				float dist = uv.x * uv.x + uv.y * uv.y;
 
 				float alpha;
 
+				float wPosY = (i.worldPos.y - _RayTracing_TopDownBuffer_Position.y) / _Range;
+
+				float sharpness = 1/(1 + abs(wPosY)); // Geting softer when further away from ground
+
 #if _SHAPE_RADIANT
-				alpha = smoothstep(4, 512, (1 / (dist + 0.001)));
+				
+
+				alpha = sharpness*smoothstep(0.25,0,dist) / (1 + dist * (1 + 9 * sharpness));
 #elif _SHAPE_SHARP
 				alpha = smoothstep(0.25, 0, dist);
 #else
@@ -82,7 +103,7 @@ Shader "RayTracing/Top Down/Shadow"
 #endif
 				  
 
-				return o.color * alpha * smoothstep(10,0.25, o.worldPos.y) * smoothstep(-1.5, 0, o.worldPos.y);
+				return i.color * alpha * smoothstep(10,0.25, wPosY) * smoothstep(-1.5, 0, wPosY);
 			}
 			ENDCG
 		}

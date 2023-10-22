@@ -1,83 +1,154 @@
-
-using QuizCanners.Migration;
-using QuizCanners.Inspect;
-using QuizCanners.Lerp;
 using System;
 using UnityEngine;
-using QuizCanners.Utils;
-
-using UniStorm;
-
 
 namespace QuizCanners.RayTracing
 {
-    internal partial class Singleton_RayRendering
+    using Migration;
+    using Inspect;
+    using Lerp;
+    using Utils;
+
+    public static partial class RayRendering
     {
-
         [Serializable]
-        internal class WeatherManager : IPEGI, ILinkedLerping, ICfgCustom, IPEGI_ListInspect
+        public class WeatherManager : IPEGI, ILinkedLerping, ICfgCustom, IPEGI_ListInspect
         {
-            [SerializeField] public SO_RayRenderingLightCfgs Configs;
+            [SerializeField] internal SO_RayRenderingLightCfgs Configs;
             [SerializeField] private Texture _cloudShadowsTexture;
+            [SerializeField] private Material RaySkybox;
+            [SerializeField] private SO_HDRsLoading HDRs;
 
+            private readonly LinkedLerp.ShaderColor AMBIENT_COLOR = new("_qc_AmbientColor", Color.clear, maxSpeed: 0.1f);
             private readonly ShaderProperty.TextureValue CLOUD_SHADOWS_TEXTURE = new("_qc_CloudShadows_Mask");
-            private readonly ShaderProperty.FloatFeature CLOUD_SHADOWS_VISIBILITY = new("_qc_Rtx_CloudShadowsVisibility", "_qc_CLOUD_SHADOWS");
+            private readonly LinkedLerp.ShaderFloatFeature CLOUD_SHADOWS_VISIBILITY = new("_qc_Rtx_CloudShadowsVisibility", "_qc_CLOUD_SHADOWS");
+            private readonly LinkedLerp.ShaderFloatFeature SUN = new(nName: "_qc_SunVisibility", featureDirective: "_qc_USE_SUN");
+            private readonly LinkedLerp.ColorValue SUN_COLOR = new("Sun Colo", maxSpeed: 2);
+            private readonly LinkedLerp.ShaderFloat SUN_LIGHT_ATTENUATION = new("_qc_Sun_Atten", initialValue: 1);
 
-            private readonly LinkedLerp.ColorValue SUN_COLOR = new("Sun Colo", maxSpeed: 10);
-        
-            private readonly LinkedLerp.ShaderColor SKY_COLOR = new("_RayMarchSkyColor", Color.grey, 10);
             private readonly LinkedLerp.ShaderColor MIN_LIGH_COLOR = new("_RayMarthMinLight", Color.black, 10);
-            // private readonly LinkedLerp.ShaderVector4 LIGHT_DIRECTION = new("_WorldSpaceLightPos0", Vector3.up.ToVector4(1), maxSpeed: 100);
             private readonly LinkedLerp.ShaderFloatFeature STARS_VISIBILITY = new(nName: "_StarsVisibility", featureDirective: "_RAY_MARCH_STARS");
-            private readonly LinkedLerp.ColorValue FOG_COLOR = new("Fog", maxSpeed: 10);
-            
-            private bool lerpDone;
+            private readonly ShaderProperty.FloatFeature FOG_VISIBILITY = new(name: "_qc_FogVisibility", featureDirective: "_RAY_MARCH_FOG");
+            private readonly ShaderProperty.Feature INDOORS = new("_qc_IGNORE_SKY");
+            private readonly LinkedLerp.ColorValue FOG_COLOR = new("Fog", maxSpeed: 1);
+          
 
-            protected Singleton_RayRendering RTX_Mgmt => Singleton.Get<Singleton_RayRendering>();
-            protected Singleton_SunAndMoonRotator SunAndMoon => Singleton.Get<Singleton_SunAndMoonRotator>();
+            private bool _artificialLightsExpected;
 
-            private Light Sun
+            public float SunAttenuation => SUN_LIGHT_ATTENUATION.CurrentValue;
+
+            public bool ArtificialLightsExpected 
             {
-                get => RenderSettings.sun;
-                set { RenderSettings.sun = value; }
-            }
-
-            
-            protected float Intensity 
-            {
-                get => Singleton.TryGetValue<Singleton_SunAndMoonRotator, float>(s => s.Intensity, logOnServiceMissing: false);
+                get => _artificialLightsExpected;
                 set 
                 {
-                    Singleton.Try<Singleton_SunAndMoonRotator>(s => s.Intensity = value);
-
-                  //  var val = LIGHT_DIRECTION.TargetValue;
-                   // val.w = value;
-                    //LIGHT_DIRECTION.TargetValue = val;
+                    _artificialLightsExpected = value;
+                    Mgmt.SetBakingDirty("Artificial Lights Chenged");
                 }
             }
 
+            private float _volumetricFog;
+
+            private bool lerpDone;
+
+            protected Singleton_SunAndMoonRotator SunAndMoon => Singleton.Get<Singleton_SunAndMoonRotator>();
+
+            public Color SunColor 
+            {
+                get => SUN_COLOR.TargetValue;
+                set 
+                {
+                    SUN_COLOR.TargetValue = value;
+                }
+            }
+
+            public float SunIntensity
+            {
+                get => SUN.GlobalValue;// Singleton.GetValue<Singleton_SunAndMoonRotator, float>(s => s.Intensity_Target, logOnServiceMissing: false);
+                set => SUN.GlobalValue = value;
+                /*set
+                {
+                    //SUN. = value;
+                    Singleton.Try<Singleton_SunAndMoonRotator>(s => s.SunIntensity = value, logOnServiceMissing: false);
+                    SUN.GlobalValue = value;
+                    UpdateIndoors();
+                }*/
+            }
+
+            public float VolumetricFog 
+            {
+                get => _volumetricFog;
+                set => _volumetricFog = value;
+            }
+
+            public float Fog 
+            {
+                get => FOG_VISIBILITY.GlobalValue;
+                set => FOG_VISIBILITY.GlobalValue = value;
+            }
+
+            public Color AmbientColor 
+            {
+                get => AMBIENT_COLOR.TargetValue;
+                set 
+                {
+                    AMBIENT_COLOR.TargetValue = value;
+                    lerpDone = false;
+                }
+            }
+
+            void UpdateIndoors() 
+            {
+                INDOORS.Enabled = SunIntensity == 0;
+            }
+
+            public bool Stars 
+            {
+                get => STARS_VISIBILITY.CurrentValue > 0.2f;
+            }
+
+            private float _rainTargetValue;
+
+            public float RainTargetValue
+            {
+                get => _rainTargetValue;
+                set
+                {
+                    _rainTargetValue = value;
+                }
+            }
+
+            /*
             protected Vector3 LightDirection 
             {
-                get => Sun ? -Sun.transform.forward : Vector3.up;// LIGHT_DIRECTION.TargetValue.XYZ();
+                get => Sun ? -Sun.transform.forward : Vector3.up;
                 set 
                 {
                     if (Sun)
                         Sun.transform.forward = -value;
-                   // LIGHT_DIRECTION.TargetValue = value.normalized.ToVector4(LIGHT_DIRECTION.TargetValue.w);
                 }
-            }
+            }*/
 
             private void UpdateEffectiveSunColor() 
             {
-
-                Singleton.Try<Singleton_SunAndMoonRotator>(s =>  s.SharedLight.color = SUN_COLOR.TargetValue, logOnServiceMissing: false);
-
-                // * Mathf.SmoothStep(-0.05f, 0.05f, LIGHT_DIRECTION.CurrentValue.y);
+                Singleton.Try<Singleton_SunAndMoonRotator>(s =>  s.SharedLight.color = SUN_COLOR.CurrentValue, logOnServiceMissing: false);
             }
 
             internal int MaxRenderFrames = 1500;
 
-         
+            public void AnimateToConfig(string key) 
+            {
+                if (Configs.ActiveConfiguration != null && Configs.ActiveConfiguration.name == key)
+                    return;
+
+                foreach (var c in Configs.configurations) 
+                {
+                    if (c.name.Equals(key))
+                    {
+                        Configs.ActiveConfiguration = c;
+                        return;
+                    }
+                }
+            }
 
             #region Encode & Decode
 
@@ -86,11 +157,17 @@ namespace QuizCanners.RayTracing
                 if (_cloudShadowsTexture)
                     CLOUD_SHADOWS_TEXTURE.GlobalValue = _cloudShadowsTexture;
 
-                CLOUD_SHADOWS_VISIBILITY.GlobalValue = CLOUD_SHADOWS_VISIBILITY.latestValue;
+                if (!Application.isPlaying && Configs && Configs.configurations.Count>0) 
+                {
+                    Configs.configurations[0].SetAsCurrent();
+                }
 
                 UpdateEffectiveSunColor();
 
                 this.SkipLerp();
+
+                if (RaySkybox)
+                    RenderSettings.skybox = RaySkybox;
             }
 
             public void ManagedOnDisable()
@@ -103,44 +180,49 @@ namespace QuizCanners.RayTracing
             public CfgEncoder EncodeSelectedIndex => Configs.Encode();
             public void DecodeInternal(CfgData data)
             {
-                //LIGHT_DIRECTION.TargetValue = new Vector3(-.8f, 1.7f, 2.6f).normalized.ToVector4(1f);
                 new CfgDecoder(data).DecodeTagsFor(this);
                 lerpDone = false;
-                UpdateEffectiveSunColor();
-                RTX_Mgmt.RequestLerps("Light Decoder");
-                this.SkipLerp();
+                Mgmt.RequestLerps("Light Decoder");
             }
             public void DecodeTag(string key, CfgData data)
             {
                 switch (key)
                 {
                     case "col": SUN_COLOR.TargetValue = data.ToColor();  break;
-                    case "sky": SKY_COLOR.TargetValue = data.ToColor(); break;
                     case "fog": FOG_COLOR.TargetValue = data.ToColor(); break;
                     case "maxFrms": MaxRenderFrames = data.ToInt(); break;
                     case "ml": MIN_LIGH_COLOR.TargetValue = data.ToColor();   break;
-                    case "liDir": LightDirection = data.ToVector3(); break;
-                    case "intn": Intensity = data.ToFloat(); break;
                     case "stars": STARS_VISIBILITY.TargetValue = data.ToFloat(); break;
-                    case "UniStorm": Singleton.Try<UniStormSystem>(s => s.Decode(data), logOnServiceMissing: false); break;
-                    case "Shad": CLOUD_SHADOWS_VISIBILITY.SetGlobal(data.ToFloat()); break;
+                    case "Shad": CLOUD_SHADOWS_VISIBILITY.TargetValue = data.ToFloat(); break;
                     case "SnM": SunAndMoon.Decode(data); break;
+                    case "Rain": _rainTargetValue = data.ToFloat(); break;
+                    case "Amb": AmbientColor = data.ToColor(); break;
+                    case "VolFog": VolumetricFog = data.ToFloat(); break;
+                    case "SunInten":  SUN.TargetValue = data.ToFloat(); break;
+                    case "atten": SUN_LIGHT_ATTENUATION.Decode(data); break;
+                    case "ArtLights":  ArtificialLightsExpected = data.ToBool(); break;
+                    case "hdr": HDRs.CurrentHDR = data.ToString(); break;
                 }
             }
 
             public CfgEncoder Encode() => new CfgEncoder()
                 .Add("col", SUN_COLOR.TargetValue)
-                .Add("sky", SKY_COLOR.TargetValue)
                 .Add("fog", FOG_COLOR.TargetValue)
                 .Add("maxFrms", MaxRenderFrames)
                 .Add("ml", MIN_LIGH_COLOR.TargetValue)
-                .Add("liDir", LightDirection)
-                .Add("intn", Intensity)
+             //   .Add("liDir", LightDirection)
+             //   .Add("intn", SunIntensity)
                 .Add("stars", STARS_VISIBILITY.TargetValue)
-                .Add("UniStorm", Singleton.Get<UniStormSystem>())
-                .Add("Shad", CLOUD_SHADOWS_VISIBILITY.latestValue)
+                .Add("Shad", CLOUD_SHADOWS_VISIBILITY.GlobalValue)
                 .Add("SnM", SunAndMoon)
-              ;
+                .Add("Rain", RainTargetValue)
+                .Add("Amb", AmbientColor)
+                .Add("VolFog", VolumetricFog)
+                .Add("SunInten",  SUN.TargetValue)
+                .Add("atten", SUN_LIGHT_ATTENUATION)
+                .Add_Bool("ArtLights", ArtificialLightsExpected)
+                .Add_String("hdr", HDRs.CurrentHDR);
+              
 
             #endregion
 
@@ -152,93 +234,97 @@ namespace QuizCanners.RayTracing
             {
                 if (!lerpDone)
                 {
+                    HDRs.ManagedUpdate();
                     _lerpData.Update(this, canSkipLerp: false);
                 }
-
-                Singleton.Try<Singleton_SunAndMoonRotator>(onFound: s =>
-                {
-                    if (!s.SharedLight)
-                        return;
-
-                    var targetLightSource = s.SharedLight;// s.Light.Sun.transform.forward.y > 0 ? s.Light.Moon : s.Light.Sun;
-
-                    LightDirection = -targetLightSource.transform.forward;
-                    //Intensity = targetLightSource.intensity;
-                    SUN_COLOR.TargetAndCurrentValue = targetLightSource.color;
-                    UpdateEffectiveSunColor();
-                }, onFailed: () =>
-                {
-                  
-                });
             }
-
 
             public void Portion(LerpData ld)
             {
                 SUN_COLOR.Portion(ld);
-                SKY_COLOR.Portion(ld);
                 FOG_COLOR.Portion(ld);
                 MIN_LIGH_COLOR.Portion(ld);
-                //LIGHT_DIRECTION.Portion(ld);
                 STARS_VISIBILITY.Portion(ld);
+                AMBIENT_COLOR.Portion(ld);
+                CLOUD_SHADOWS_VISIBILITY.Portion(ld);
+                SUN.Portion(ld);
+                SUN_LIGHT_ATTENUATION.Portion(ld);
             }
 
             public void Lerp(LerpData ld, bool canSkipLerp)
             {
                 SUN_COLOR.Lerp(ld, canSkipLerp);
-                SKY_COLOR.Lerp(ld, canSkipLerp);
                 FOG_COLOR.Lerp(ld, canSkipLerp);
                 MIN_LIGH_COLOR.Lerp(ld, canSkipLerp);
-                //LIGHT_DIRECTION.Lerp(ld, canSkipLerp);
                 STARS_VISIBILITY.Lerp(ld, canSkipLerp);
+                AMBIENT_COLOR.Lerp(ld, canSkipLerp);
+                CLOUD_SHADOWS_VISIBILITY.Lerp(ld, canSkipLerp);
+                SUN.Lerp(ld, canSkipLerp);
+                SUN_LIGHT_ATTENUATION.Lerp(ld, canSkipLerp);
 
-                lerpDone |= ld.Done;
+
+                lerpDone |= ld.IsDone;
+
+                if (lerpDone) 
+                {
+                    Mgmt.SetBakingDirty(reason: "Lerp Finished", invalidateResult: true);
+                }
 
                 RenderSettings.fogColor = FOG_COLOR.CurrentValue;
                 Singleton.Try<Singleton_CameraOperatorConfigurable>(s => s.MainCam.backgroundColor = FOG_COLOR.CurrentValue, logOnServiceMissing: false);
 
-                UpdateEffectiveSunColor();
+                Singleton.Try<Singleton_SunAndMoonRotator>(s => s.SunIntensity = SUN.CurrentValue, logOnServiceMissing: false);
 
+                var ambint = AMBIENT_COLOR.CurrentValue;
+
+                RenderSettings.ambientSkyColor = ambint * 2;
+                RenderSettings.ambientEquatorColor = ambint * 1.5f;
+                RenderSettings.ambientGroundColor = ambint;
+
+                UpdateEffectiveSunColor();
+                UpdateIndoors();
             }
+
 
             #endregion
 
             #region Inspector
 
             private readonly pegi.EnterExitContext _context = new(playerPrefId: "rtxWthInsp");
-
+           // [SerializeField]private pegi.EnterExitContext 
             public void Inspect()
             {
                 var changed = pegi.ChangeTrackStart();
 
                 using (_context.StartContext())
                 {
+                    if (RenderSettings.ambientMode != UnityEngine.Rendering.AmbientMode.Trilight && "Set Ambient to Trilight".PegiLabel().Click().Nl())
+                        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
 
                     pegi.Nl();
-
-                    if ("Uni Storm System".PegiLabel(pegi.Styles.ListLabel).IsEntered())
-                    {
-                        pegi.Nl();
-
-                        Singleton.Try<UniStormSystem>(s =>
-                        {
-                            s.Nested_Inspect();
-                        }, onFailed: () =>
-                        {
-                            "No UniStorm System Found".PegiLabel().Write_Hint();
-                        });
-                    }
-                    pegi.Nl();
-
 
                     if (_context.IsAnyEntered == false)
                     {
-                        var sky = RenderSettings.skybox;
+                        ////if (Configs.ActiveConfiguration != null)
+                        //   Configs.ActiveConfiguration.name.PegiLabel(pegi.Styles.HeaderText).Nl();
 
-                        if ("Skybox".PegiLabel().Edit(ref sky).Nl())
+                        "Sky: {0}".F(INDOORS.Enabled ? "HIDDEN" : "RENDERED").PegiLabel(pegi.Styles.BaldText).Nl();
+
+                        Inspect_SelectConfig();
+                        pegi.Nl();
+
+                        Material sky = RenderSettings.skybox;
+
+                        if ("Skybox".PegiLabel().Edit(ref sky))
                             RenderSettings.skybox = sky;
 
-                        Singleton.Try<UniStormSystem>(s => pegi.Nested_Inspect(s.InspectShort, s), logOnServiceMissing: false);
+                        if (RaySkybox && RaySkybox != sky && "Set Ray Sky".PegiLabel().Click())
+                            RenderSettings.skybox = RaySkybox;
+
+                        pegi.Nl();
+
+                        if (!RaySkybox)
+                            "Ray Skybox".PegiLabel().Edit(ref RaySkybox).Nl();
 
                         "Frames needed for baking".PegiLabel().Edit(ref MaxRenderFrames).Nl();
 
@@ -249,36 +335,44 @@ namespace QuizCanners.RayTracing
 
                         pegi.Nl();
 
-                        if (Sun)
-                        {
-                            Color sl = sun.color;
-                            sl.a = sun.intensity;
-                            SUN_COLOR.TargetValue = sl;
-                        }
-
                         var col = SUN_COLOR.TargetValue;
-                        if ("Light Color".PegiLabel().Edit(ref col).Nl())
+                        if ("Light Color".PegiLabel().Edit(ref col, hdr: true).Nl())
                         {
                             SUN_COLOR.TargetValue = col;
-                            if (sun)
-                                sun.color = col;
                         }
 
-                        var inten = Intensity;
+                        var inten = SUN.TargetValue;
                         if ("Intensity".PegiLabel(70).Edit(ref inten, 0, 5).Nl())
-                            Intensity = inten;
+                            SUN.TargetValue = inten;
 
-                        col = SKY_COLOR.TargetValue;
-                        if ("Sky Color".PegiLabel().Edit(ref col).Nl())
-                            SKY_COLOR.TargetValue = col;
+                        var atten = SUN_LIGHT_ATTENUATION.TargetValue;
+                        if ("Attenuation".PegiLabel(70).Edit(ref atten, 0, 6).Nl())
+                            SUN_LIGHT_ATTENUATION.TargetValue = atten;
 
+                        /*
                         col = FOG_COLOR.TargetValue;
-                        if ("Fog Color".PegiLabel().Edit(ref col).Nl())
-                            FOG_COLOR.TargetValue = col;
+                        if ("Fog Color".PegiLabel().Edit(ref col, hdr: true).Nl())
+                            FOG_COLOR.TargetValue = col;*/
+
+
+                        float fg = Fog;
+                        "Fog".PegiLabel(40).Edit_01(ref fg).Nl(()=> Fog = fg);
+
+                        var vf = VolumetricFog;
+                        "Volumetric Fog".PegiLabel().Edit_01(ref vf).Nl(()=> VolumetricFog = vf);
+
+                        if (vf > 0 && vf < 0.1f)
+                            "Volumetric fog is barely visible while having a performance impact. Setting to zero is recomended".PegiLabel().WriteWarning().Nl();
 
                         var dc = MIN_LIGH_COLOR.TargetValue;
                         if ("Dark Color".PegiLabel().Edit(ref dc).Nl())
                             MIN_LIGH_COLOR.TargetValue = dc;
+
+                        var amb = AmbientColor;
+                        if ("Ambient".PegiLabel().Edit(ref amb, hdr: true).Nl())
+                            AmbientColor = amb;
+
+                        "Ambient Alpha -> Modify Skybox".PegiLabel().Write_Hint().Nl();
 
                         var stars = STARS_VISIBILITY.TargetValue;
 
@@ -289,21 +383,74 @@ namespace QuizCanners.RayTracing
                         if ("Stars".PegiLabel(60).Edit_01(ref stars).Nl())
                             STARS_VISIBILITY.TargetAndCurrentValue = stars;
 
+
+                        "Artificial lights".PegiLabel().ToggleIcon(ref _artificialLightsExpected).Nl(()=> ArtificialLightsExpected = _artificialLightsExpected);
+
+                        "Rain".PegiLabel(40).Edit_01(ref _rainTargetValue).Nl();
+                       // RAIN.InspectInList_Nested().Nl(()=> RAIN.SetGlobal());
+
                         CLOUD_SHADOWS_VISIBILITY.InspectInList_Nested().Nl();
 
+
                         "Cloud Shadows".PegiLabel().Edit(ref _cloudShadowsTexture).Nl().OnChanged(()=> CLOUD_SHADOWS_TEXTURE.GlobalValue = _cloudShadowsTexture);
-                            
-                        ConfigurationsSO_Base.Inspect(ref Configs);
+
+                        if (changed) 
+                        {
+                            this.SkipLerp();
+                        }
+
+
+                        if ("Configs".PegiLabel().IsFoldout().Nl())
+                        {
+                            ConfigurationsSO_Base.Inspect(ref Configs).OnChanged(() => Singleton.Try<Singleton_RayRendering>(s => s.SetBakingDirty(reason: "Weather Config changed")));
+                        }
+
+                        if ("HDRs".PegiLabel().IsFoldout().Nl_ifEntered())
+                            "HDRs".PegiLabel(40).Edit_Inspect(ref HDRs).Nl();
+                        else
+                            HDRs.InspectSelect().Nl();
+                        
+
+                        if ("Sun ".PegiLabel().IsFoldout().Nl()) 
+                        {
+                            Singleton.Try<Singleton_SunAndMoonRotator>(s => s.Nested_Inspect().Nl(()=> 
+                            {
+                                Mgmt.SetBakingDirty("Sun and Moon Changed");
+                            }));
+                        }
+
+                        pegi.Nl();
+
                     }
 
+                    pegi.Nl();
 
+                    if (!lerpDone && "Skip Lerp".PegiLabel().Click())
+                        this.SkipLerp();
 
                     if (changed)
                     {
+                        lerpDone = false;
                         UpdateEffectiveSunColor();
-                        this.SkipLerp();
                     }
                 }
+            }
+
+
+
+            public void Inspect_SelectConfig() 
+            {
+                if (Configs)
+                    Configs.Inspect_Select();
+            }
+
+            public pegi.ChangesToken Inspect_SelectConfig(ref string key)
+            {
+                var changes = pegi.ChangeTrackStart();
+                if (Configs)
+                    Configs.Inspect_Select(ref key);
+
+                return changes;
             }
 
             public void InspectInList(ref int edited, int ind)
@@ -316,10 +463,13 @@ namespace QuizCanners.RayTracing
                     "CFG".PegiLabel(60).Edit(ref Configs);
                 else
                     pegi.Nested_Inspect(Configs.InspectShortcut, Configs);
-                
+
+                if (INDOORS.Enabled)
+                    "NO SKY".PegiLabel(40).Write();
+
                 if (changes) 
                 {
-                    this.SkipLerp();
+                   // this.SkipLerp();
                 }
             }
 

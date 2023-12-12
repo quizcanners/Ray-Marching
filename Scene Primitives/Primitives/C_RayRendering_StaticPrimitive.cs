@@ -1,7 +1,5 @@
 ﻿using UnityEngine;
 using QuizCanners.Inspect;
-using QuizCanners.Migration;
-using QuizCanners.Lerp;
 using QuizCanners.Utils;
 using static QuizCanners.RayTracing.TracingPrimitives;
 
@@ -14,7 +12,6 @@ namespace QuizCanners.RayTracing
     {
         private PrimitiveMaterial _config = new();
         private Shape _shape;
-        protected readonly Gate.DirtyVersion shaderValuesVersion = new();
         public bool IsHidden { get; private set; }
 
         public override Vector4 SHD_ColorAndRoughness => _config.Color.Alpha(_config.Roughtness);
@@ -137,9 +134,8 @@ namespace QuizCanners.RayTracing
 
             if (changed)
             {
-                shaderValuesVersion.IsDirty = true;
                 if (mgmt)
-                    mgmt.SetBakingDirty("Inspector");
+                    mgmt.SetBakingDirty("Inspector", invalidateResult: true);
             }
         }
 

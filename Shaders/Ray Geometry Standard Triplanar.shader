@@ -465,7 +465,7 @@ float3 worldPosAdjusted = i.worldPos;
 
 					float fresnel = GetFresnel_FixNormal(normal, i.normal.xyz, viewDir) * ao;//GetFresnel(normal, viewDir) * ao;
 
-					//	float rawFresnel = smoothstep(1,0, dot(viewDir, normal));
+					float rawFresnel = smoothstep(1,0, dot(viewDir, normal));
 
 
 					float metal = madsMap.r;

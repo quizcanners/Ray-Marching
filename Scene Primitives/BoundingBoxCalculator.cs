@@ -55,7 +55,15 @@ namespace QuizCanners.RayTracing
             Max = Vector3.negativeInfinity;
         }
 
-      
+        public void Add(Vector3 center, float radius)
+        {
+            var extents = radius * Vector3.one;
+
+            Min = Vector3.Min(Min, center - extents);
+            Max = Vector3.Max(Max, center + extents);
+        }
+
+
         public void Add(Vector3 center, Vector3 size) 
         {
             var extents = size * 0.5f;
@@ -106,7 +114,7 @@ namespace QuizCanners.RayTracing
 
         public override string ToString() => "From {0} to {1} - {2} m3".F(Min, Max, Volume);
 
-        public void Inspect()
+        void IPEGI.Inspect()
         {
             var center = Center;
             if ("Center".PegiLabel().Edit(ref center))

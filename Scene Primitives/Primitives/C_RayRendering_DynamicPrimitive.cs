@@ -5,7 +5,7 @@ using UnityEngine;
 namespace QuizCanners.RayTracing
 {
     [ExecuteAlways]
-    [AddComponentMenu("PrimitiveTracing/Proxy/Dynamic Primitive")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/PrimitiveTracing/Proxy/Dynamic Primitive")]
     public class C_RayRendering_DynamicPrimitive : C_RayRendering_PrimitiveBase, IPEGI
     {
         [SerializeField] private Color _color = Color.gray;
@@ -31,7 +31,7 @@ namespace QuizCanners.RayTracing
         }
 
         #region Inspector
-        public void Inspect()
+        void IPEGI.Inspect()
         {
             pegi.TryDefaultInspect(this);
         }

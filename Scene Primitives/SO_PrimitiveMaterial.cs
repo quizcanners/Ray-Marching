@@ -48,7 +48,7 @@ namespace QuizCanners.RayTracing
             public Material Material;
             public PrimitiveMaterial Primitive = new();
 
-            public void Inspect()
+            void IPEGI.Inspect()
             {
                 "Material".PegiLabel().Edit(ref Material).Nl();
             }
@@ -64,7 +64,7 @@ namespace QuizCanners.RayTracing
 
         [SerializeField] private pegi.CollectionInspectorMeta _linksMeta = new pegi.CollectionInspectorMeta("Primitive Materials");
 
-        public void Inspect()
+        void IPEGI.Inspect()
         {
             _linksMeta.Edit_List(allLinks).Nl();
 

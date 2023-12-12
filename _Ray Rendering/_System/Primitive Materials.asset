@@ -252,6 +252,11 @@ MonoBehaviour:
       MatType: 0
       Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
       Roughtness: 0.5
+  - Material: {fileID: 2100000, guid: 47cea14190ed76e46951d9c2b02ef27b, type: 2}
+    Primitive:
+      MatType: 4
+      Color: {r: 0.254717, g: 0.254717, b: 0.254717, a: 1}
+      Roughtness: 0.5
   _linksMeta:
     inspectedElement_Internal: -1
     listSectionStartIndex: 0

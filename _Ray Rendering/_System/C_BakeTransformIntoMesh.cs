@@ -1,10 +1,13 @@
 using QuizCanners.Inspect;
+using QuizCanners.Utils;
 using UnityEngine;
 
 namespace QuizCanners.RayTracing
 {
 
     [ExecuteAlways]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/PrimitiveTracing/Transform Into Mesh")]
+
     public class C_BakeTransformIntoMesh : MonoBehaviour, IPEGI, INeedAttention
     {
         [SerializeField] private TransformToMeshDataBake _meshDataBake = new();
@@ -36,9 +39,14 @@ namespace QuizCanners.RayTracing
             _meshDataBake.Managed_OnEnable();
         }
 
+        protected void Reset()
+        {
+            _meshDataBake.OnReset(transform);
+        }
+
         #region Inspector
 
-        public void Inspect()
+        void IPEGI.Inspect()
         {
             pegi.Nl();
 

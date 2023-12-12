@@ -14,7 +14,7 @@ Shader "RayTracing/Effect/Easy Fog"
 
 		Tags
 		  {
-			  "Queue" = "Transparent"
+			  "Queue" = "Transparent+1"
 			  "IgnoreProjector" = "True"
 			  "RenderType" = "Transparent"
 			  "PreviewType" = "Plane"
@@ -89,7 +89,58 @@ Shader "RayTracing/Effect/Easy Fog"
 				  sampler2D _NoiseTex;
 
 				  sampler2D _MainTex;
+				  float4 _MainTex_TexelSize;
 				  sampler2D _BumpMap;
+
+				  /*
+
+				  				// from http://www.java-gaming.org/index.php?topic=35123.0
+				float4 cubic_Interpolation(float v) 
+				{
+					float4 n = float4(1.0, 2.0, 3.0, 4.0) - v;
+					float4 s = n * n * n;
+					float x = s.x;
+					float y = s.y - 4.0 * s.x;
+					float z = s.z - 4.0 * s.y + 6.0 * s.x;
+					float w = 6.0 - x - y - z;
+					return float4(x, y, z, w) * (1.0 / 6.0);
+				}*/
+
+				float4 TextureBicubic(float2 texCoords, float4 texelSize) 
+				{
+
+					float2 texSize = texelSize.zw;//textureSize(sampler, 0);
+					float2 invTexSize = texelSize.xy;///1.0 / texSize;
+
+					texCoords = texCoords * texSize - 0.5;
+
+					float2 fxy = texCoords % 1;
+
+					texCoords -= fxy;
+
+					float4 xcubic = cubic_Interpolation(fxy.x);
+					float4 ycubic = cubic_Interpolation(fxy.y);
+
+					float4 c = texCoords.xxyy + float2(-0.5, +1.5).xyxy;
+
+					float4 s = float4(xcubic.xz + xcubic.yw, ycubic.xz + ycubic.yw);
+
+					float4 offset = c + float4(xcubic.yw, ycubic.yw) / s;
+
+					offset *= invTexSize.xxyy;
+
+					float4 sample0 = tex2Dlod(_MainTex, float4(offset.xz, 0, 0));
+					float4 sample1 = tex2Dlod(_MainTex, float4(offset.yz, 0, 0));
+					float4 sample2 = tex2Dlod(_MainTex, float4(offset.xw, 0, 0));
+					float4 sample3 = tex2Dlod(_MainTex, float4(offset.yw, 0, 0));
+
+					float sx = s.x / (s.x + s.y);
+					float sy = s.z / (s.z + s.w);
+
+					return lerp(	lerp(sample3, sample2, sx), lerp(sample1, sample0, sx), sy);
+				}
+
+
 
 				  fixed4 frag(v2f i) : SV_Target
 				  {
@@ -161,7 +212,10 @@ Shader "RayTracing/Effect/Easy Fog"
 						tex2D(_NoiseTex, i.texcoord *1.2 + tnormal.zx * 0.02  - _Time.x*0.3).r
 						;
 
-					float alpha = tex2D(_MainTex, i.texcoord + noise*0.02).r;
+					
+
+					float alpha = 	TextureBicubic( i.texcoord + noise*0.02, _MainTex_TexelSize).r;//
+					//tex2D(_MainTex, i.texcoord + noise*0.02).r;
 
 					alpha *= lerp(1, noise*7, (1 - alpha*alpha));
 

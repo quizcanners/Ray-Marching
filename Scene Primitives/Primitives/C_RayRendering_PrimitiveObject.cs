@@ -7,7 +7,7 @@ namespace QuizCanners.RayTracing
 
     [DisallowMultipleComponent]
     [ExecuteInEditMode]
-    [AddComponentMenu("PrimitiveTracing/Proxy/Static")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/PrimitiveTracing/Proxy/Static")]
     public class C_RayRendering_PrimitiveObject : C_RayRendering_StaticPrimitive
     {
         public string variableName;

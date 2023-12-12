@@ -84,7 +84,7 @@ namespace QuizCanners.RayTracing
             }
 
             #region Inspector
-            public void Inspect()
+            void IPEGI.Inspect()
             {
 
                 "Bakes done: {0}".F(_bakeCounter).PegiLabel().Nl();

@@ -2,15 +2,16 @@ using QuizCanners.Inspect;
 using QuizCanners.Utils;
 using System;
 using UnityEngine;
-using static QuizCanners.RayTracing.TracingPrimitives;
+using UnityEngine.UIElements;
 
 namespace QuizCanners.RayTracing
 {
+    using static TracingPrimitives;
 
     [DisallowMultipleComponent]
     [ExecuteInEditMode]
     [SelectionBase]
-    [AddComponentMenu("PrimitiveTracing/Scene Prefab/Primitive Shape")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/PrimitiveTracing/Scene Prefab/Primitive Shape")]
     public class C_RayT_PrimShape_EnvironmentElement : MonoBehaviour, IPEGI, INeedAttention, IPEGI_Handles
     {
         [SerializeField] private MeshRenderer _renderer;
@@ -29,9 +30,9 @@ namespace QuizCanners.RayTracing
         private readonly Gate.QuaternionValue _previousRotation = new();
         private readonly Gate.Integer _previousConfigVersion = new();
 
-    
+
         [Header("Material")]
-     //   [SerializeField] private bool useExclusiveMaterial;
+        //   [SerializeField] private bool useExclusiveMaterial;
         [SerializeField] private PrimitiveMaterial excludiveMaterial;
 
         [NonSerialized] public bool Registered;
@@ -42,6 +43,23 @@ namespace QuizCanners.RayTracing
         public bool Unrotated => Shape != Shape.Sphere && transform.rotation == Quaternion.identity;
 
         protected Singleton_EnvironmentElementsManager Tracking => Singleton.Get<Singleton_EnvironmentElementsManager>();
+
+        public Bounds GetBounds()
+        {
+            if (_colliderAndPrimitive)
+            {
+                bool wasEnabled = _colliderAndPrimitive.enabled;
+                if (!wasEnabled)
+                    _colliderAndPrimitive.enabled = true;
+                var res = _colliderAndPrimitive.bounds;
+                if (!wasEnabled)
+                    _colliderAndPrimitive.enabled = false;
+
+                return res;
+            }
+
+            return new Bounds(center: PrimitiveCenter, Vector3.Scale(PrimitiveUpscale, transform.localScale));
+        }
 
         public Vector3 PrimitiveSize
         {
@@ -170,12 +188,15 @@ namespace QuizCanners.RayTracing
         public float GetOverlap(Vector3 bottomCenter, Vector3 volumeSize)
         {
             // TODO: Calculate overlap
-            var upscale = transform.localScale;
-            var size = Vector3.Scale(PrimitiveUpscale, upscale);
-            Vector3 elementCenter = PrimitiveCenter;
 
-            Vector3 elementMin = elementCenter - size * 0.5f;
-            Vector3 elementMax = elementCenter + size * 0.5f;
+            var bounds = GetBounds();
+
+            //  var upscale = transform.localScale;
+            //  var size = Vector3.Scale(PrimitiveUpscale, upscale);
+            Vector3 elementCenter = bounds.center; //PrimitiveCenter;
+
+            Vector3 elementMin = bounds.min;// elementCenter - size * 0.5f;
+            Vector3 elementMax = bounds.max;//elementCenter + size * 0.5f;
 
             //elementMin.y = bottomCenter.y; // Roof will have strong affect on the underlying area
 
@@ -197,7 +218,7 @@ namespace QuizCanners.RayTracing
             {
                 float distance = Vector3.Distance(elementCenter, bottomCenter);
 
-                LatestVolumeOverlap = -Mathf.Abs((1 + distance) * 10 / (1 + size.magnitude * transform.lossyScale.magnitude));
+                LatestVolumeOverlap = -Mathf.Abs((1 + distance) * 10 / (1 + bounds.size.magnitude * transform.lossyScale.magnitude));
 
                 LatestVolumeOverlap /= GetMaterialWeight(Material);
 
@@ -226,7 +247,7 @@ namespace QuizCanners.RayTracing
             {
                 if (_attemptToAutoregister.TryChange(true))
                 {
-                    Tracking.Register(this);
+                    TracingPrimitives.Register(this);
                 }
             }
         }
@@ -234,14 +255,14 @@ namespace QuizCanners.RayTracing
         void OnDisable() 
         {
             if (Registered)
-                Tracking.UnRegister(this);
+                TracingPrimitives.UnRegister(this);
 
         }
 
         private void OnPrimitiveDirty() 
         {
             Singleton.Try<Singleton_RayRendering>(s => s.SetBakingDirty(reason: "{0} moved".F(name)), logOnServiceMissing: false);
-            Singleton.Try<Singleton_EnvironmentElementsManager>(s => s.OnArrangementChanged(), logOnServiceMissing: false);
+            TracingPrimitives.OnArrangementChanged();
         }
 
         public Vector3 PrimitiveCenter

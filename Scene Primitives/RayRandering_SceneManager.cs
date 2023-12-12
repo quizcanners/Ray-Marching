@@ -151,7 +151,7 @@ namespace QuizCanners.RayTracing
 
             private readonly pegi.EnterExitContext _context = new();
 
-            public void Inspect()
+            void IPEGI.Inspect()
             {
                 using (_context.StartContext())
                 {

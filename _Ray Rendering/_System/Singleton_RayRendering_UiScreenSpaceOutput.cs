@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace QuizCanners.RayTracing
 {
     [ExecuteAlways]
-    [AddComponentMenu("Quiz ñ'Anners/Ray Rendering/Output")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/Ray Rendering/Output")]
     internal class Singleton_RayRendering_UiScreenSpaceOutput : Singleton.BehaniourBase
     {
         public RawImage RawImage;

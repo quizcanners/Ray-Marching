@@ -8,7 +8,7 @@ namespace QuizCanners.RayTracing
 {
 
     [ExecuteAlways]
-    [AddComponentMenu("Quiz ñ'Anners/Sun And Moon")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/Quiz ñ'Anners/Sun And Moon")]
     public class Singleton_SunAndMoonRotator : Singleton.BehaniourBase, IPEGI_Handles, ICfg, ILinkedLerping
     {
 

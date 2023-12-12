@@ -284,7 +284,7 @@ Shader "RayTracing/Geometry/Emissive Triplanar"
 
 					float smoothFresnel = smoothstep(0,1, dot(viewDir, i.normal.xyz));
 
-					_EmissionColor.rgb *= _EmissionColor.a * smoothFresnel * lerp(1, tex.rgb, _Multiply);
+					_EmissionColor.rgb *= _EmissionColor.a * lerp(1, tex.rgb, _Multiply);
 
 				
 					float overlay = ao; // + ao)*smoothFresnel;
@@ -294,7 +294,7 @@ Shader "RayTracing/Geometry/Emissive Triplanar"
 						tex.rgb = lerp(tex.rgb, _EdgeColor.rgb, edgeColorVisibility);
 					#endif*/
 
-					float3 col =  lerp(_EmissionColor.rgb, tex.rgb * ambientLight, overlay);
+					float3 col =  lerp(_EmissionColor.rgb, tex.rgb * ambientLight, overlay * 0.5);
 
 				
 			

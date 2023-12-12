@@ -30,8 +30,6 @@ namespace QuizCanners.RayTracing
 
             var go = meshFilter.gameObject;
 
-
-
             if (QcUnity.IsPartOfAPrefab(go))
                 return;
                 
@@ -112,8 +110,14 @@ namespace QuizCanners.RayTracing
                 UpdateMeshData();
         }
 
+        public void OnReset(Transform parent) 
+        {
+            meshFilter = parent.GetComponent<MeshFilter>();
+        }
+             
+
         #region Inspector
-        public void Inspect()
+        void IPEGI.Inspect()
         {
             var changed = pegi.ChangeTrackStart();
 

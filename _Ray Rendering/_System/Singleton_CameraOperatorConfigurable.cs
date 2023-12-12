@@ -6,8 +6,7 @@ using UnityEngine;
  
 namespace QuizCanners.Utils
 {
-
-    [AddComponentMenu("Quiz ñ'Anners/Camera Operator Configurable")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/Camera Operator Configurable")]
     public class Singleton_CameraOperatorConfigurable : Singleton_CameraOperatorGodMode, ICfgCustom, ILinkedLerping
     {
         [SerializeField] private QcMath.DynamicRangeFloat _height = new(0.001f, 10, 0.2f);
@@ -317,7 +316,7 @@ namespace QuizCanners.Utils
                         _mainCam.fieldOfView = fov;
 
                     "Height:".PegiLabel(60).Write();
-                    _height.Inspect();
+                    pegi.Nested_Inspect_Value(ref _height);
                     pegi.Nl();
 
                     if ("Clip Range".PegiLabel(90).Edit_Delayed(ref clipDistance).Nl())

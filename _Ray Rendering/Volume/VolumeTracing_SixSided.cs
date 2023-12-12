@@ -15,6 +15,7 @@ namespace QuizCanners.RayTracing
         {
             [SerializeField] public LogicWrappers.CountDownFromMax FramesToBake = new(100);
             [SerializeField] public LogicWrappers.CountDownFromMax FramesToSmooth = new(16);
+            public Gate.Bool PostEffectsApplied = new();
 
             public float Progress01 => 1f - 0.5f * (FramesToBake.Remaining01 + FramesToSmooth.Remaining01);
 
@@ -22,6 +23,7 @@ namespace QuizCanners.RayTracing
             {
                 FramesToBake.Restart();
                 FramesToSmooth.Restart();
+                PostEffectsApplied.ValueIsDefined = false;
             }
         }
 
@@ -44,7 +46,7 @@ namespace QuizCanners.RayTracing
 
             private BakerConfig BakerConfig => readyToShow ? _secondPassBaking : _fistPassBaking;
 
-            public enum BakeStage { Undefined, Cleared, BakingEarlyPass, BakingSecondPass, Finished }
+            public enum BakeStage { Undefined, Cleared, BakingEarlyPass, BakingSecondPass, PostEffects, Finished }
 
             public void Invalidate(Singleton_VolumeTracingBaker parent)
             {
@@ -106,7 +108,7 @@ namespace QuizCanners.RayTracing
                     C_VolumeTexture.CubeSide tex = parent.volume[enm];
                     if (!tex.IsDirty.IsRequested) 
                     {
-                        tex.SetTexture(parent.volume, enm, parent._doubleBuffer.RenderFromAndSwapIn(tex.GetTexture() as RenderTexture, parent.offsetShader));
+                        tex.SetGlobalTexture(parent.volume, enm, parent._doubleBuffer.RenderFromAndSwapIn(tex.GetTexture() as RenderTexture, parent.offsetShader));
                     } 
                 }
 
@@ -150,7 +152,6 @@ namespace QuizCanners.RayTracing
                             return;
 
                         var dir = (VolumeCubeMapped.Direction)BakedTextureIndex;
-
                         C_VolumeTexture.CubeSide tex = parent.volume[dir];
 
                         if (!BakerConfig.FramesToBake.IsFinished)
@@ -167,25 +168,7 @@ namespace QuizCanners.RayTracing
                             break;
                         }
 
-                        tex.SetGlobalTexture(parent.volume, dir);
-
-                        parent.volume.ToTextureArray(BakedTextureIndex, tex.GetTexture());
-
-                        if (BakedTextureIndex < 5)
-                        {
-                            StartBakeSide(parent, (VolumeCubeMapped.Direction)(BakedTextureIndex + 1));
-                            break;
-                        }
-
-                        if (readyToShow)
-                        {
-                            Stage = BakeStage.Finished;
-                        }
-                        else
-                        {
-                            readyToShow = true;
-                            StartBakeSide(parent, 0);
-                        }
+                        Stage = BakeStage.PostEffects;
 
                         break;
 
@@ -196,7 +179,7 @@ namespace QuizCanners.RayTracing
                             RT_CUBEMAP_BAKING.Enabled = true;
                             parent._doubleBuffer.BlitTargetWithPreviousAndSwap(ref tmp, parent.smoothingShader);
                             RT_CUBEMAP_BAKING.Enabled = false;
-                            tex.SetTexture(parent.volume, dir, tmp);
+                            tex.SetGlobalTexture(parent.volume, dir, tmp);
                         }
 
                         void Bake()
@@ -216,6 +199,39 @@ namespace QuizCanners.RayTracing
 
                             RT_CUBEMAP_BAKING.Enabled = false;
                         }
+
+                    case BakeStage.PostEffects:
+
+                        var dir2 = (VolumeCubeMapped.Direction)BakedTextureIndex;
+                        C_VolumeTexture.CubeSide volSide = parent.volume[dir2];
+
+                        var tmp = volSide.GetTexture() as RenderTexture;
+                        RT_CUBEMAP_BAKING.Enabled = true;
+                        parent._doubleBuffer.BlitTargetWithPreviousAndSwap(ref tmp, parent.postEffectsShader);
+                        RT_CUBEMAP_BAKING.Enabled = false;
+                        volSide.SetGlobalTexture(parent.volume, dir2, tmp);
+
+                        parent.volume.ToTextureArray(BakedTextureIndex, volSide.GetTexture());
+
+                        if (BakedTextureIndex < 5)
+                        {
+                            StartBakeSide(parent, (VolumeCubeMapped.Direction)(BakedTextureIndex + 1));
+                            break;
+                        }
+
+                        if (readyToShow)
+                        {
+                            Stage = BakeStage.Finished;
+                        }
+                        else
+                        {
+                            readyToShow = true;
+                            StartBakeSide(parent, 0);
+                        }
+
+                        break;
+
+                  
 
                 }
             }

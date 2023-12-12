@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: Ray Renderer Light Config
   m_EditorClassIdentifier: 
   configurations:
-  - name: Space
-    data:
-      _value: col|35|r|5|0.505|g|5|0.667|b|1|1|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.722135|y|9|-0.277622|z|8|0.265087|w|8|0.575478|||Rain|1|0|Amb|29|r|5|0.193|g|5|0.114|b|4|0.34||VolFog|1|0|SunInten|4|1.25|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|1||ArtLights|1|y|hdr|5|Space|
   - name: Blue Sky
     data:
       _value: col|27|r|1|1|g|1|1|b|1|1|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.722331|y|9|-0.277935|z|8|0.265425|w|8|0.574926|||Rain|1|0|Amb|30|r|5|0.613|g|5|0.779|b|5|0.962||VolFog|1|0|SunInten|4|1.28|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|4.05||ArtLights|1|n|hdr|7|Daytime|
+  - name: Space
+    data:
+      _value: col|35|r|5|0.505|g|5|0.667|b|1|1|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.722135|y|9|-0.277622|z|8|0.265087|w|8|0.575478|||Rain|1|0|Amb|29|r|5|0.193|g|5|0.114|b|4|0.34||VolFog|1|0|SunInten|4|1.25|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|1||ArtLights|1|y|hdr|5|Space|
   - name: Night
     data:
       _value: col|39|r|5|0.417|g|5|0.428|b|5|0.783|a|4|0.75||fog|35|r|4|0.07|g|5|0.123|b|5|0.189|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|5|0.542|SnM|61|rot|53|x|8|0.911066|y|9|-0.162171|z|8|0.334871|w|8|0.177543|||Rain|1|0|Amb|29|r|5|0.202|g|4|0.31|b|5|0.472||VolFog|5|0.742|SunInten|4|0.98|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|0.45||ArtLights|1|y|hdr|5|Night|
@@ -40,3 +40,6 @@ MonoBehaviour:
   - name: Pitch Black
     data:
       _value: col|39|r|5|0.103|g|5|0.221|b|5|0.292|a|4|0.91||fog|35|r|4|0.07|g|5|0.123|b|5|0.189|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|60|rot|52|x|7|0.18768|y|8|0.857204|z|9|-0.151551|w|8|0.454982|||Rain|1|0|Amb|6|a|1|1||VolFog|1|0|SunInten|1|0|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|0||ArtLights|1|y|hdr|0||
+  - name: Cloudy
+    data:
+      _value: col|35|r|5|0.505|g|5|0.667|b|1|1|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.722135|y|9|-0.277622|z|8|0.265087|w|8|0.575478|||Rain|1|0|Amb|36|r|5|0.794|g|5|0.897|b|5|0.962|a|1|1||VolFog|5|0.777|SunInten|1|0|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|1.89||ArtLights|1|n|hdr|0||

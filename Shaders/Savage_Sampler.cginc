@@ -22,12 +22,14 @@ inline float SampleContactAO_OffsetWorld(inout float3 pos, float3 normal)
 		float outsideVolume;
 		float4 scene = SampleSDF(pos , outsideVolume);
 
-		float coef = _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w;
+		float coef = _RayMarchingVolumeVOLUME_POSITION_N_SIZE.w * 2;
 
 		pos += normal * coef;
 
+		float contactShadow = smoothstep( -2 * coef, 2 * coef, (scene.a + dot(normal, scene.xyz) * 2 * coef));
+
 		//float sameNormal = smoothstep(-1, 1, dot(normal, scene.xyz));
-		return lerp(smoothstep( -2 * coef, 2 * coef, (scene.a + dot(normal, scene.xyz)*2 * coef)),1, outsideVolume);
+		return lerp(contactShadow * 0.75 + 0.25, 1, outsideVolume);
 	#else 
 		return 1;
 	#endif

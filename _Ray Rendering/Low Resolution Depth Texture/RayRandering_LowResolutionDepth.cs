@@ -90,7 +90,7 @@ namespace QuizCanners.RayTracing
 
         #region Inspector
 
-        public void Inspect()
+        void IPEGI.Inspect()
         {
             // REFLECTIONS.Nested_Inspect();
             // MOBILE.Nested_Inspect();

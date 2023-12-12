@@ -15,12 +15,11 @@ namespace QuizCanners.RayTracing
         [SerializeField] protected Shader bakingShader;
         [SerializeField] protected Shader offsetShader;
         [SerializeField] protected Shader smoothingShader;
-       
+        [SerializeField] protected Shader postEffectsShader;
+
 
         private readonly OnDemandRenderTexture.DoubleBuffer _doubleBuffer = new("Baking Volume", size: 1024, precision: OnDemandRenderTexture.PrecisionType.Half);
         private readonly ShaderProperty.Feature Qc_OffsetRGBA = new("Qc_OffsetRGBA");
-
-        //  [NonSerialized] private readonly ShaderProperty.FloatValue SMOOTHING_BAKING_TRANSPARENCY = new("Qc_SmoothingBakingTransparency");
 
         private bool VolumeActive;
 
@@ -28,14 +27,11 @@ namespace QuizCanners.RayTracing
         private readonly Gate.Vector4Value _bakedPositionAndSize = new();
         private readonly Gate.Vector4Value _bakedslicesInShader = new();
         private readonly Gate.Frame _renderFrameGate = new();
-     //   private readonly Gate.Float _volumeHeight = new();
 
         protected readonly MaterialInstancer.ByShader material = new();
 
         private readonly Gate.Integer _sceneConfigsVersion = new();
         private readonly Gate.Integer _volumeCfgVersion = new();
-
-
 
         private ShaderProperty.VectorValue _slicesInShader_Previous;
         private ShaderProperty.VectorValue _positionNsizeInShader_Previous;
@@ -66,6 +62,10 @@ namespace QuizCanners.RayTracing
         }
 
         public int PositionVersion;
+
+        private MainBakingStage _mainBakingStage;
+
+        private enum MainBakingStage { Tracing, FinalSmoothing, PostEffect, Finished }
 
         private bool _positioNManagedExternally;
 
@@ -113,6 +113,8 @@ namespace QuizCanners.RayTracing
             }
         }
         */
+
+      
 
         public bool TryChangeOffset()
         {
@@ -188,8 +190,11 @@ namespace QuizCanners.RayTracing
             }
         }
 
-        public void RestartBaker() => framesToBake.Restart();
-
+        public void RestartBaker()
+        {
+            framesToBake.Restart();
+            _mainBakingStage = MainBakingStage.Tracing;
+        }
         private void ClearDoubleBuffer() 
         {
             if (_doubleBuffer.Target)
@@ -285,36 +290,59 @@ namespace QuizCanners.RayTracing
 
             bool BakeMainVolume()
             {
+                if (_mainBakingStage == MainBakingStage.Finished)
+                    return false;
+
+                switch (_mainBakingStage) 
+                {
+                    case MainBakingStage.FinalSmoothing:
+                        Smooth();
+                        _mainBakingStage = MainBakingStage.PostEffect;
+                        return true;
+                    case MainBakingStage.PostEffect:
+
+                        TracingPrimitives.s_postEffets.UpdateDataInGPU();
+                        RenderTexture rt = volume.GetOrCreate() as RenderTexture;
+                        _doubleBuffer.BlitTargetWithPreviousAndSwap(ref rt, postEffectsShader);
+                        volume.Texture = rt;
+                        _mainBakingStage = MainBakingStage.Finished;
+                        return true;
+                }
+
                 if (_bakedToSmoothedBufferDirtyVersion.TryClear(versionDifference: 8))
+                {
+                    Smooth();
+                    return true;
+                }
+
+                framesToBake.RemoveOne();
+                Paint(null, _doubleBuffer.Target, bakingShader);
+                _bakedToSmoothedBufferDirtyVersion.IsDirty = true;
+
+                if (framesToBake.IsFinished)
+                    _mainBakingStage = MainBakingStage.FinalSmoothing;
+                
+                return true;
+
+                void Smooth()
                 {
                     if (!volume)
                     {
-                        QcLog.ChillLogger.LogErrorOnce(()=> "{0} didn't find a Volume".F(name), key: "vtmNoRt", gameObject);
-                        return true;
+                        QcLog.ChillLogger.LogErrorOnce(() => "{0} didn't find a Volume".F(name), key: "vtmNoRt", gameObject);
+                        return;
                     }
 
                     RenderTexture rt = volume.GetOrCreate() as RenderTexture;
                     if (!rt)
                     {
-                        QcLog.ChillLogger.LogErrorOnce(()=> "Volume didn't provide a RenderTexture".F(gameObject.name), key: "vshart", gameObject);
-                        return true;
+                        QcLog.ChillLogger.LogErrorOnce(() => "Volume didn't provide a RenderTexture".F(gameObject.name), key: "vshart", gameObject);
+                        return;
                     }
 
                     _doubleBuffer.BlitTargetWithPreviousAndSwap(ref rt, smoothingShader);
                     volume.Texture = rt;
-
-                    return true;
                 }
 
-                if (!framesToBake.IsFinished)
-                {
-                    framesToBake.RemoveOne();
-                    Paint(null, _doubleBuffer.Target, bakingShader);
-                    _bakedToSmoothedBufferDirtyVersion.IsDirty = true;
-                    return true;
-                }
-
-                return false;
             }
         }
 
@@ -340,11 +368,14 @@ namespace QuizCanners.RayTracing
             {
                 case SHADERS:
 
-                InspectShader("Bakign Shader", ref bakingShader);
-                InspectShader("Displacement", ref offsetShader);
-                InspectShader("Smoothing Shader", ref smoothingShader);
+                "Shaders".PegiLabel(pegi.Styles.HeaderText).Nl();
 
-                static void InspectShader(string role, ref Shader shader)
+                InspectShader("Bakign", ref bakingShader);
+                InspectShader("Displacement", ref offsetShader);
+                InspectShader("Smoothing", ref smoothingShader);
+                InspectShader("Post Effect", ref postEffectsShader);
+
+                    static void InspectShader(string role, ref Shader shader)
                         => role.PegiLabel(90).Edit(ref shader).Nl();
                 break;
 

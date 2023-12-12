@@ -81,7 +81,7 @@ namespace QuizCanners.RayTracing
         }
 
         private static SO_HDRsLoading inspected;
-        public void Inspect()
+        void IPEGI.Inspect()
         {
             inspected = this;
 

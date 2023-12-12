@@ -268,9 +268,10 @@
 			void CombineMaps(inout float currentHeight, inout float4 bumpMap, out float3 tnormal, 
 				out float showNew, float dotNormal, float2 uv)
 			{
-				float4 newbumpMap;
-				SampleBumpMap(_Map, newbumpMap, tnormal, uv);
-				float newHeight = newbumpMap.a;// GetHeight(newbumpMap, tnormal, uv);
+				float4 newbumpMap = 0.5;
+				tnormal = 0.5;
+			//	SampleBumpMap(_Map, newbumpMap, tnormal, uv);
+				float newHeight = 0.5; //newbumpMap.a;// GetHeight(newbumpMap, tnormal, uv);
 
 				showNew = GetShowNext(currentHeight, newHeight, dotNormal);
 				currentHeight = lerp(currentHeight, newHeight, showNew);
@@ -289,9 +290,9 @@
 				float3 uvHor = newPos * 0.2 * _HorizontalTiling;
 
 				// Horizontal Sampling X
-				float3 tnormalX;
-				float4 bumpMapHor;
-				SampleBumpMap(_Map, bumpMapHor, tnormalX, uvHor.zy);
+				float3 tnormalX = 0.5;
+				float4 bumpMapHor = 0.5;
+				//SampleBumpMap(_Map, bumpMapHor, tnormalX, uvHor.zy);
 				float horHeight = bumpMapHor.a;
 				float4 tex = tex2D(_MainTex, uvHor.zy);
 
@@ -312,9 +313,9 @@
 
 				// Vertial Sampling
 
-				float4 bumpMapTop;
-				float3 tnormalTop;
-				SampleBumpMap(_MapTop, bumpMapTop, tnormalTop, uvHor.xz);
+				float4 bumpMapTop = 0.5;
+				float3 tnormalTop = 0.5;
+				//SampleBumpMap(_MapTop, bumpMapTop, tnormalTop, uvHor.xz);
 				float4 texTop = lerp(tex2D(_MainTex, uvHor.xz), tex2D(_MainTexTop, uvHor.xz), smoothstep(0.4, 0.5, normal.y));
 
 				float topHeight = bumpMapTop.a;

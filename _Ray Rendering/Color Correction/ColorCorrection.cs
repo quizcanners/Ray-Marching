@@ -50,7 +50,7 @@ namespace QuizCanners.RayTracing
 
             public override string ToString() => "Color correction";
 
-            public void Inspect()
+            void IPEGI.Inspect()
             {
                 var changed = pegi.ChangeTrackStart();
 

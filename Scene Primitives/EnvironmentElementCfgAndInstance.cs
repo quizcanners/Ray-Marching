@@ -64,7 +64,7 @@ namespace QuizCanners.RayTracing
                     pegi.ClickHighlight(EnvironmentElement);
             }
 
-            public void Inspect()
+            void IPEGI.Inspect()
             {
                 if (EnvironmentElement)
                     EnvironmentElement.Nested_Inspect();

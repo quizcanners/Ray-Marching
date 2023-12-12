@@ -6,7 +6,7 @@ namespace QuizCanners.RayTracing
 {
     [DisallowMultipleComponent]
     [ExecuteAlways]
-    [AddComponentMenu("PrimitiveTracing/Scene Prefab/Primitive Shape With Mesh Data")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/PrimitiveTracing/Scene Prefab/Primitive Shape With Mesh Data")]
     public class C_RayT_TfDataInMesh_EnvironmentElement : C_RayT_PrimShape_EnvironmentElement, IPEGI
     {
         [SerializeField] private TransformToMeshDataBake meshDataBake = new();

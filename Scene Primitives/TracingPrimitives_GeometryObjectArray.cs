@@ -3,6 +3,7 @@ using QuizCanners.Utils;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static QuizCanners.RayTracing.TracingPrimitives;
 
 namespace QuizCanners.RayTracing
 {
@@ -16,11 +17,11 @@ namespace QuizCanners.RayTracing
 
             [SerializeField] private string _parameterName;
             [SerializeField] public Shape ShapeToReflect = Shape.Cube;
-           // [SerializeField] public bool SupportsRotation = true;
 
-            [SerializeField] internal C_RayRendering_PrimitiveObjectForArray primitivePrefab;
+            //  [SerializeField] internal C_RayRendering_PrimitiveObjectForArray primitivePrefab;
+            //[SerializeField] internal List<C_RayRendering_PrimitiveObjectForArray> registeredPrimitives = new();
 
-            [SerializeField] internal List<C_RayRendering_PrimitiveObjectForArray> registeredPrimitives = new();
+            internal List<SortedElement> SortedElements = new List<SortedElement>();
 
             ShaderProperty.VectorArrayValue _positionAndMaterial;
             ShaderProperty.VectorArrayValue _size;
@@ -58,14 +59,21 @@ namespace QuizCanners.RayTracing
                     _boundingExtendsAll = new(_parameterName + "_BoundSize_All");
                 }
 
-                while (registeredPrimitives.Count> MAX_ELEMENTS_COUNT) 
+                if (SortedElements.Count> MAX_ELEMENTS_COUNT) 
                 {
-                    var last = registeredPrimitives.Count-1;
-                    registeredPrimitives[last].gameObject.DestroyWhatever();
-                    registeredPrimitives.RemoveAt(last);
+                   // var last = SortedElements.Count-1;
+                    SortedElements.RemoveRange(MAX_ELEMENTS_COUNT, SortedElements.Count - MAX_ELEMENTS_COUNT);
+                    // registeredPrimitives[last].gameObject.DestroyWhatever();
+                    //registeredPrimitives.RemoveAt(last);
+                } else 
+                {
+                    while (SortedElements.Count < MAX_ELEMENTS_COUNT) 
+                    {
+                        SortedElements.Add(new SortedElement());
+                    }
                 }
 
-
+                /*
                 Singleton.Try<Singleton_TracingPrimitivesController>(s =>
                 {
                     while (registeredPrimitives.Count < MAX_ELEMENTS_COUNT)
@@ -76,7 +84,7 @@ namespace QuizCanners.RayTracing
 
                         registeredPrimitives.Add(inst);
                     }
-                });
+                });*/
             }
 
             struct Efficiency 
@@ -91,7 +99,7 @@ namespace QuizCanners.RayTracing
             private void GroupBoundingBoxes() 
             {
                 boxes.Clear();
-                foreach (var prim in registeredPrimitives) 
+                foreach (var prim in SortedElements) 
                 {
                     if (!prim.IsHidden)
                     {
@@ -99,7 +107,7 @@ namespace QuizCanners.RayTracing
                     }
                 }
 
-                int iterations = 0;
+              //  int iterations = 0;
 
                 while (boxes.Count > MAX_BOUNDING_BOXES_COUNT)
                 {
@@ -137,7 +145,7 @@ namespace QuizCanners.RayTracing
                         }
                     }
 
-                    iterations++;
+                  //  iterations++;
 
                     if (bestEfficiency.Value > 0)
                     {
@@ -145,24 +153,20 @@ namespace QuizCanners.RayTracing
                         boxes.RemoveAt(bestEfficiency.Index_I);
                     } else 
                     {
-                        break;
+                        //Fallback Box Grouping
+                        boxes[boxes.Count - 1].Encapsulate(boxes[boxes.Count - 2]);
+                        boxes.RemoveAt(boxes.Count - 2);
+                        Debug.LogError("Failed to group boxes. Merging random");
+                        //break;
                     }
                 }
             }
 
             public void PassElementsToShader()
             {
-                RemoveEmpty();
-
                 InitializeIfNotInitialized();
 
                 _box.Reset();
-
-                for (int i = registeredPrimitives.Count - 1; i >= 0; i--)
-                {
-                    if (!registeredPrimitives[i])
-                        registeredPrimitives.RemoveAt(i);
-                }
 
                 GroupBoundingBoxes();
 
@@ -180,9 +184,9 @@ namespace QuizCanners.RayTracing
                         positionArray[totalIndex] = prim.SHD_PositionAndMaterial;
                         colorArray[totalIndex] = prim.SHD_ColorAndRoughness;
                         rotationArray[totalIndex] = prim.SHD_Rotation;
-                        sizeArray[totalIndex] = prim.SHD_Extents;
+                        sizeArray[totalIndex] = prim.Size;//SHD_Extents;
 
-                        _box.Add(prim.GetBoundingBox());
+                        _box.Add(prim.BoundingBox);
 
                         totalIndex++;
                     }
@@ -220,20 +224,6 @@ namespace QuizCanners.RayTracing
                 _rotation.GlobalValue = rotationArray;
             }
 
-            void RemoveEmpty()
-            {
-                for (int i = Math.Min(MAX_ELEMENTS_COUNT, registeredPrimitives.Count) - 1; i >= 0; i--)
-                {
-                    var el = registeredPrimitives[i];
-                    if (!el) //|| !el.arrayVariableName.Equals(_parameterName))
-                        registeredPrimitives.RemoveAt(i);
-                }
-            }
-
-            public void ClearInstances() 
-            {
-                registeredPrimitives.DestroyAndClear();
-            }
 
             #region Inspector
 
@@ -253,35 +243,19 @@ namespace QuizCanners.RayTracing
 
             private readonly pegi.EnterExitContext context = new();
 
-            public void Inspect()
+            void IPEGI.Inspect()
             {
                 using (context.StartContext())
                 {
                     if (context.IsAnyEntered == false)
                     {
                         "Name".PegiLabel().Edit_Delayed(ref _parameterName).Nl(()=> _setInShader.ValueIsDefined = false);
-                        "Prefab".PegiLabel(50).Edit(ref primitivePrefab).Nl();
                       //  "Rotation".PegiLabel().ToggleIcon(ref SupportsRotation).Nl();
                     }
-                    "Registered primitives".PegiLabel().Enter_List_UObj(registeredPrimitives).Nl();
+                    "Registered primitives".PegiLabel().Edit_List(SortedElements).Nl();
 
                     if (context.IsCurrentEntered)
                     {
-                        if ("Fix Names".PegiLabel().Click().Nl())
-                        {
-                            for (int i = 0; i < registeredPrimitives.Count; i++) // var rp in registeredPrimitives)
-                            {
-                                var pr = registeredPrimitives[i];
-                                if (pr)
-                                {
-                                    pr.gameObject.name = _parameterName + " " + i.ToString();
-                                    pr.transform.SetAsLastSibling();
-                                }
-                            }
-
-                        }
-
-                        pegi.Click(ClearInstances).Nl();
                         "Pass {0} Elements To Array".F(MAX_ELEMENTS_COUNT).PegiLabel().Click(PassElementsToShader).Nl();
                     }
 
@@ -313,7 +287,7 @@ namespace QuizCanners.RayTracing
             private class BoundingBox : IPEGI_Handles, IPEGI_ListInspect
             {
                 public BoundingBoxCalculator Calculator = new();
-                public List<C_RayRendering_PrimitiveObjectForArray> Primitives = new();
+                public List<SortedElement> Primitives = new();
 
                 public bool TryEncapsulate(BoundingBox other, out float efficiency)
                 {
@@ -348,13 +322,12 @@ namespace QuizCanners.RayTracing
                 public void InspectInList(ref int edited, int index)
                 {
                     ToString().PegiLabel().Nl();
-
                 }
 
-                public BoundingBox(C_RayRendering_PrimitiveObjectForArray startElement)
+                public BoundingBox(SortedElement startElement)
                 {
                     Primitives.Add(startElement);
-                    Calculator.Add(startElement.GetBoundingBox());
+                    Calculator.Add(startElement.BoundingBox);
                 }
             }
 

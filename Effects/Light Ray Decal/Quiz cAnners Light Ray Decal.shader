@@ -14,6 +14,7 @@
 			"PreviewType" = "Plane"
 			"IgnoreProjector" = "True"
 			"RenderType" = "Transparent"
+			"DisableBatching" = "True"
 		}
 
 		Cull Front
@@ -85,7 +86,12 @@
 
 					alpha = saturate(alpha * scaleFade);
 
-					return lerp( _FadeColor,_Color, smoothstep(0.25, 1, alpha)) * alpha;
+					float4 col = lerp( _FadeColor,_Color, smoothstep(0.25, 1, alpha)) * alpha * alpha;
+
+					float3 mix = (col.gbr + col.brg);
+					col.rgb += mix * mix * 0.1;
+
+					return col;
 
 				}
 				ENDCG

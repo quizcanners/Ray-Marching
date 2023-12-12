@@ -53,7 +53,7 @@ namespace QuizCanners.RayTracing
         #endregion
 
         #region Inspector
-        public void Inspect()
+        void IPEGI.Inspect()
         {
             var changes = pegi.ChangeTrackStart();
 

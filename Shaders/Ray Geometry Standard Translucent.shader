@@ -12,6 +12,8 @@ Shader "RayTracing/Geometry/Standard Translucent"
 		[Toggle(_AMBIENT_IN_UV2)] ambInuv2("Ambient mapped to UV2", Float) = 0
 		[Toggle(_COLOR_R_AMBIENT)] colAIsAmbient("Vert Col is Ambient", Float) = 0
 
+		[KeywordEnum(None, Unity, VertexTraced, PixelTraced)] _SHADOW("Shadow", Float) = 0
+
 		[Toggle(_MICRODETAIL)] microdetail("Use Microdetail", Float) = 0
 		_MicrodetailMap("Microdetail Map", 2D) = "white" {}
 
@@ -75,6 +77,9 @@ Shader "RayTracing/Geometry/Standard Translucent"
 				#pragma shader_feature_local ___ _SHOWUVTWO
 				#pragma shader_feature_local ___ _SIMPLIFY_SHADER
 
+
+				#pragma shader_feature_local _SHADOW_NONE _SHADOW_UNITY  _SHADOW_VERTEXTRACED _SHADOW_PIXELTRACED
+
 				#pragma shader_feature_local _PER_PIXEL_REFLECTIONS_OFF _PER_PIXEL_REFLECTIONS_ON _PER_PIXEL_REFLECTIONS_INVERTEX  _PER_PIXEL_REFLECTIONS_MIXED
 		
 				#define RENDER_DYNAMICS
@@ -129,8 +134,14 @@ Shader "RayTracing/Geometry/Standard Translucent"
 
 					float3 refractedRay = refract(-normalize(o.viewDir.xyz), o.normal.xyz, 0.5);
 
+				
+
 					o.traced = GetTraced_Glassy_Vertex(o.worldPos, normalize(o.viewDir.xyz), o.normal.xyz);
-					o.traced.a = GetTranslucentTracedShadow(worldPos, refractedRay, 1) * 0.75 + o.traced.a * 0.25;
+
+					#if _SHADOW_VERTEXTRACED
+						o.traced.a = GetTranslucentTracedShadow(worldPos, refractedRay, 1) * 0.75 + o.traced.a * 0.25;
+					#endif
+						
 					
 					return o;
 				}
@@ -225,10 +236,19 @@ Shader "RayTracing/Geometry/Standard Translucent"
 					float specular = GetSpecular(madsMap.a, fresnel , metal);// madsMap.a; // GetSpecular(madsMap.a, fresnel, metal);
 
 				//normalize(-viewDir - normal * 0.5);
+				//_SHADOW_NONE _SHADOW_UNITY  _SHADOW_VERTEXTRACED _SHADOW_PIXELTRACED
 
-					float shadow = (SHADOW_ATTENUATION(i) + 1) * 0.5 * i.traced.a ;
+					float3 refractedRay =  refract(-viewDir, normal, 0.75);
+
+					float shadow =1;
 						
-					//	return shadow;
+					#if _SHADOW_UNITY
+						shadow *= SHADOW_ATTENUATION(i);
+					#elif _SHADOW_VERTEXTRACED
+						shadow *= i.traced.a;
+					#elif _SHADOW_PIXELTRACED
+						shadow *= GetTranslucentTracedShadow(i.worldPos, refractedRay, 1) * 0.75 + i.traced.a * 0.25;
+					#endif
 
 					float3 lightColor = GetDirectional() * shadow; // Savage_GetDirectional(shadow, ao, normal, i.normal, i.worldPos);
 					
@@ -241,14 +261,15 @@ Shader "RayTracing/Geometry/Standard Translucent"
 
 				#if _MIRROR
 					ApplyBottomFog(bakeReflected, i.worldPos.xyz, viewDir.y);
-
 					return float4(bakeReflected,1);
 				#endif
 
-				float3 refractedRay =  refract(-viewDir, normal, 0.75);
+			
 				float3 bakeStraight = GetBakedAndTracedReflection(samplePos, refractedRay, BLOOD_SPECULAR, ao);
 			
 				bakeStraight += GetTranslucent_Sun(refractedRay) * shadow; //translucentSun * shadow * GetDirectional() * 4; 
+
+				//return float4(bakeStraight, 1);
 
 				float showStraight = lerp(0.8, 0.2, fresnel); //pow(1 - fresnel, 2);
 

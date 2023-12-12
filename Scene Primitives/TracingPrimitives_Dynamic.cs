@@ -94,7 +94,7 @@ namespace QuizCanners.RayTracing
             private readonly pegi.CollectionInspectorMeta _instancesMeta
                 = new("Instances", showEditListButton: false, showAddButton: false);
 
-            public void Inspect()
+            void IPEGI.Inspect()
             {
                 if (!_instancesMeta.IsAnyEntered)
                     "Parameter".PegiLabel().Write_ForCopy(PARAMETER_NAME).Nl();

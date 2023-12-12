@@ -1,25 +1,6 @@
 static const float GAMMA_TO_LINEAR = 2.2;
 static const float LINEAR_TO_GAMMA = 1 / GAMMA_TO_LINEAR;
 
-uniform float _RayTraceDofDist;
-uniform float _RayTraceDOF;
-uniform sampler2D _RayTracing_SourceBuffer;
-uniform float4 _RayTracing_SourceBuffer_ScreenFillAspect;
-
-uniform float _RayTraceTransparency;
-
-uniform float4 _RayTracing_TargetBuffer_ScreenFillAspect;
-
-uniform sampler2D _RayMarchingVolume;
-uniform sampler2D _qcPp_DestBuffer;
-uniform float4 _RayMarchingVolumeVOLUME_POSITION_N_SIZE;
-uniform float4 _RayMarchingVolumeVOLUME_H_SLICES;
-uniform float4 _RayMarchingVolumeVOLUME_POSITION_OFFSET;
-
-uniform float _MaxRayMarchDistance;
-float _maxRayMarchSteps;
-float _RayMarchSmoothness;
-float _RayMarchShadowSoftness;
 
 float3 hash33(float3 p3)
 {

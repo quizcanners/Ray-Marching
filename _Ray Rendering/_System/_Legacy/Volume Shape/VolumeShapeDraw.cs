@@ -40,7 +40,7 @@ namespace QuizCanners.RayTracing
             }
         }
 
-        public void Inspect()
+        void IPEGI.Inspect()
         {
             pegi.Nl();
 

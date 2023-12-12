@@ -212,6 +212,14 @@ float3 GetReflection_ByMaterialType(MaterialParameters input, float3 normal, flo
 		#endif
 
 		return col;
+
+#else 
+
+// Fallback reflectivity
+float3 pointLight = GetPointLight(volumeSamplePosition, normal, input.ao);
+float3 diffuseColor = pointLight + lightColor + bake * input.ao;
+return input.tex.rgb * diffuseColor;
+
 #endif
 
 return 0;

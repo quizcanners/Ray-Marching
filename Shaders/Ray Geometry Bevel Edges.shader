@@ -211,7 +211,7 @@ Shader "RayTracing/Geometry/Beveled Edges "
 					precomp.tex = tex;
 				
 					precomp.reflectivity = _Reflectivity;
-					precomp.metal = metal;
+					precomp.metal = step(0.5, metal);
 					precomp.traced = i.traced;
 					precomp.water = 0;
 					precomp.smoothsness = specular;

@@ -1,7 +1,11 @@
+#ifndef QC_RTX_PRIM
+#define QC_RTX_PRIM
+
 #include "Assets/Ray-Marching/Shaders/inc/IntersectOperations.cginc"
 #include "Assets/Ray-Marching/Shaders/inc/RayMathHelpers.cginc"
 #include "Assets/Ray-Marching/Shaders/inc/SDFoperations.cginc"
-#include "Assets/The-Fire-Below/Common/Shaders/quizcanners_cg.cginc"
+#include "Assets/Ray-Marching/Shaders/Savage_VolumeSampling.cginc"
+
 
 #include "UnityCG.cginc"
 #include "UnityLightingCommon.cginc" 
@@ -91,16 +95,33 @@ uniform float4 _RayMarthMinLight;
 
 uniform samplerCUBE  Qc_SkyBox;
 
-uniform float4 _qc_AmbientColor;
+
 uniform float4 _qc_PointLight_Position;
 uniform float4 _qc_PointLight_Color;
 
 uniform float _qc_SunVisibility;
 //_qc_USE_SUN
 
-uniform float qc_VolumeAlpha;
-sampler2D Qc_SDF_Volume;
-uniform float Qc_SDF_Visibility;
+
+
+uniform float _RayTraceDofDist;
+uniform float _RayTraceDOF;
+uniform sampler2D _RayTracing_SourceBuffer;
+uniform float4 _RayTracing_SourceBuffer_ScreenFillAspect;
+
+uniform float _RayTraceTransparency;
+
+uniform float4 _RayTracing_TargetBuffer_ScreenFillAspect;
+
+uniform sampler2D _qcPp_DestBuffer;
+
+
+uniform float _MaxRayMarchDistance;
+float _maxRayMarchSteps;
+float _RayMarchSmoothness;
+float _RayMarchShadowSoftness;
+
+
 
 #define MAX_VOLUME_ALPHA 10500//1e10
 #define MATCH_RAY_TRACED_SUN_COEFFICIENT 0.5
@@ -113,50 +134,6 @@ uniform float Qc_SDF_Visibility;
 #define GLASS 3.
 #define EMISSIVE 4.
 #define SUBTRACTIVE 5.
-
-inline float3 GetAmbientLight()
-{
-	return _qc_AmbientColor.rgb;
-}
-
-float4 SampleVolume(float3 pos, out float outOfBounds)
-{
-	#if !qc_NO_VOLUME
-		float4 bake = SampleVolume(_RayMarchingVolume, pos
-			, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
-			, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
-
-		return bake;
-	#endif
-
-	outOfBounds = 1;
-	return 0;
-	
-}
-
-float4 SampleSDF(float3 pos, out float outOfBounds)
-{
-	if (Qc_SDF_Visibility == 0)
-	{
-		outOfBounds = 1;
-		return 0;
-	}
-
-	float4 bake = SampleVolume(Qc_SDF_Volume, pos
-		, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
-		, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
-
-	return bake;
-}
-
-float4 SampleVolume(sampler2D tex, float3 pos, out float outOfBounds)
-{
-	float4 bake = SampleVolume(tex, pos
-		, _RayMarchingVolumeVOLUME_POSITION_N_SIZE
-		, _RayMarchingVolumeVOLUME_H_SLICES, outOfBounds);
-
-	return bake;
-}
 
 inline float3 GetDirectional()
 {
@@ -199,7 +176,6 @@ float getShadowAttenuation(float3 worldPos)
 	return 1.0;
 #endif  
 }
-
 
 float3 SampleSkyBox(float3 rd)
 {
@@ -296,13 +272,20 @@ float SceneSdf(float3 position, float smoothness)
 			float4 pos = RayMarchUnRot_BoundPos[b];
 			float4 size = RayMarchUnRot_BoundSize[b];
 
+			//type < EMISSIVE + 1
+
 			toBound = CubeDistance_Inernal(position - pos.xyz, size.xyz);
 
 			UNITY_BRANCH
 			if (toBound < boxDetection)
 			{
-				for (int i = pos.w; i < size.w; i++)
-					ADD(CubeDistance(position, RayMarchUnRot[i], RayMarchUnRot_Size[i].xyz, edges));
+				for (int i = pos.w; i < size.w; i++) 
+				{
+					float4 posNType = RayMarchUnRot[i];
+					if (posNType.w>= EMISSIVE)
+						continue;
+					ADD(CubeDistance(position, posNType, RayMarchUnRot_Size[i].xyz, edges));
+				}
 					//TRACE_BOX_ROT(RayMarchCube[i], RayMarchCube_Rot[i], RayMarchCube_Size[i], RayMarchCube_Mat[i]);
 			} else 
 			{
@@ -330,8 +313,15 @@ float SceneSdf(float3 position, float smoothness)
 			UNITY_BRANCH
 			if (toBound < boxDetection)
 			{
-				for (int i = pos.w; i < size.w; i++)
-					ADD(CubeDistanceRot(position, RayMarchCube_Rot[i], RayMarchCube[i], RayMarchCube_Size[i].xyz, edges));
+				for (int i = pos.w; i < size.w; i++) 
+				{
+					float4 posNType = RayMarchCube_Rot[i];
+
+					if (posNType.w>= EMISSIVE)
+						continue;
+
+					ADD(CubeDistanceRot(position, posNType, RayMarchCube[i], RayMarchCube_Size[i].xyz, edges));
+				}
 					//TRACE_BOX_ROT(RayMarchCube[i], RayMarchCube_Rot[i], RayMarchCube_Size[i], RayMarchCube_Mat[i]);
 			} else 
 			{
@@ -1392,3 +1382,5 @@ float4 renderSdf(in float3 ro, in float3 rd, in float4 seed) {
 	return 	max(0, col);
 
 }
+
+#endif

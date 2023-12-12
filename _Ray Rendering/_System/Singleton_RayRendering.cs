@@ -12,7 +12,7 @@ namespace QuizCanners.RayTracing
     using Utils;
 
     [ExecuteAlways]
-    [AddComponentMenu("Quiz с'Anners/Ray Rendering/RTX Controller")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/Ray Rendering/RTX Controller")]
     public class Singleton_RayRendering : Singleton.BehaniourBase, IPEGI, ILinkedLerping, ICfg, ITaggedCfg
     {
         [Header("Submanagers")]
@@ -22,7 +22,7 @@ namespace QuizCanners.RayTracing
         [SerializeField] internal QualityManager qualityManager = new();
         [SerializeField] internal ColorManager colorManager = new();
         [SerializeField] internal SDFVolume sdfVolume = new();
-        [SerializeField] public WeatherManager lightsManager = new();
+        public WeatherManager lightsManager = new();
         [SerializeField] internal LowResolutionDepth lowResolutionDepth;
 
         [Header("Dependencies")]
@@ -53,7 +53,7 @@ namespace QuizCanners.RayTracing
             lightsManager.ManagedOnEnable();
             colorManager.ManagedOnEnable();
             sdfVolume.ManagedOnEnable();
-            SetBakingDirty(reason: "Scene reloaded");
+            SetBakingDirty(reason: "Scene reloaded", invalidateResult: true);
         }
 
         protected override void OnBeforeOnDisableOrEnterPlayMode(bool _afterEnableCalled)
@@ -77,7 +77,7 @@ namespace QuizCanners.RayTracing
             {
                 if (VolumeTracingBaker)
                 {
-                    VolumeTracingBaker.ClearBake(eraseResult: false);
+                    VolumeTracingBaker.ClearBake(eraseResult: true);
                 }
             }
         }

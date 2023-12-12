@@ -1,13 +1,17 @@
 using QuizCanners.Inspect;
 using QuizCanners.Utils;
 using System;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace QuizCanners.RayTracing
 {
+  
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/Top Down Light Camera")]
     [ExecuteAlways]
-    [AddComponentMenu("Quiz ñ'Anners/Top Down Light Camera")]
     public class Singleton_TopDownShadowAndLightsRenderer : Singleton.BehaniourBase, IPEGI
     {
         [SerializeField] private Camera _orthogonalCamera;
@@ -49,9 +53,6 @@ namespace QuizCanners.RayTracing
 
         void UpdateCamera() 
         {
-            if (!Application.isPlaying)
-                return;
-
             if (!_orthogonalCamera)
             {
                 Debug.LogError("Top Down camera is not assigned");
@@ -79,8 +80,6 @@ namespace QuizCanners.RayTracing
             TOP_DOWN_RENDERER_POSITION.GlobalValue = transform.position.ToVector4(0.5f / _orthoSize);
         }
 
-      
-
         private readonly Gate.Vector3Value _positionGate = new();
 
         public void SetPosition(Vector3 newPosition) 
@@ -104,6 +103,16 @@ namespace QuizCanners.RayTracing
         public override void Inspect()
         {
             var changed = pegi.ChangeTrackStart();
+
+#if UNITY_EDITOR
+
+            if (!Application.isPlaying) 
+            {
+                if ("Allign to Scene Camera".PegiLabel().Click().Nl())
+                    transform.position = SceneView.lastActiveSceneView.camera.transform.position; // TryGetOverla.position;
+            }
+
+#endif
 
             if (_orthogonalCamera)
             {
@@ -142,9 +151,6 @@ namespace QuizCanners.RayTracing
 
         public override string NeedAttention()
         {
-            if (_orthogonalCamera && !Application.isPlaying && _orthogonalCamera.enabled)
-                return "Disable Orthagonal camera";
-
             return base.NeedAttention();
         }
 
@@ -156,8 +162,6 @@ namespace QuizCanners.RayTracing
             base.OnAfterEnable();
 
             QcUnity.SetLayerMaskForSceneView(_renderLayer, false);
-
-            // TOP_DOWN_LIGHT_AND_SHADOW.Enabled = true;
 
             UpdateCamera();
         }
@@ -171,7 +175,6 @@ namespace QuizCanners.RayTracing
                 _renderTexture.DestroyWhatever();
                 _renderTexture = null;
             }
-            // TOP_DOWN_LIGHT_AND_SHADOW.Enabled = false;
         }
 
     }

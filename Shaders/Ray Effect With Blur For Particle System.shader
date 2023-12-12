@@ -198,7 +198,7 @@ Shader "RayTracing/Effect/Spritesheet/Blurred Screen Grab For Particle System"
 
 					col.a = saturate(col.a * fade);
 
-					/*
+					
 					float2 grabUv = i.uvgrab.xy / i.uvgrab.w;
 					float2 pix = (_ScreenParams.zw - 1) * (1+col.a*2);// *proximity;// *circle;
 
@@ -251,8 +251,10 @@ Shader "RayTracing/Effect/Spritesheet/Blurred Screen Grab For Particle System"
 
 					sum.rgb /= div;
 
-					col.rgb = lerp(sum, col.rgb, col.a); 
-					*/
+					sum.a = 1;
+
+					col += sum * (1-col.a) * smoothstep(0, 0.5, col.a); 
+					//LerpTransparent(colA, colB, i.blend);
 
 				//	col.a = smoothstep(0, 0.5, col.a);
 

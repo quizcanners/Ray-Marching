@@ -123,11 +123,11 @@ Category
 					
 					float2 uv = o.texcoord.xy;
 
-					float4 bumpMap;
-					float3 tnormal;
-					SampleBumpMap(_BumpMap, bumpMap, tnormal, uv);
+					float4 bumpMap = 0.5;
+					//float3 tnormal;
+					//SampleBumpMap(_BumpMap, bumpMap, tnormal, uv);
 
-					uv -= tnormal.rg  *  _MainTex_TexelSize.xy;
+					//uv -= tnormal.rg  *  _MainTex_TexelSize.xy;
 
 					float4 tex = tex2D(_MainTex, uv);// * o.color;
 
@@ -137,7 +137,7 @@ Category
 
 					float3 normal = o.normal.xyz;
 
-					ApplyTangent(normal, tnormal, o.wTangent);
+					//ApplyTangent(normal, tnormal, o.wTangent);
 
 					float fresnel = saturate(dot(normal,viewDir));
 

@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-
 using PainterTool;
 
 namespace QuizCanners.RayTracing
@@ -11,7 +10,7 @@ namespace QuizCanners.RayTracing
     using System;
 
     [ExecuteAlways]
-    [AddComponentMenu("Quiz с'Anners/Ray Rendering/Primitives Manager")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/Ray Rendering/Primitives Manager")]
     public class Singleton_TracingPrimitivesController : Singleton.BehaniourBase, IPEGI, IPEGI_Handles
     {
 #if UNITY_EDITOR
@@ -19,20 +18,10 @@ namespace QuizCanners.RayTracing
 #endif
 
         [SerializeField] internal Dynamic dynamicObjects = new();
-
-      //  [SerializeField] internal DictionaryOfArrays objectArrays;
-
         [SerializeField] internal GeometryObjectArray rotatedCubes;
         [SerializeField] internal GeometryObjectArray unRotatedCubes;
-
-        //   [SerializeField] protected List<C_RayRendering_PrimitiveObject> spheres;
-        // [SerializeField] protected List<C_RayRendering_PrimitiveObject> lights;
-        //   [SerializeField] protected List<C_RayRendering_PrimitiveObject> subtractiveCubes;
-
         [SerializeField] private Color _floorColor = Color.gray;
         
-      //  private readonly ShaderProperty.ColorValue FLOOR_COLOR = new("RAY_FLOOR_Mat");
-
         private readonly Gate.Integer _arrangementVersion = new();
         private readonly Gate.Integer _volumeVersion = new();
 
@@ -58,35 +47,24 @@ namespace QuizCanners.RayTracing
 
             var vol = C_VolumeTexture.LatestInstance;
 
-            if ((environment && _arrangementVersion.TryChange(environment.ArrangementVersion)) | (vol && _volumeVersion.TryChange(vol.LocationVersion)))
+            if ((environment && _arrangementVersion.TryChange(ArrangementVersion)) | (vol && _volumeVersion.TryChange(vol.LocationVersion)))
             {
                 bool changed = false;
 
-                /*
-                foreach (var pair in objectArrays) 
-                {
-                    GeometryObjectArray el = pair.Value;
-                    UpdateShapes(el.registeredPrimitives, el.ShapeToReflect);
-                    el.PassElementsToShader();
-                }*/
-
                 if (_debugShapes == DebugShapes.HideRotated)
-                    HideAll(rotatedCubes.registeredPrimitives);
+                    HideAll(rotatedCubes.SortedElements);
                 else
-                    UpdateShapes(rotatedCubes.registeredPrimitives, rotatedCubes.ShapeToReflect, rotated: true);
+                    UpdateShapes(rotatedCubes.SortedElements, rotatedCubes.ShapeToReflect, rotated: true);
                 
                 if (_debugShapes == DebugShapes.HideUnrotated)
-                    HideAll(unRotatedCubes.registeredPrimitives);
+                    HideAll(unRotatedCubes.SortedElements);
                 else
-                    UpdateShapes(unRotatedCubes.registeredPrimitives, unRotatedCubes.ShapeToReflect, rotated: false);
+                    UpdateShapes(unRotatedCubes.SortedElements, unRotatedCubes.ShapeToReflect, rotated: false);
                 
                 rotatedCubes.PassElementsToShader();
                 unRotatedCubes.PassElementsToShader();
-                // UpdateShapes(spheres, Shape.Sphere);
-                //  UpdateShapes(lights, Shape.AmbientLightSource);
-                //   UpdateShapes(subtractiveCubes, Shape.SubtractiveCube);
 
-                void HideAll<T>(List<T> shapes) where T : C_RayRendering_StaticPrimitive
+                void HideAll<T>(List<T> shapes) where T : SortedElement
                 {
                     for (int i = 0; i < shapes.Count; i++)
                     {
@@ -94,13 +72,12 @@ namespace QuizCanners.RayTracing
                     }
                 }
 
-                void UpdateShapes<T>(List<T> shapes, Shape shape, bool rotated ) where T: C_RayRendering_StaticPrimitive
+                void UpdateShapes<T>(List<T> shapes, Shape shape, bool rotated ) where T: SortedElement
                 {
                     for (int i = 0; i < shapes.Count; i++)
                     {
                         T el = shapes[i];
-                        if (el)
-                            changed |= el.TryReflect(environment.GetInstanceForShape(shape, rotated:rotated, i));
+                        changed |= el.TryReflect(environment.GetInstanceForShape(shape, rotated:rotated, i));
                     }
                 }
 
@@ -120,18 +97,11 @@ namespace QuizCanners.RayTracing
         protected override void OnAfterEnable()
         {
             base.OnAfterEnable();
-            //FLOOR_COLOR.GlobalValue = _floorColor;
         }
 
         protected override void OnBeforeOnDisableOrEnterPlayMode(bool afterEnableCalled)
         {
             base.OnBeforeOnDisableOrEnterPlayMode(afterEnableCalled);
-          //  foreach (var a in objectArrays)
-               // a.Value.ClearInstances();
-
-            rotatedCubes.ClearInstances();
-            unRotatedCubes.ClearInstances();
-            //objectArrays.Clear();
         }
 
         #region Inspector
@@ -192,7 +162,6 @@ namespace QuizCanners.RayTracing
 
         #endregion
 
-    //   [Serializable] internal class DictionaryOfArrays : SerializableDictionary<string, GeometryObjectArray> {}
     }
     
     [PEGI_Inspector_Override(typeof(Singleton_TracingPrimitivesController))] internal class TracingPrimitivesControllerDrawer : PEGI_Inspector_Override { }

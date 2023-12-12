@@ -25,13 +25,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2851973443218338703}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 300, y: 300, z: 300}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2851973443218338702
 MonoBehaviour:
@@ -63,10 +63,11 @@ MonoBehaviour:
   bakingShader: {fileID: 4800000, guid: 73833b5f1381bf640a70c83bf508ccfd, type: 3}
   offsetShader: {fileID: 4800000, guid: b6e5b6dfb5451424ea4529cfdfa0a5cb, type: 3}
   smoothingShader: {fileID: 4800000, guid: d0349496133b7e04196d735c9cd5e58d, type: 3}
+  postEffectsShader: {fileID: 4800000, guid: c747c8891fe74d34da23d50816d6b55e, type: 3}
   PositionVersion: 0
   context:
     _currentlyEntered: -1
-  _editorTab: Debug
+  _editorTab: Shaders
 --- !u!114 &2851973443218338698
 MonoBehaviour:
   m_ObjectHideFlags: 0

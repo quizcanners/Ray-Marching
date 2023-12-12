@@ -1,5 +1,4 @@
 using PainterTool;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,35 +9,20 @@ namespace QuizCanners.RayTracing
     using static TracingPrimitives;
 
     [ExecuteAlways]
-    [AddComponentMenu("Quiz ñ'Anners/Ray Rendering/Environment Elements")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/Ray Rendering/Environment Elements")]
     public partial class Singleton_EnvironmentElementsManager : Singleton.BehaniourBase, IPEGI, IGotCount
     {
-        private readonly List<CfgAndInstance> Instances = new();
         private readonly Dictionary<Shape, List<int>> _sortedRotated = new();
         private readonly Dictionary<Shape, List<int>> _sortedUnRotated = new();
         private readonly Gate.Integer _sortedInstancesVersion = new();
         private readonly Gate.Integer _volumeVersion = new();
-
-        [NonSerialized] public int ArrangementVersion = -1;
-        public void OnArrangementChanged() => ArrangementVersion++;
-
-        public void Register(C_RayT_PrimShape_EnvironmentElement el)
-        {
-            Instances.Add(new CfgAndInstance(el));
-            OnArrangementChanged();
-        }
-
-        public void UnRegister(C_RayT_PrimShape_EnvironmentElement el) 
-        {
-            OnArrangementChanged();
-        }
 
         public C_RayT_PrimShape_EnvironmentElement GetInstanceForShape(Shape shape, bool rotated, int index)
         {
             List<int> l = GetSortedForVolume(rotated).GetOrCreate(shape);
             if (l.Count > index)
             {
-                var inst = Instances.TryGet(l[index]);
+                var inst = s_instances.TryGet(l[index]);
                 return inst?.EnvironmentElement;
             }
 
@@ -66,7 +50,7 @@ namespace QuizCanners.RayTracing
 
             foreach (var ind in byShapeIndexes) 
             {
-                var el = Instances[ind];
+                var el = s_instances[ind];
 
                 if (!el.EnvironmentElement)
                     continue;
@@ -125,7 +109,7 @@ namespace QuizCanners.RayTracing
                             var sortedIndexA = sortedIndexes[i];
                             var sortedIndexB = sortedIndexes[i + 1];
 
-                            if (Instances[sortedIndexB].VolumeWeight > Instances[sortedIndexA].VolumeWeight)
+                            if (s_instances[sortedIndexB].VolumeWeight > s_instances[sortedIndexA].VolumeWeight)
                             {
                                 dirty = true;
                                 sortedIndexes[i] = sortedIndexB;
@@ -141,18 +125,18 @@ namespace QuizCanners.RayTracing
 
             void UpdateLists()
             {
-                for (int i = Instances.Count - 1; i >= 0; i--)
+                for (int i = s_instances.Count - 1; i >= 0; i--)
                 {
-                    if (!Instances[i].IsValid)
-                        Instances.RemoveAt(i);
+                    if (!s_instances[i].IsValid)
+                        s_instances.RemoveAt(i);
                 }
 
                 // Indexes to sort
                 HashSet<int> rotatedDistributionList = new();
                 HashSet<int> unRotatedDistributionList = new();
-                for (int i = 0; i < Instances.Count; i++)
+                for (int i = 0; i < s_instances.Count; i++)
                 {
-                    if (Instances[i].EnvironmentElement.Unrotated)
+                    if (s_instances[i].EnvironmentElement.Unrotated)
                         unRotatedDistributionList.Add(i);
                     else
                         rotatedDistributionList.Add(i);
@@ -170,7 +154,7 @@ namespace QuizCanners.RayTracing
 
                     foreach (int el in listToClear)
                     {
-                        CfgAndInstance ins = Instances[el];
+                        CfgAndInstance ins = s_instances[el];
                         if (ins.IsValid)
                             sorted.GetOrCreate(ins.EnvironmentElement.Shape).Add(el);
                     }
@@ -182,7 +166,7 @@ namespace QuizCanners.RayTracing
                         for (int i = list.Count - 1; i >= 0; i--)
                         {
                             int indexOfInstance = list[i];
-                            CfgAndInstance el = Instances.TryGet(indexOfInstance);
+                            CfgAndInstance el = s_instances.TryGet(indexOfInstance);
                             if (el == null || !el.IsValid || el.EnvironmentElement.Shape != pair.Key || el.Unroated != unRotated)
                                 list.RemoveAt(i);
                             else
@@ -195,15 +179,12 @@ namespace QuizCanners.RayTracing
 
         }
 
-
         public void Clear()
         {
             _sortedRotated.Clear();
             _sortedUnRotated.Clear();
             _sortedInstancesVersion.ValueIsDefined = false;
         }
-
-
 
         #region Inspector
 
@@ -212,26 +193,24 @@ namespace QuizCanners.RayTracing
         private readonly pegi.EnterExitContext _context = new();
 
         private readonly pegi.CollectionInspectorMeta _inspectedInstance = new("Instances");
+     
         public override void Inspect()
         {
             pegi.Nl();
             using (_context.StartContext())
             {
-                _inspectedInstance.Enter_List(Instances).Nl();
+                _inspectedInstance.Enter_List(s_instances).Nl();
 
+                s_postEffets.Enter_Inspect().Nl();
+ 
                 if ("Sorted".PegiLabel().IsEntered().Nl()) 
                 {
                     "Shape".PegiLabel().Edit_Enum(ref _debugShape).Nl();
-
                     List<int> rotL = GetSortedForVolume(rotated: true).GetOrCreate(_debugShape);
-
                     "Rotated".PegiLabel().Edit_List(rotL).Nl();
-
                     List<int> unRotL = GetSortedForVolume(rotated: false).GetOrCreate(_debugShape);
                     "Un Rotated".PegiLabel().Edit_List(unRotL).Nl();
-
                 }
-
                 /*
                 if (_context.IsCurrentEntered && Instances.Count > 0 && "Clear All".PegiLabel().Click().Nl())
                 {
@@ -240,8 +219,7 @@ namespace QuizCanners.RayTracing
             }
         }
 
-        public int GetCount() => Instances.Count;
-
+        public int GetCount() => s_instances.Count;
 
         #endregion
     }

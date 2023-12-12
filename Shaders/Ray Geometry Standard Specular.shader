@@ -2,7 +2,9 @@ Shader "RayTracing/Geometry/Standard Specular"
 {
 	Properties
 	{
+		[KeywordEnum(REGULAR, BICUBIC, PIXELATED, NONE)] _SAMPLING("Texture Sampling", Float) = 0
 		_MainTex("Albedo (RGB)", 2D) = "white" {}
+		[HDR]_Color("Color", Color) = (1,1,1,1)
 		_SpecularMap("R-Metalic G-Ambient _ A-Specular", 2D) = "black" {}
 		[KeywordEnum(OFF, PLASTIC, METAL, LAYER, MIXED_METAL, PAINTED_METAL)] _REFLECTIVITY("Reflective Material Type", Float) = 0
 		[KeywordEnum(OFF, ON, INVERTEX, MIXED)] _PER_PIXEL_REFLECTIONS("Traced Reflections", Float) = 0
@@ -16,7 +18,7 @@ Shader "RayTracing/Geometry/Standard Specular"
 		[Toggle(_AMBIENT_IN_UV2)] ambInuv2("Ambient mapped to UV2", Float) = 0
 		[Toggle(_COLOR_R_AMBIENT)] colAIsAmbient("Vert Col is Ambient", Float) = 0
 		[Toggle(_FRESNEL_FADE_AO)] fresFadeAo("Fresnel fades AO", Float) = 0
-		//[Toggle(_SDF_AMBIENT)] sdfAmbient("SDF Ambient", Float) = 0
+		[Toggle(_SDF_AMBIENT)] sdfAmbient("SDF Ambient", Float) = 0
 
 		[Toggle(_EMISSIVE)] emissiveTexture("Emissive Texture", Float) = 0
 		_Emissive("Emissive", 2D) = "clear" {}
@@ -31,6 +33,9 @@ Shader "RayTracing/Geometry/Standard Specular"
 		_BumpMap2("Normal Map 2", 2D) = "bump" {}
 
 		[Toggle(_SIMPLIFY_SHADER)] simplifyShader("Simplify Shader", Float) = 0
+
+	
+		//[Toggle(_BICUBIC_SAMPLING)] bicubic("Bicubic Sampling", Float) = 0
 
 		[Toggle(_PARALLAX)] parallax("Parallax", Float) = 0
 		_ParallaxForce("Parallax Amount", Range(0.001,0.01)) = 0.01
@@ -103,6 +108,10 @@ Shader "RayTracing/Geometry/Standard Specular"
 
 				#pragma shader_feature_local _MICRODETAIL_NONE  _MICRODETAIL_ON  _MICRODETAIL_LAYER
 
+				//NONE, REGULAR, BICUBIC)] _SAMPLING
+
+				#pragma shader_feature_local _SAMPLING_NONE _SAMPLING_REGULAR _SAMPLING_BICUBIC   _SAMPLING_PIXELATED
+
 				#pragma shader_feature_local ___ _AMBIENT_IN_UV2
 				#pragma shader_feature_local _AO_NONE _AO_MADS _AO_SEPARATE  _AO_MADSANDSEPARATE
 				#pragma shader_feature_local ___ _COLOR_R_AMBIENT
@@ -114,8 +123,7 @@ Shader "RayTracing/Geometry/Standard Specular"
 				#pragma shader_feature_local ___ _SHOWUVTWO
 				#pragma shader_feature_local ___ _SIMPLIFY_SHADER
 				#pragma shader_feature_local ___ _EMISSIVE
-			//	#pragma shader_feature_local ___ _SDF_AMBIENT
-
+				#pragma shader_feature_local ___ _SDF_AMBIENT
 	
 
 				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
@@ -130,7 +138,9 @@ Shader "RayTracing/Geometry/Standard Specular"
 					float3 normal		: TEXCOORD3;
 					float4 wTangent		: TEXCOORD4;
 					float3 viewDir		: TEXCOORD5;
+					#if !_RTX_SHADOW
 					SHADOW_COORDS(6)
+					#endif
 					float3 tangentViewDir : TEXCOORD7;
 					float4 traced : TEXCOORD8;
 #if LIGHTMAP_ON
@@ -159,6 +169,7 @@ Shader "RayTracing/Geometry/Standard Specular"
 
 					o.traced = GetTraced_Mirror_Vert(o.worldPos, normalize(o.viewDir.xyz), o.normal.xyz);
 
+	
 					TRANSFER_TANGENT_VIEW_DIR(o);
 					TRANSFER_WTANGENT(o)
 					TRANSFER_SHADOW(o);
@@ -230,6 +241,8 @@ Shader "RayTracing/Geometry/Standard Specular"
 
 
 
+				float4 _Color;
+
 #if _OFFSET_BY_HEIGHT
 				FragColDepth frag(v2f i)
 #else 
@@ -241,15 +254,28 @@ Shader "RayTracing/Geometry/Standard Specular"
 					float3 viewDir = normalize(i.viewDir.xyz);
 					float rawFresnel = saturate(1- dot(viewDir, i.normal.xyz));
 
-					
-
 					float2 uv = TRANSFORM_TEX(i.texcoord.xy, _MainTex);
 			
+
+				#if _SAMPLING_BICUBIC
+					float4 bicOff;
+					float2 bicWeights;
+					GetBicubicCoefficients(uv, _MainTex_TexelSize, bicOff, bicWeights);
+
+				#elif _SAMPLING_PIXELATED
+					smoothedPixelsSampling(uv, _MainTex_TexelSize);
+				#endif
+
+				
+			
+
 					// **************** Albedo & Masks
 
 					float offsetAmount = (1 + rawFresnel * rawFresnel * 4);
 
 					float4 madsMap = tex2D(_SpecularMap, uv);
+
+				//	return madsMap.g;
 
 					float displacement = madsMap.b;
 
@@ -261,7 +287,21 @@ Shader "RayTracing/Geometry/Standard Specular"
 					CheckParallax(uv, madsMap, _SpecularMap, i.tangentViewDir, deOff, displacement);
 #endif
 
-					float3 tnormal = UnpackNormal(tex2D(_BumpMap, uv));
+
+			float3 tnormal;
+			#if _SAMPLING_NONE
+				tnormal = float3(0,1,0);
+			#else 
+				float4 bumpSample;
+				
+				#if _SAMPLING_BICUBIC
+					bumpSample = tex2DBicubicCoef(_BumpMap, bicOff, bicWeights); 
+				#else
+					bumpSample = tex2D(_BumpMap, uv);
+				#endif
+				tnormal = UnpackNormal(bumpSample);
+			#endif
+					
 				
 			// ******************** MICRODETAIL
 #if !_MICRODETAIL_NONE && !_DAMAGED && !_SECOND_LAYER
@@ -280,42 +320,30 @@ Shader "RayTracing/Geometry/Standard Specular"
 
 					// ************** Ambient Occlusion
 
-					float ao = 1;
-						
-#if _AO_SEPARATE || _AO_MADSANDSEPARATE
-#	if _AMBIENT_IN_UV2
-					ao *= tex2D(_OcclusionMap, i.texcoord1.xy).r;
-#	else
-					ao *= tex2D(_OcclusionMap, i.texcoord.xy).r;
-#	endif
-#endif
-
-#if _AO_MADS || _AO_MADSANDSEPARATE
-					ao *= madsMap.g;
-#endif
-					
-				#if _FRESNEL_FADE_AO
-					ao = lerp(ao,1, rawFresnel); // * (1-ao);
-				#endif
-
-#if _COLOR_R_AMBIENT
-					ao *= (0.25 + i.color.r * 0.75);
-#endif
-
-	
-
+			float4 tex = _Color;
+			#if _SAMPLING_NONE
+				//tex = 1;
+			#elif _SAMPLING_BICUBIC
+				tex *= tex2DBicubicCoef(_MainTex, bicOff, bicWeights); 
+			#else
+				tex *= tex2D(_MainTex, uv);
+			#endif
+			//
+			/*
+			#if !_COLOR_R_AMBIENT
+				tex.rgb *= i.color.rgb;
+			#endif
+			*/
+// ******************* SECOND LAYER
 
 float shadow = 1;
-
+float ao = 1;
+			
 
 #	if _DAMAGED
 
 			float4 mask = tex2D(_Damage_Tex, i.texcoord1);// .r;// -mask.g;
 #	endif
-
-			float4 tex = tex2D(_MainTex, uv);
-
-// ******************* SECOND LAYER
 
 
 #	if _SECOND_LAYER
@@ -359,10 +387,33 @@ float shadow = 1;
 					 );
 
 					ao *= (1+offsetShadow) * 0.5;
-					ao = lerp(ao, madsMap.g, layerAlpha);
+					//madsMap.g = lerp(ao, madsMap.g, layerAlpha);
 
 					shadow *= lerp(offsetShadow, 1, layerAlpha);
 #	endif
+
+
+// AO
+
+#if _AO_SEPARATE || _AO_MADSANDSEPARATE
+#	if _AMBIENT_IN_UV2
+					ao *= tex2D(_OcclusionMap, i.texcoord1.xy).r;
+#	else
+					ao *= tex2D(_OcclusionMap, i.texcoord.xy).r;
+#	endif
+#endif
+
+#if _AO_MADS || _AO_MADSANDSEPARATE
+					ao *= madsMap.g;
+#endif
+					
+				#if _FRESNEL_FADE_AO
+					ao = lerp(ao,1, rawFresnel); // * (1-ao);
+				#endif
+
+#if _COLOR_R_AMBIENT
+					ao *= (0.25 + i.color.r * 0.75);
+#endif
 
 
 // ******************* DAMAGE
@@ -441,9 +492,10 @@ float showRed =0;
 
 	ApplyTangent(normal, tnormal, i.wTangent);
 					
-	shadow *= SHADOW_ATTENUATION(i);
-
 	
+
+					shadow *= SHADOW_ATTENUATION(i);
+			
 // ********************** WATER
 
 //float glossLayer = 0;
@@ -464,8 +516,10 @@ float showRed =0;
 #endif
 
 	float3 worldPosAdjusted = i.worldPos;
-	ao *= SampleContactAO_OffsetWorld(worldPosAdjusted, normal);
 
+	#if _SDF_AMBIENT
+	ao *= SampleContactAO_OffsetWorld(worldPosAdjusted, normal);
+	#endif
 
 					// **************** light
 
@@ -479,6 +533,8 @@ float showRed =0;
 					ModifyColorByWetness(tex.rgb, water,madsMap.a, _MudColor);
 #endif
 */
+
+					//return specular;
 
 					MaterialParameters precomp;
 					

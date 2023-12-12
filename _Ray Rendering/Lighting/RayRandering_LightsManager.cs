@@ -42,7 +42,7 @@ namespace QuizCanners.RayTracing
                 set 
                 {
                     _artificialLightsExpected = value;
-                    Mgmt.SetBakingDirty("Artificial Lights Chenged");
+                    Mgmt.SetBakingDirty("Artificial Lights Chenged", invalidateResult: true);
                 }
             }
 
@@ -98,7 +98,7 @@ namespace QuizCanners.RayTracing
 
             void UpdateIndoors() 
             {
-                INDOORS.Enabled = SunIntensity == 0;
+                INDOORS.Enabled = SunIntensity == 0 && AmbientColor.r == 0 && AmbientColor.g == 0 && AmbientColor.b == 0;
             }
 
             public bool Stars 
@@ -292,7 +292,7 @@ namespace QuizCanners.RayTracing
 
             private readonly pegi.EnterExitContext _context = new(playerPrefId: "rtxWthInsp");
            // [SerializeField]private pegi.EnterExitContext 
-            public void Inspect()
+            void IPEGI.Inspect()
             {
                 var changed = pegi.ChangeTrackStart();
 
@@ -402,7 +402,7 @@ namespace QuizCanners.RayTracing
 
                         if ("Configs".PegiLabel().IsFoldout().Nl())
                         {
-                            ConfigurationsSO_Base.Inspect(ref Configs).OnChanged(() => Singleton.Try<Singleton_RayRendering>(s => s.SetBakingDirty(reason: "Weather Config changed")));
+                            ConfigurationsSO_Base.Inspect(ref Configs).OnChanged(() => Singleton.Try<Singleton_RayRendering>(s => s.SetBakingDirty(reason: "Weather Config changed", invalidateResult: true)));
                         }
 
                         if ("HDRs".PegiLabel().IsFoldout().Nl_ifEntered())

@@ -93,22 +93,31 @@
 				}*/
 
 			//	float sdfOffsetAmount = smoothstep(VOL_SIZE, 0, nrmDist.w);
-
+				float outOfBounds;
 				float3 rayDirection;
 
 #if RT_TO_CUBEMAP
 				rayDirection = normalize(lerp(rand.xyz, _RT_CubeMap_Direction.xyz, abs(_RT_CubeMap_Direction.xyz)));
 #else 
+				
+				float4 sdf0 = SampleSDF(worldPos, outOfBounds);
+
 				rayDirection = normalize(rand.rgb);
+
+				float dotToNorm = dot(sdf0.xyz, rayDirection);
+
+				float flipRay = step(0, -dotToNorm) * outOfBounds;
+			
+				rayDirection = normalize(lerp(rayDirection, -rayDirection, flipRay));
 #endif
 
 				// + nrmDist.xyz * sdfOffsetAmount * 2;
 				
 				//worldPos += rand.rga * 0.45 * VOL_SIZE;
-				float outOfBounds;
+			
 				float4 sdf = SampleSDF(worldPos + rayDirection * VOL_SIZE, outOfBounds);
 
-				float blackPixel = smoothstep(0.05, -0.01, sdf.a) * (1-outOfBounds);
+				float blackPixel = smoothstep(0, -0.01, sdf.a) * (1-outOfBounds);
 				
 				float4 col = render(worldPos, rayDirection, noise);
 
@@ -118,7 +127,7 @@
 
 				col.a = 1;
 
-				col = lerp(col,0, blackPixel);
+				col.rgb = lerp(col.rgb,0, blackPixel);
 
 				return col;
 			}

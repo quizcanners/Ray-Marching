@@ -3,7 +3,7 @@ Shader "RayTracing/Geometry/Beveled Edges Cell Shaded"
 	Properties
 	{
 		_MainTex("Albedo (RGB)", 2D) = "white" {}
-	
+		[HDR]_Color("Color", Color) =  (1,1,1,1)
 	//	[Toggle(_REFLECTIVITY)] reflectivity("Any Reflectivity", Float) = 0
 		[KeywordEnum(OFF, PLASTIC, METAL, LAYER)] _REFLECTIVITY("Reflective Material Type", Float) = 0
 		[KeywordEnum(OFF, ON, INVERTEX, MIXED)] _PER_PIXEL_REFLECTIONS("Traced Reflections", Float) = 0
@@ -17,12 +17,13 @@ Shader "RayTracing/Geometry/Beveled Edges Cell Shaded"
 		[Toggle(_COLOR_R_AMBIENT)] colAIsAmbient("Vert Col is Ambient", Float) = 0
 
 		_EdgeColor("Edge Color Tint", Color) = (0.5,0.5,0.5,0)
-			_MetalColor("Metal Color", Color) = (0.5, 0.5, 0.5, 0)
+		_MetalColor("Metal Color", Color) = (0.5, 0.5, 0.5, 0)
 	
 		
 		[Toggle(_DEBUG_EDGES)] debugEdges("Debug Edges", Float) = 0
 
 		[Toggle(_DYNAMIC_OBJECT)] dynamic("Dynamic Object", Float) = 0
+		[Toggle(_INDIRECT_INSTANCING)] indirectInst("Indirect Instancing", Float) = 0
 
 	}
 
@@ -42,7 +43,7 @@ Shader "RayTracing/Geometry/Beveled Edges Cell Shaded"
 
 			}
 
-			ColorMask RGBA
+			ColorMask RGB
 			Cull Back
 
 			Pass
@@ -50,8 +51,6 @@ Shader "RayTracing/Geometry/Beveled Edges Cell Shaded"
 
 				CGPROGRAM
 
-
-			
 				#pragma vertex vert
 				#pragma fragment frag
 				#pragma multi_compile_instancing
@@ -64,12 +63,20 @@ Shader "RayTracing/Geometry/Beveled Edges Cell Shaded"
 				#pragma shader_feature_local __ _DEBUG_EDGES
 				#pragma shader_feature_local ___ _DYNAMIC_OBJECT
 				#pragma shader_feature_local _REFLECTIVITY_OFF _REFLECTIVITY_PLASTIC _REFLECTIVITY_METAL _REFLECTIVITY_LAYER
+				#pragma shader_feature_local ___ _INDIRECT_INSTANCING
 
 				#pragma multi_compile ___ _qc_USE_RAIN
 				#pragma multi_compile ___ _qc_IGNORE_SKY
 				#pragma multi_compile qc_NO_VOLUME qc_GOT_VOLUME 
 
 				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+
+				#if _INDIRECT_INSTANCING
+					#define UNITY_INDIRECT_DRAW_ARGS IndirectDrawIndexedArgs
+				    #include "UnityIndirect.cginc"
+				#endif
+
+				
 
 				struct v2f 
 				{
@@ -88,6 +95,10 @@ Shader "RayTracing/Geometry/Beveled Edges Cell Shaded"
 					fixed4 color : COLOR;
 				};
 
+				#if _INDIRECT_INSTANCING
+					StructuredBuffer<float4x4> _Matrices;
+				#endif
+
 				sampler2D _MainTex;
 				float4 _MainTex_ST;
 				float4 _MainTex_TexelSize;
@@ -95,14 +106,34 @@ Shader "RayTracing/Geometry/Beveled Edges Cell Shaded"
 				sampler2D _Map;
 				float4 _Map_ST;
 
-				v2f vert(appdata_full v) 
+
+				#if _INDIRECT_INSTANCING
+					v2f vert(appdata_full v, uint svInstanceID : SV_InstanceID)
+				#else
+					v2f vert(appdata_full v) 
+				#endif
 				{
 					v2f o;
-					UNITY_SETUP_INSTANCE_ID(v);
 
-					o.pos = UnityObjectToClipPos(v.vertex);
+					float3 worldPos;
+
+					#if _INDIRECT_INSTANCING
+					   InitIndirectDrawArgs(0);
+						uint cmdID = GetCommandID(0);
+						uint instanceID = GetIndirectInstanceID(svInstanceID);
+						//worldPos = v.vertex.xyz + cmdID * 3 + _Positions[instanceID].xyz;
+						worldPos = mul(_Matrices[instanceID], v.vertex).xyz;
+						o.pos = mul(UNITY_MATRIX_VP,  float4(worldPos.xyz, v.vertex.w));
+					#else
+						UNITY_SETUP_INSTANCE_ID(v);
+						worldPos = mul(unity_ObjectToWorld, v.vertex);
+						o.pos = UnityObjectToClipPos(v.vertex);
+					#endif
+
+				
+
 					o.texcoord = TRANSFORM_TEX(v.texcoord, _MainTex);
-					o.worldPos = mul(unity_ObjectToWorld, v.vertex);
+					o.worldPos = worldPos;
 					o.normal.xyz = UnityObjectToWorldNormal(v.normal);
 					o.color = v.color;
 					o.viewDir = WorldSpaceViewDir(v.vertex);
@@ -138,7 +169,8 @@ Shader "RayTracing/Geometry/Beveled Edges Cell Shaded"
 				sampler2D _OcclusionMap;
 			#endif
 
-
+			
+				float4 _Color;
 
 			float4 _MetalColor;
 
@@ -146,184 +178,75 @@ Shader "RayTracing/Geometry/Beveled Edges Cell Shaded"
 				{
 					
 
-					float3 viewDir = normalize(i.viewDir.xyz);
-					float4 seam = 
-					#if _COLOR_R_AMBIENT
-						0;
-					#else 
-						i.color;
-					#endif
+						float3 viewDir = normalize(i.viewDir.xyz);
+						float4 seam = 
+						#if _COLOR_R_AMBIENT
+							0;
+						#else 
+							i.color;
+						#endif
 
-					float hideSeam;
-					float3 normal = GetBeveledNormal_AndSeam(seam, i.edge,viewDir, i.normal.xyz, i.snormal.xyz, i.edgeNorm0, i.edgeNorm1, i.edgeNorm2, hideSeam);	
-					hideSeam *= _EdgeColor.a;
+						float hideSeam;
+						float3 normal = GetBeveledNormal_AndSeam(seam, i.edge,viewDir, i.normal.xyz, i.snormal.xyz, i.edgeNorm0, i.edgeNorm1, i.edgeNorm2, hideSeam);	
+						hideSeam *= _EdgeColor.a;
 
-					float2 uv = i.texcoord.xy;
+						float2 uv = i.texcoord.xy;
 
-					float ao = 1; 
+						float ao = 1; 
 
-#if _AO_SEPARATE
-					ao = tex2D(_OcclusionMap, uv).r;
-#endif
-
-#if _COLOR_R_AMBIENT
-					ao *= (0.25 + i.color.r * 0.75);
-#endif
-
-					float4 tex = tex2D(_MainTex, uv);
-
-					#if _DEBUG_EDGES
-						tex.rgb = normal;
-					#endif
-
-					tex = lerp(tex, _EdgeColor, hideSeam);
-			float shadow = SHADOW_ATTENUATION(i);
-		float water = 0;
-
-
-							// ********************** Contact Shadow
-
-
-
-#		if _qc_USE_RAIN 
-			water += GetRain(i.worldPos, normal, i.normal, shadow);
-			float makeSmooth = smoothstep(0.25, 0.3, water * max(0, normal.y + 0.1));
-			_Smoothness = lerp(_Smoothness, 0.95, makeSmooth);
-#		endif
-
-
-			float fresnel = GetFresnel_FixNormal(normal,  i.snormal.xyz, viewDir) * ao;
-
-	float3 worldPosAdjusted = i.worldPos;
-	ao *= SampleContactAO_OffsetWorld(worldPosAdjusted, normal);
-
-		/*
-		float3 bake;
-	
-		bake = Savage_GetVolumeBake(i.worldPos, normal.xyz, i.snormal.xyz, i.worldPos);
-
-		return float4(bake,1);*/
-
-	//	TOP_DOWN_SETUP_UV(topdownUv, i.worldPos);
-		//float4 topDownAmbient = SampleTopDown_Ambient(topdownUv, normal, i.worldPos);
-	//	return tex;//-topDownAmbient;
-
-
-			float mixMetal = 0;
-
-			MaterialParameters precomp;
-					
-			precomp.shadow = shadow;
-			precomp.ao = ao;
-			precomp.fresnel = fresnel;
-			precomp.tex = tex;
-			precomp.smoothsness= _Smoothness;
-			precomp.reflectivity= _Reflectivity;
-			precomp.metal= mixMetal;
-			precomp.traced= i.traced;
-			precomp.water = water;
-			precomp.microdetail = 0;
-			precomp.metalColor = lerp(tex, _MetalColor, _MetalColor.a);
-
-			float3 col = GetReflection_ByMaterialType(precomp, normal, i.normal.xyz, viewDir, worldPosAdjusted);
-
-
-					/*
-		// ********************* Reflection
-		float3 lightColor = Savage_GetDirectional_Opaque(shadow, ao, normal, i.worldPos);
-
-		float3 reflectedRay = reflect(-viewDir, normal);
-		float3 reflectionColor = 0;
-
-#if _REFLECTIVITY_METAL
-
-		float3 pointLight = GetPointLight_Specualr(i.worldPos.xyz, reflectedRay, _Smoothness);//GetPointLight(volumeSamplePosition, normal, ao, viewDir, _Smoothness, reflectionColor);
-	
-	
-		RaySamplerHit hit;
-
-		float3 tracedRefl = SampleRay_NoSun(i.worldPos, reflectedRay, hit) ;
-
-		float3 bakedRefl = SampleVolume_CubeMap(i.worldPos, reflectedRay);
-
-		float showBlurred=  smoothstep(0, 100*_Smoothness, length(hit.Pos-i.worldPos));
-
-		reflectionColor = lerp(tracedRefl, bakedRefl,showBlurred * fresnel);
-
-		float3 reflectedTopDown = 0;
-
-		ao *= TopDownSample(hit.Pos, reflectedTopDown);
-		reflectionColor += reflectedTopDown * hit.Material.rgb;
-		float hitSpecular = smoothstep(1, 0, hit.Material.a) * 0.9;
-
-		reflectionColor.rgb += 
-		GetPointLight_Specualr(hit.Pos, reflectedRay, _Smoothness);
-		//GetPointLight(hit.Pos, hit.Normal, ao, reflectedRay, hitSpecular, reflectionColor) * hit.Material.rgb;
-
-		reflectionColor *= ao;
-		reflectionColor += GetDirectionalSpecular(normal, viewDir, _Smoothness) * lightColor;
-
-		float3 col = tex.rgb * reflectionColor;
-#endif
-	
-	// LIGHTING
-	float3 bake;
-	float3 volumeSamplePosition;
-	bake = Savage_GetVolumeBake(i.worldPos, normal.xyz, normalize(i.normal + 0.01), volumeSamplePosition);
-
-	TOP_DOWN_SETUP_UV(topdownUv, i.worldPos);
-	float4 topDownAmbient = SampleTopDown_Ambient(topdownUv, normal, i.worldPos);
-	ao *= topDownAmbient.a;
-	bake += topDownAmbient.rgb;
-
-	#if _REFLECTIVITY_OFF
-		float3 pointLight = GetPointLight(volumeSamplePosition, normal, ao);
-		float3 diffuseColor = pointLight + lightColor + bake * ao;
-		float3 col = tex.rgb * diffuseColor;
-		
-		return float4(col, 1);
+	#if _AO_SEPARATE
+						ao = tex2D(_OcclusionMap, uv).r;
 	#endif
 
-#if _REFLECTIVITY_LAYER
-		float3 pointLight = GetPointLight(volumeSamplePosition, normal, ao, viewDir, _Smoothness, reflectionColor);
-		float3 diffuseColor = pointLight + lightColor + bake * ao;
-		float3 col = tex.rgb * diffuseColor;
+	#if _COLOR_R_AMBIENT
+						ao *= (0.25 + i.color.r * 0.75);
+	#endif
 
-		// ********************* Reflection
-		
-		float4 refAndAo = GetRayTrace_AndAo(i.worldPos.xyz, reflectedRay);
+						float4 tex = tex2D(_MainTex, uv) * _Color;
 
-		reflectionColor += refAndAo.rgb;
-		ao *= refAndAo.a;
+						#if _DEBUG_EDGES
+							tex.rgb = normal;
+						#endif
 
-		reflectionColor *= ao;
-		reflectionColor += GetDirectionalSpecular(normal, viewDir, _Smoothness) * lightColor;
+						tex = lerp(tex, _EdgeColor, hideSeam);
+				float shadow = SHADOW_ATTENUATION(i);
+			float water = 0;
 
-		col = lerp(col, reflectionColor, fresnel * _Reflectivity);
-#endif
 
-#if _REFLECTIVITY_PLASTIC
-					float specular = GetSpecular_Plastic(_Smoothness, fresnel * _Reflectivity);
+								// ********************** Contact Shadow
 
-					float3 pointLight = GetPointLight(volumeSamplePosition, normal, ao, viewDir, specular, reflectionColor);
-					float3 diffuseColor = pointLight + lightColor + bake * ao;
-					float3 col = tex.rgb * diffuseColor;
 
-					// ********************* Reflection
 
-					float4 topDownAmbientSpec = SampleTopDown_Specular(topdownUv, reflectedRay, i.worldPos, i.normal.xyz, specular);
-					ao *= topDownAmbientSpec.a;
-					reflectionColor += topDownAmbientSpec.rgb;
-					reflectionColor = GetBakedAndTracedReflection(volumeSamplePosition, reflectedRay, specular, i.traced);
+	#		if _qc_USE_RAIN 
+				water += GetRain(i.worldPos, normal, i.normal, shadow);
+				float makeSmooth = smoothstep(0.25, 0.3, water * max(0, normal.y + 0.1));
+				_Smoothness = lerp(_Smoothness, 0.95, makeSmooth);
+	#		endif
 
-					reflectionColor *= ao;
-					reflectionColor += GetDirectionalSpecular(normal, viewDir, specular) * lightColor;// pow(dott, power) * brightness;
 
-					float reflectivity = specular + (1-specular) * _Reflectivity * fresnel;
+				float fresnel = GetFresnel_FixNormal(normal,  i.snormal.xyz, viewDir) * ao;
 
-					MixInSpecular_Plastic(col, reflectionColor, reflectivity);
-#endif
-*/
+		float3 worldPosAdjusted = i.worldPos;
+		ao *= SampleContactAO_OffsetWorld(worldPosAdjusted, normal);
+
+					float mixMetal = 0;
+
+					MaterialParameters precomp;
+					
+					precomp.shadow = shadow;
+					precomp.ao = ao;
+					precomp.fresnel = fresnel;
+					precomp.tex = tex;
+					precomp.smoothsness= _Smoothness;
+					precomp.reflectivity= _Reflectivity;
+					precomp.metal= mixMetal;
+					precomp.traced= i.traced;
+					precomp.water = water;
+					precomp.microdetail = 0;
+					precomp.metalColor = lerp(tex, _MetalColor, _MetalColor.a);
+
+					float3 col = GetReflection_ByMaterialType(precomp, normal, i.normal.xyz, viewDir, worldPosAdjusted);
+
 					ApplyBottomFog(col, i.worldPos.xyz, viewDir.y);
 
 					return float4(col, 1);

@@ -10,18 +10,18 @@ Shader "GPUInstancer/RayTracing/Geometry/Standard Cutout"
 		_OcclusionMap("Ambient Map", 2D) = "white" {}
 		[Toggle(_AMBIENT_IN_UV2)] ambInuv2("Ambient mapped to UV2", Float) = 0
 		[Toggle(_COLOR_R_AMBIENT)] colAIsAmbient("Vert Col is Ambient", Float) = 0
-			[Toggle(_SDF_AMBIENT)] sdfAmbient("SDF Ambient", Float) = 0
+		[Toggle(_SDF_AMBIENT)] sdfAmbient("SDF Ambient", Float) = 0
 
 		[Toggle(_WIND_SHAKE)] windShake("Wind Shaking", Float) = 0
 
-			[Toggle(_BACKFACE_FLIP)] fixBackface("Backface Flip", Float) = 0
+		[Toggle(_BACKFACE_FLIP)] fixBackface("Backface Flip", Float) = 0
 
 		[Toggle(_SUB_SURFACE)] subSurfaceScattering("SubSurface Scattering", Float) = 0
 		[HDR] _SubSurface("Sub Surface Color", Color) = (1,0.5,0,0)
 		_SkinMask("Skin Mask (_UV2)", 2D) = "white" {}
 
-			[KeywordEnum(OFF, ON, INVERTEX, MIXED)] _PER_PIXEL_REFLECTIONS("Traced Reflections", Float) = 0
-			[Toggle(_DYNAMIC_OBJECT)] dynamic("Dynamic Object", Float) = 0
+		[KeywordEnum(OFF, ON, INVERTEX, MIXED)] _PER_PIXEL_REFLECTIONS("Traced Reflections", Float) = 0
+		[Toggle(_DYNAMIC_OBJECT)] dynamic("Dynamic Object", Float) = 0
 
 	}
 

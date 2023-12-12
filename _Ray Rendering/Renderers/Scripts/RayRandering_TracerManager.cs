@@ -99,7 +99,7 @@ namespace QuizCanners.RayTracing
             #endregion
 
             #region Inspect
-            public void Inspect()
+            void IPEGI.Inspect()
             {
                 pegi.Nl();
 

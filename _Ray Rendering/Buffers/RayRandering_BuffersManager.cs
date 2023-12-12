@@ -142,7 +142,7 @@ namespace QuizCanners.RayTracing
             }
 
             #region Inspector
-            public void Inspect()
+            void IPEGI.Inspect()
             {
                 pegi.Nl();
                 "Dynamic Buffers".PegiLabel().Edit_Array(ref _twoBuffers).Nl();

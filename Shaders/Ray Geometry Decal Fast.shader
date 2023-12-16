@@ -25,7 +25,7 @@
 		
 			CGPROGRAM
 
-			#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
+			#include "Assets/Qc_Rendering/Shaders/PrimitivesScene_Sampler.cginc"
 
 			#pragma vertex vert
 			#pragma fragment frag

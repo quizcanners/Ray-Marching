@@ -28,7 +28,7 @@ Shader "RayTracing/Geometry/Liquid Opaque"
 				//#pragma multi_compile __ RT_FROM_CUBEMAP 
 				#pragma multi_compile ___ _qc_IGNORE_SKY
 
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
 
 
 

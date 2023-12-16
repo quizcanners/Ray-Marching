@@ -63,8 +63,8 @@ Shader "RayTracing/Geometry/Skinned GPU Instanced"
             #pragma shader_feature_local ___ _COLOR_R_AMBIENT
 
 
-            #include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-            #include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+            #include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+            #include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
             #include "Assets\GPUInstancer-CrowdAnimations\Shaders\Include\GPUICrowdInclude.cginc"
             #pragma shader_feature_vertex GPUI_CA_TEXTURE
@@ -300,8 +300,8 @@ Shader "RayTracing/Geometry/Skinned GPU Instanced"
 
            //	#pragma multi_compile __ RT_FROM_CUBEMAP 
            
-            #include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-             #include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+            #include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+             #include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
             #include "Assets\GPUInstancer-CrowdAnimations\Shaders\Include\GPUICrowdInclude.cginc"
             #pragma shader_feature_vertex GPUI_CA_TEXTURE

@@ -84,7 +84,7 @@ Shader "RayTracing/Geometry/Standard Translucent"
 		
 				#define RENDER_DYNAMICS
 		
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
 
 				struct v2f 
 				{

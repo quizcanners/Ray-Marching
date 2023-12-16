@@ -29,11 +29,11 @@ Shader "GPUInstancer/RayTracing/Decal/Shadow"
 #pragma instancing_options procedural:setupGPUI
 #pragma multi_compile_instancing
 
-			#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-			#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-			#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-			#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
-		#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+			#include "Assets/Qc_Rendering/Shaders/PrimitivesScene_Sampler.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Signed_Distance_Functions.cginc"
+			#include "Assets/Qc_Rendering/Shaders/RayMarching_Forward_Integration.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Sampler_TopDownLight.cginc"
+		#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
 			#pragma vertex vert
 			#pragma fragment frag

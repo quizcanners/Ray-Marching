@@ -28,10 +28,10 @@ Shader "RayTracing/Geometry/Beveled Edges Geometry Sharpner "
 
 				#pragma multi_compile ___ _qc_IGNORE_SKY
 
-				#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-				#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-				#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-				#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
+				#include "Assets/Qc_Rendering/Shaders/PrimitivesScene_Sampler.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Signed_Distance_Functions.cginc"
+				#include "Assets/Qc_Rendering/Shaders/RayMarching_Forward_Integration.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Sampler_TopDownLight.cginc"
 
 				#pragma vertex vert
 				#pragma geometry geom

@@ -67,8 +67,8 @@ Shader "RayTracing/Geometry/Standard Smooth 3D (Transparent)"
 					#pragma shader_feature_local ___ _COLOR_R_AMBIENT
 					//#define RENDER_DYNAMICS
 
-					#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-					#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+					#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+					#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
 					struct v2f
 					{

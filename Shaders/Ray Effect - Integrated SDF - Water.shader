@@ -21,8 +21,8 @@
 			#define RENDER_DYNAMICS
 
 
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-				#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
 
 			float4 _Effect_Time;
@@ -91,7 +91,7 @@
 			#pragma vertex vert
 			#pragma fragment frag
 			//#pragma multi_compile_fwdbase
-			//	#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+			//	#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
 
 			#pragma multi_compile_instancing
 		

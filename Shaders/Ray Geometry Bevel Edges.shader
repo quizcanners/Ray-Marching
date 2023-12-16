@@ -61,7 +61,7 @@ Shader "RayTracing/Geometry/Beveled Edges "
 				#pragma multi_compile qc_NO_VOLUME qc_GOT_VOLUME 
 				#pragma multi_compile __ _qc_IGNORE_SKY 
 
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
 
 
 				struct v2f {

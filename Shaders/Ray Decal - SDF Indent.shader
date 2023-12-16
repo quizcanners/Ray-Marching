@@ -15,11 +15,11 @@
 			#pragma multi_compile qc_NO_VOLUME qc_GOT_VOLUME 
 			#pragma multi_compile __ _qc_IGNORE_SKY 
 
-			#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-			#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-			#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-			#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
-			#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+			#include "Assets/Qc_Rendering/Shaders/PrimitivesScene_Sampler.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Signed_Distance_Functions.cginc"
+			#include "Assets/Qc_Rendering/Shaders/RayMarching_Forward_Integration.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Sampler_TopDownLight.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
 		ENDCG
 

@@ -27,8 +27,8 @@
 		   #pragma fragment frag
 		   #pragma multi_compile_instancing
 
-		   #include "Assets/Ray-Marching/Shaders/Savage_Sampler.cginc"
-		   #include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+		   #include "Assets/Qc_Rendering/Shaders/Savage_Sampler.cginc"
+		   #include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
 		   struct appdata_t 
 	   {

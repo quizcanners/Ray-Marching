@@ -31,7 +31,7 @@ Shader "GPUInstancer/RayTracing/Terrain/Standard Merging"
 			//#pragma multi_compile __ RT_FROM_CUBEMAP 
 			#pragma multi_compile ___ _qc_USE_RAIN
 
-			#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
 			#include "Assets\The-Fire-Below\Common\Shaders\qc_terrain_cg.cginc"
 
 			ENDCG

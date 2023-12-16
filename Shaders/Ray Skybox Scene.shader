@@ -35,7 +35,7 @@
 			#pragma multi_compile  ___ _RAY_MARCH_STARS
 			#pragma multi_compile ___ _ROTATE_SKYBOX
 
-			#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
 
 			#pragma target 3.0
 

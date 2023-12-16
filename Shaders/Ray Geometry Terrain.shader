@@ -39,7 +39,7 @@ Shader "RayTracing/Terrain/Terrain Itself"
 
 			#pragma shader_feature_local _PER_PIXEL_REFLECTIONS_OFF _PER_PIXEL_REFLECTIONS_ON _PER_PIXEL_REFLECTIONS_INVERTEX  _PER_PIXEL_REFLECTIONS_MIXED
 
-			#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
 			#include "Assets\The-Fire-Below\Common\Shaders\qc_terrain_cg.cginc"
 
 			sampler2D _Control;

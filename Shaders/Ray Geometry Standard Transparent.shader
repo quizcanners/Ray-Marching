@@ -36,7 +36,7 @@ Shader "RayTracing/Geometry/Standard Transparent"
 
 				#pragma multi_compile ___ _qc_IGNORE_SKY
 
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
 
 				float3 ShakeWorldPos(float3 worldPos, float topDownShadow)
 				{

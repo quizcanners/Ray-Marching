@@ -92,8 +92,8 @@ Shader "RayTracing/Geometry/Standard Triplanar"
 			//	#pragma shader_feature_local ___ _SDF_AMBIENT
 		
 
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-				#include "Assets/Ray-Marching/Shaders/RayMarching_SmoothedDepth.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+				#include "Assets/Qc_Rendering/Shaders/RayMarching_SmoothedDepth.cginc"
 				
 				struct v2f
 				{

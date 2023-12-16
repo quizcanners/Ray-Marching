@@ -28,8 +28,8 @@
 			#define IGNORE_FLOOR
 
 		
-			#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-			#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
 			#include "Assets\The-Fire-Below\Common\Shaders\qc_terrain_cg.cginc"
 

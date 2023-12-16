@@ -36,8 +36,8 @@ Shader "GPUInstancer/RayTracing/Effect/Smoke Sphere"
 				#pragma multi_compile ___ _qc_IGNORE_SKY
 			   #pragma multi_compile qc_NO_VOLUME qc_GOT_VOLUME 
 
-			   #include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-			   #include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+			   #include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+			   #include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
 			   #pragma vertex vert
 			   #pragma fragment frag

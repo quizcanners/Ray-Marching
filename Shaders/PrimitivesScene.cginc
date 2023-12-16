@@ -1,10 +1,10 @@
 #ifndef QC_RTX_PRIM
 #define QC_RTX_PRIM
 
-#include "Assets/Ray-Marching/Shaders/inc/IntersectOperations.cginc"
-#include "Assets/Ray-Marching/Shaders/inc/RayMathHelpers.cginc"
-#include "Assets/Ray-Marching/Shaders/inc/SDFoperations.cginc"
-#include "Assets/Ray-Marching/Shaders/Savage_VolumeSampling.cginc"
+#include "Assets/Qc_Rendering/Shaders/inc/IntersectOperations.cginc"
+#include "Assets/Qc_Rendering/Shaders/inc/RayMathHelpers.cginc"
+#include "Assets/Qc_Rendering/Shaders/inc/SDFoperations.cginc"
+#include "Assets/Qc_Rendering/Shaders/Savage_VolumeSampling.cginc"
 
 
 #include "UnityCG.cginc"

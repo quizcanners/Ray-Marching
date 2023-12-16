@@ -44,9 +44,14 @@
 				#pragma multi_compile __ RT_FROM_CUBEMAP 
 				#define RENDER_DYNAMICS
 
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
 
-				sampler2D _MainTex;
+				//sampler2D _MainTex;
+
+				Texture2D _MainTex;
+				SamplerState my_linear_clamp_sampler;
+			
+
 				float4 _MainTex_ST;
 				float4 _MainTex_TexelSize;
 				float4 _Color;
@@ -133,11 +138,14 @@
 
 					float2 blurVector =Rot(rotation, -angle) * sizeOnScreen *  4 * force; //_MainTex_TexelSize.x;
 
-					float4 color0 = tex2Dlod(_MainTex, float4(uv - blurVector, 0, mipLevel));
-					float4 color1 = tex2Dlod(_MainTex, float4(uv  , 0, mipLevel));
-					float4 color2 = tex2Dlod(_MainTex, float4(uv + blurVector , 0, mipLevel));
-					float4 color3 = tex2Dlod(_MainTex, float4(uv + blurVector *2 , 0, mipLevel));
-					float4 color4 = tex2Dlod(_MainTex, float4(uv + blurVector *3 , 0, mipLevel));
+				//	 _MainTex.Sample(my_linear_clamp_sampler, uv);
+
+
+					float4 color0 = _MainTex.Sample(my_linear_clamp_sampler, uv - blurVector);
+					float4 color1 = _MainTex.Sample(my_linear_clamp_sampler, uv  );
+					float4 color2 = _MainTex.Sample(my_linear_clamp_sampler, uv + blurVector);
+					float4 color3 = _MainTex.Sample(my_linear_clamp_sampler, uv + blurVector *2 );
+					float4 color4 = _MainTex.Sample(my_linear_clamp_sampler, uv + blurVector *3 );
 
 					float3 col;
 					col.rgb =   color0.rgb * color0.a +

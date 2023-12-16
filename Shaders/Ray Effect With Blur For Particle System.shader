@@ -47,14 +47,14 @@ Shader "RayTracing/Effect/Spritesheet/Blurred Screen Grab For Particle System"
 
 
 				#pragma multi_compile __ RT_FROM_CUBEMAP 
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
 
 
 				/*
-				#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-				#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-				#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-				#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
+				#include "Assets/Qc_Rendering/Shaders/PrimitivesScene_Sampler.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Signed_Distance_Functions.cginc"
+				#include "Assets/Qc_Rendering/Shaders/RayMarching_Forward_Integration.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Sampler_TopDownLight.cginc"
 				*/
 
 				#pragma vertex vert

@@ -29,8 +29,8 @@
 			#pragma multi_compile qc_NO_VOLUME qc_GOT_VOLUME 
 			#pragma multi_compile __ _qc_IGNORE_SKY 
 
-			#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-			#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
 			float _Merging;
 			float4 _Effect_Time;

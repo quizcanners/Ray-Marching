@@ -31,9 +31,9 @@
 
 				CGPROGRAM
 
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-				#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
-			#include "Assets/Ray-Marching/Shaders/inc/RayDistanceOperations.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
+			#include "Assets/Qc_Rendering/Shaders/inc/RayDistanceOperations.cginc"
 		
 			#pragma shader_feature_local SHAPE_SPHERE SHAPE_BOX SHAPE_CAPSULE 
 

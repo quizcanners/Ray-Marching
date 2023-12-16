@@ -59,8 +59,8 @@ Shader "GPUInstancer/RayTracing/Geometry/Destructive With Overlay"
 		#pragma shader_feature_local _PER_PIXEL_REFLECTIONS_OFF _PER_PIXEL_REFLECTIONS_ON _PER_PIXEL_REFLECTIONS_INVERTEX  _PER_PIXEL_REFLECTIONS_MIXED
 		#pragma shader_feature_local _REFLECTIVITY_OFF _REFLECTIVITY_PLASTIC  _REFLECTIVITY_LAYER   
 
-		#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-		#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+		#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+		#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
 		#include "Assets\The-Fire-Below\Common\Shaders\qc_terrain_cg.cginc"
 

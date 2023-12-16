@@ -48,7 +48,7 @@ Shader "RayTracing/Geometry/Cloth"
 				#pragma shader_feature_local ___ _COLOR_R_AMBIENT
 				#pragma shader_feature_local ___ _PARALLAX
 
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler.cginc"
 
 				#pragma vertex vert
 				#pragma fragment frag		

@@ -36,8 +36,8 @@ Shader "RayTracing/Effect/Easy Fog"
 			//	 #pragma multi_compile __ RT_FROM_CUBEMAP 
 				#define RENDER_DYNAMICS
 
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-			#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 				#pragma multi_compile ___ _qc_IGNORE_SKY
 
 

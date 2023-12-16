@@ -12,11 +12,11 @@ Shader "RayTracing/Integrated SDF/Volumetric World Space"
 
 		CGINCLUDE
 
-			#include "Assets/Ray-Marching/Shaders/PrimitivesScene_Sampler.cginc"
-			#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-			#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-			#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
-			#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+			#include "Assets/Qc_Rendering/Shaders/PrimitivesScene_Sampler.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Signed_Distance_Functions.cginc"
+			#include "Assets/Qc_Rendering/Shaders/RayMarching_Forward_Integration.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Sampler_TopDownLight.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
 			float SampleSDF(float3 pos, float4 spherePos)
 			{

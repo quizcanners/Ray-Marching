@@ -44,9 +44,9 @@ Shader "RayTracing/Effect/Spritesheet/For Particle System"
 
 				#pragma shader_feature_local _PER_PIXEL_REFLECTIONS_INVERTEX _PER_PIXEL_REFLECTIONS_ON  _PER_PIXEL_REFLECTIONS_MIXED
 				//#pragma multi_compile __ RT_FROM_CUBEMAP 
-				//#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler_Debug.cginc"
-				#include "Assets/Ray-Marching/Shaders/Savage_DepthSampling.cginc"
+				//#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 
 				#pragma vertex vert
 				#pragma fragment frag

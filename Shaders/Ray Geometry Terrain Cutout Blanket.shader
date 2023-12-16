@@ -17,10 +17,10 @@ Category
 
 				CGINCLUDE
 
-				#include "Assets/Ray-Marching/Shaders/Savage_Sampler.cginc"
-				//#include "Assets/Ray-Marching/Shaders/Signed_Distance_Functions.cginc"
-				//#include "Assets/Ray-Marching/Shaders/RayMarching_Forward_Integration.cginc"
-				//#include "Assets/Ray-Marching/Shaders/Sampler_TopDownLight.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler.cginc"
+				//#include "Assets/Qc_Rendering/Shaders/Signed_Distance_Functions.cginc"
+				//#include "Assets/Qc_Rendering/Shaders/RayMarching_Forward_Integration.cginc"
+				//#include "Assets/Qc_Rendering/Shaders/Sampler_TopDownLight.cginc"
 				#include "Assets\The-Fire-Below\Common\Shaders\qc_terrain_cg.cginc"
 
 				float3 ModifyPosition(float3 worldPos)

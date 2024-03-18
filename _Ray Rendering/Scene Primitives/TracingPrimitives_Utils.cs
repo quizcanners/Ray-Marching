@@ -1,4 +1,4 @@
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     public static partial class TracingPrimitives
     {

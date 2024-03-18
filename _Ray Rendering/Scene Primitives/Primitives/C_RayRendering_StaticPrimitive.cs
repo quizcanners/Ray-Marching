@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
 using QuizCanners.Inspect;
 using QuizCanners.Utils;
-using static QuizCanners.RayTracing.TracingPrimitives;
+using static QuizCanners.VolumeBakedRendering.TracingPrimitives;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
 
     [DisallowMultipleComponent]
@@ -31,7 +31,7 @@ namespace QuizCanners.RayTracing
             IsHidden = true;
         }
 
-        public virtual bool TryReflect(C_RayT_PrimShape_EnvironmentElement el)
+        public virtual bool TryReflect(C_RayT_PrimShape el)
         {
             if (!el)
             {
@@ -127,7 +127,7 @@ namespace QuizCanners.RayTracing
 
             pegi.Nl();
 
-            var mgmt = Singleton.Get<Singleton_RayRendering>();
+            var mgmt = Singleton.Get<Singleton_QcRendering>();
 
             if (!mgmt)
                 "No manager Singleton".PegiLabel().WriteWarning();

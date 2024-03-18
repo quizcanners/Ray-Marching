@@ -4,7 +4,7 @@ using System;
 using UnityEngine;
 
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     [ExecuteAlways]
     [AddComponentMenu(QcUtils.QUIZCANNERS + "/Ray Tracing/Camera And Output")]
@@ -78,13 +78,13 @@ namespace QuizCanners.RayTracing
 
         #region Inspector
 
-        public override string InspectedCategory => nameof(RayTracing);
+        public override string InspectedCategory => nameof(VolumeBakedRendering);
 
         public override string ToString() => "Baker Camera";
 
         public override string NeedAttention()
         {
-            if (!WorldCamera)
+            if (Application.isPlaying && !WorldCamera)
                 return "{0} Not Assigned".F(nameof(WorldCamera));
 
             if (!RayTracingOutput)

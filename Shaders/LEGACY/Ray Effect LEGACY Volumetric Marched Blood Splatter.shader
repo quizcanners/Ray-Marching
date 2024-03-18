@@ -28,9 +28,14 @@
 
 			CGPROGRAM
 
-	#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+			#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Standard.cginc"
 			#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
+			#include "Assets/Qc_Rendering/Shaders/inc/SDFoperations.cginc"
 			//#include "Assets/Qc_Rendering/Shaders/PrimitivesScene_Sampler.cginc"
+
+			
+			#include "Assets/Qc_Rendering/Shaders/Signed_Distance_Functions.cginc"
+			#include "Assets/Qc_Rendering/Shaders/RayMarching_Forward_Integration.cginc"
 
 			#pragma vertex vert
 			#pragma fragment frag

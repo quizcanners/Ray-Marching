@@ -26,6 +26,8 @@ Shader "RayTracing/Top Down/Traced"
 			CGPROGRAM
 
 			#define RENDER_DYNAMICS
+			
+			#include "Assets/Qc_Rendering/Shaders/PrimitivesScene_Intersect.cginc"
 			#include "Assets/Qc_Rendering/Shaders/Savage_Sampler.cginc"
 			
 			#pragma vertex vert

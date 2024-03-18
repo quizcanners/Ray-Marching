@@ -4,7 +4,7 @@ using QuizCanners.Migration;
 using QuizCanners.Utils;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
 
     [ExecuteAlways]
@@ -18,15 +18,30 @@ namespace QuizCanners.RayTracing
         public int SunAngle = 10;
 
 
+        private readonly ShaderProperty.VectorValue SUN_BACK_ROTATION = new("qc_SunBackDirection");
+
         private readonly LinkedLerp.QuaternionValue _sunRotation = new("ROtation", Quaternion.identity, 50f);
 
         private bool IsAnimating = true;
 
         private float _intensityFallback = 1f;
 
+        public Vector3 SunDirection => SharedLight.transform.forward;
+
+        private Quaternion cachedRot;
+        private Gate.Frame _rotCacheframe = new();
+        public Quaternion GetLightRotationWithOffset() 
+        {
+            if (!_rotCacheframe.TryEnter())
+                return cachedRot;
+
+            cachedRot = Quaternion.Lerp(Quaternion.identity, SharedLight.transform.rotation, 0.8f);
+            return cachedRot;
+        }
+
         public float SunIntensity 
         {
-            get => Singleton.GetValue<Singleton_RayRendering, float>(s => s.lightsManager.SunIntensity, _intensityFallback); //_intensityAnimation.targetValue;
+            get => Singleton.GetValue<Singleton_QcRendering, float>(s => s.lightsManager.SunIntensity, _intensityFallback); //_intensityAnimation.targetValue;
 
             set 
             {
@@ -61,12 +76,12 @@ namespace QuizCanners.RayTracing
 
         public void SetLightSourcePositionAndColor(Vector3 position, Color color) 
         {
-            Singleton.Try<Singleton_CameraOperatorGodMode>(c => 
+            if (Singleton.TryGet<Singleton_CameraOperatorGodMode>(out var c)) 
             {
                 var diff = position - c.Position;
                 SetSunRotation(Quaternion.LookRotation(-diff, Vector3.up));
                 SharedLight.color = color;
-            });
+            };
         }
 
 
@@ -105,6 +120,8 @@ namespace QuizCanners.RayTracing
 
             _lerpData.Update(this, canSkipLerp: false);
             OnTimeOfDayChanged();
+
+            SUN_BACK_ROTATION.GlobalValue = -SharedLight.transform.forward.ToVector4(0);
 
             if (_lerpData.IsDone)
                 IsAnimating = false;

@@ -2,23 +2,26 @@ using QuizCanners.Utils;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     public static class VolumeTracing
     {
-        internal static int Version;
+        public static int ActiveConfigVersion;
+        public static int Version = 0;
 
-        public static void SetDirty()
+        public enum MotionMode { Static, DiscreteSteps, DynaimicRoot  }
+
+        public static void OnVolumeConfigStackChanged()
         {
-            Version++;
+            ActiveConfigVersion++;
         }
 
-        internal static List<Inst_RtxVolumeSettings> Stack = new();
+        public static List<Inst_RtxVolumeSettings> Stack = new();
 
         public static void OnDisable(Inst_RtxVolumeSettings cfg) 
         {
             if (Stack.IndexOf(cfg) == Stack.Count - 1)
-                SetDirty();
+                OnVolumeConfigStackChanged();
 
             Stack.Remove(cfg);
         }
@@ -74,7 +77,7 @@ namespace QuizCanners.RayTracing
             void AddAsCurrent()
             {
                 Stack.Add(cfg);
-                SetDirty();
+                OnVolumeConfigStackChanged();
             }
         }
 
@@ -135,7 +138,7 @@ namespace QuizCanners.RayTracing
                     continue;
                 
                 Stack.Move(i, Stack.Count-1);
-                SetDirty();
+                OnVolumeConfigStackChanged();
                 return;
             }
         }
@@ -144,7 +147,7 @@ namespace QuizCanners.RayTracing
         public static void OnVolumePositionChanged(Inst_RtxVolumeSettings cfg) 
         {
             if (Stack.Count != 0 && Stack[^1] == cfg)
-                SetDirty();
+                OnVolumeConfigStackChanged();
         }
     }
 }

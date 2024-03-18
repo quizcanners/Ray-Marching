@@ -50,10 +50,12 @@ sampler2D   _SpecGlossMap;
 sampler2D   _MetallicGlossMap;
 #endif
 
-#if defined(UNITY_STANDARD_USE_SHADOW_UVS) && defined(_PARALLAXMAP)
-sampler2D   _ParallaxMap;
-half        _Parallax;
-#endif
+
+
+//#if defined(UNITY_STANDARD_USE_SHADOW_UVS) && defined(_PARALLAXMAP)
+//sampler2D   _ParallaxMap;
+//half        _Parallax;
+//#endif
 
 
 
@@ -124,75 +126,17 @@ void vertShadowCaster (VertexInput v
     #endif
 }
 
-half4 fragShadowCaster (UNITY_POSITION(vpos)
-#ifdef UNITY_STANDARD_USE_SHADOW_OUTPUT_STRUCT
-    , VertexOutputShadowCaster i
-#endif
-) : SV_Target
-{
-    #if defined(UNITY_STANDARD_USE_SHADOW_UVS)
-        #if defined(_PARALLAXMAP) && (SHADER_TARGET >= 30)
-            half3 viewDirForParallax = normalize(i.viewDirForParallax);
-            fixed h = tex2D (_ParallaxMap, i.tex.xy).g;
-            half2 offset = ParallaxOffset1Step (h, _Parallax, viewDirForParallax);
-            i.tex.xy += offset;
-        #endif
-
-        /*
-        #if defined(_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A)
-            half alpha = _Color.a;
-        #else
-            half alpha = tex2D(_MainTex, i.tex.xy).a * _Color.a;
-        #endif
-        #if defined(_ALPHATEST_ON)
-            clip (alpha - _Cutoff);
-        #endif
-
-
-        #if defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)
-            #if defined(_ALPHAPREMULTIPLY_ON)
-                half outModifiedAlpha;
-                PreMultiplyAlpha(half3(0, 0, 0), alpha, SHADOW_ONEMINUSREFLECTIVITY(i.tex), outModifiedAlpha);
-                alpha = outModifiedAlpha;
-            #endif
-            #if defined(UNITY_STANDARD_USE_DITHER_MASK)
-                // Use dither mask for alpha blended shadows, based on pixel position xy
-                // and alpha level. Our dither texture is 4x4x16.
-                #ifdef LOD_FADE_CROSSFADE
-                    #define _LOD_FADE_ON_ALPHA
-                    alpha *= unity_LODFade.y;
-                #endif
-                half alphaRef = tex3D(_DitherMaskLOD, float3(vpos.xy*0.25,alpha*0.9375)).a;
-                clip (alphaRef - 0.01);
-            #else
-                clip (alpha - _Cutoff);
-            #endif
-        #endif*/
-
-    #endif // #if defined(UNITY_STANDARD_USE_SHADOW_UVS)
-
-    /*
-    #ifdef LOD_FADE_CROSSFADE
-        #ifdef _LOD_FADE_ON_ALPHA
-            #undef _LOD_FADE_ON_ALPHA
-        #else
-            UnityApplyDitherCrossFade(vpos.xy);
-        #endif
-    #endif*/
-
-    SHADOW_CASTER_FRAGMENT(i)
-}
 
 
 // Tess shader code. Copyright (c) 2019 PDP Archydra.
 
 
 float _Tess;
-float _maxDist;
+//float _maxDist;
 float _ShadowLOD;
-float _Displacement;
-float _DispOffset;
-sampler2D   _ParallaxMap;
+//float _Displacement;
+//float _DispOffset;
+//sampler2D   _ParallaxMap;
 float _Phong;
 
 struct TessFactors {
@@ -222,8 +166,6 @@ TessData vs_tess (VertexInput v) {
   return o;
 }
 
-#define FT_SHADOW_LOD //always on for deferred
-
 #ifdef FT_EDGE_TESS
 	float4 tessIt (float4 v0, float4 v1, float4 v2)
 	{
@@ -236,12 +178,7 @@ TessData vs_tess (VertexInput v) {
 	    return FTSphereProjectionTess (v0, v1, v2, _Displacement, outTess);
 	}
 
-	float4 disp (float4 pos, float2 uv, float3 norm)
-	{
-	    float d = tex2Dlod(_ParallaxMap, float4(uv * _MainTex_ST.xy + _MainTex_ST.zw, 0, 0)).b * _Displacement;
-	    d = d * 0.5 - 0.5 + _DispOffset;
-	    return  float4(pos.xyz + norm * d, pos.w); 
-	}
+
 #else
 	float4 tessIt (float4 v0, float4 v1, float4 v2) {
 		#if defined(FT_SHADOW_LOD)
@@ -252,13 +189,6 @@ TessData vs_tess (VertexInput v) {
 		return FTDistanceBasedTess(v0, v1, v2, _maxDist * 0.2f, _maxDist * 1.2f, outTess);
 	}
 
-	float4 disp (float4 pos, float2 uv, float3 norm)
-	{
-		float fadeOut =  saturate((_maxDist - distance(mul(unity_ObjectToWorld, pos.xyz), _WorldSpaceCameraPos)) / (_maxDist * 0.7f));
-	    float d = tex2Dlod(_ParallaxMap, float4(uv * _MainTex_ST.xy + _MainTex_ST.zw, 0, 0)).b * _Displacement;
-	    d = d * 0.5 - 0.5 + _DispOffset;
-	    return float4(pos.xyz + mul(unity_WorldToObject, norm) * d * fadeOut, pos.w);
-	}
 
 #endif
 
@@ -301,43 +231,7 @@ TessData hs_tess(InputPatch<TessData, 3> v, uint cpID : SV_OutputControlPointID)
 	return o;
 }
 
-[domain("tri")]
-void ds_tess(TessFactors hs_data, const OutputPatch<TessData, 3> vi, float3 bary : SV_DomainLocation,
-#ifdef UNITY_STANDARD_USE_SHADOW_OUTPUT_STRUCT
-  out VertexOutputShadowCaster o,
-#endif
-#ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
-  out VertexOutputStereoShadowCaster os,
-#endif
-  out float4 opos : SV_POSITION
-)
-{
-	VertexInput v = (VertexInput)0;
 
-	float fU = bary.x;
-	float fV = bary.y;
-	float fW = bary.z;
-
-	float4 vertex = vi[0].vertex * fU + vi[1].vertex * fV + vi[2].vertex * fW;
-	v.normal = vi[0].normal * fU + vi[1].normal * fV + vi[2].normal * fW;
-    v.uv0 = vi[0].uv0 * fU + vi[1].uv0 * fV + vi[2].uv0 * fW;
-
-    phongIt4 (vertex, vi[0].vertex, vi[1].vertex, vi[2].vertex, vi[0].normal, vi[1].normal, vi[2].normal, bary);
-    v.vertex = disp(vertex, v.uv0, v.normal);
-
-    #if defined(UNITY_STANDARD_USE_SHADOW_UVS) && defined(_PARALLAXMAP)
-        v.tangent = vi[0].tangent * fU + vi[1].tangent * fV + vi[2].tangent * fW;
-    #endif
-
-    v.vertex.w = 1.0;
-	#ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
-        UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(os);
-    #endif
-    TRANSFER_SHADOW_CASTER_NOPOS(o,opos)
-    #if defined(UNITY_STANDARD_USE_SHADOW_UVS)
-        o.tex = float4(v.uv0,0,0); // TRANSFORM_TEX(v.uv0, _MainTex);
-    #endif
-}
 
 
 #endif // UNITY_STANDARD_SHADOW_INCLUDED

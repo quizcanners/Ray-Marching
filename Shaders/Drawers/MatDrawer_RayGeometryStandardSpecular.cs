@@ -2,7 +2,7 @@ using QuizCanners.Inspect;
 using UnityEngine;
 
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     using static Utils.ShaderProperty;
 

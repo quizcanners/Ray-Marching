@@ -8,17 +8,18 @@
 
 //---------------------------------------
 // Directional lightmaps & Parallax require tangent space too
+/*
 #if (_NORMALMAP || DIRLIGHTMAP_COMBINED || _PARALLAXMAP)
     #define _TANGENT_TO_WORLD 1
 #endif
-
+*/
 
 //---------------------------------------
 float _Tess;
-float _maxDist;
+//float _maxDist;
 float _ShadowLOD;
-float _Displacement;
-float _DispOffset;
+//float _Displacement;
+//float _DispOffset;
 float _Phong;
 
 half4       _Color;
@@ -40,14 +41,16 @@ struct VertexInput
 {
     float4 vertex   : POSITION;
     half3 normal    : NORMAL;
-    float2 uv0      : TEXCOORD0;
-    float2 uv1      : TEXCOORD1;
-#if defined(DYNAMICLIGHTMAP_ON) || defined(UNITY_PASS_META)
-    float2 uv2      : TEXCOORD2;
-#endif
-#ifdef _TANGENT_TO_WORLD
+    float4 uv0      : TEXCOORD0;
+    float4 uv1      : TEXCOORD1;
+//#if defined(DYNAMICLIGHTMAP_ON) || defined(UNITY_PASS_META)
+    float4 uv2      : TEXCOORD2;
+    float4 uv3      : TEXCOORD3;
+//#endif
+//#ifdef _TANGENT_TO_WORLD
     half4 tangent   : TANGENT;
-#endif
+    half4 color : COLOR;
+//#endif
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -55,14 +58,15 @@ struct VertexTess
 {
     float4 vertex   : INTERNALTESSPOS;
     half3 normal    : NORMAL;
-    float2 uv0      : TEXCOORD0;
-    float2 uv1      : TEXCOORD1;
-#if defined(DYNAMICLIGHTMAP_ON) || defined(UNITY_PASS_META)
-    float2 uv2      : TEXCOORD2;
-#endif
-#ifdef _TANGENT_TO_WORLD
+    float4 uv0      : TEXCOORD0;
+    float4 uv1      : TEXCOORD1;
+//#if defined(DYNAMICLIGHTMAP_ON) || defined(UNITY_PASS_META)
+    float4 uv2      : TEXCOORD2;
+    float4 uv3      : TEXCOORD3;
+//#endif
+//#ifdef _TANGENT_TO_WORLD
     half4 tangent   : TANGENT;
-#endif
+//#endif
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 

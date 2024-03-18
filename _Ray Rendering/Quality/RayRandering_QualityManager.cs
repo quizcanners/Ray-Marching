@@ -1,25 +1,17 @@
 using QuizCanners.Inspect;
-using QuizCanners.Migration;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
-    public static partial class RayRendering
+    public static partial class QcRender
     {
-        public class QualityManager : IPEGI, ICfg, IPEGI_ListInspect
+        public class QualityManager : IPEGI, IPEGI_ListInspect
         {
 
             internal void ManagedOnEnable() 
             {
             }
 
-            public void DecodeTag(string key, CfgData data)
-            {
-               
-            }
 
-            public CfgEncoder Encode() => new CfgEncoder()
-                //Add_Bool("mob", MOBILE.Enabled)
-                ;
 
             #region Inspector
 
@@ -31,13 +23,7 @@ namespace QuizCanners.RayTracing
 
             public void InspectInList(ref int edited, int index)
             {
-
-                if (Icon.Enter.Click())
-                    edited = index;
-
-                if ("Quality".PegiLabel().ClickLabel())
-                    edited = index;
-
+                "Quality".PegiLabel().ClickEnter(ref edited, index);
             }
             #endregion
         }

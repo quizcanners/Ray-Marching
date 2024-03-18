@@ -3,9 +3,9 @@ using QuizCanners.Migration;
 using QuizCanners.Utils;
 using System;
 using UnityEngine;
-using static QuizCanners.RayTracing.TracingPrimitives;
+using static QuizCanners.VolumeBakedRendering.TracingPrimitives;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
 
     [Serializable]

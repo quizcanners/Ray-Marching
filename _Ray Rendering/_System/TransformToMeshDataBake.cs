@@ -3,7 +3,7 @@ using QuizCanners.Utils;
 using System;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
 
     [Serializable]
@@ -13,6 +13,10 @@ namespace QuizCanners.RayTracing
         [SerializeField] private Mesh originalMesh;
         private Mesh meshInstance;
         private Color _myColor = Color.white;
+
+
+        public int DataVersion { get; private set; }
+
         public Color MyColor
         {
             get => _myColor;
@@ -21,6 +25,17 @@ namespace QuizCanners.RayTracing
                 _myColor = value;
                 _position.ValueIsDefined = false;
             }
+        }
+
+        public Mesh GetMesh(bool isStatic) 
+        {
+            if (!meshInstance && Application.isPlaying)
+            {
+                UpdateMeshData();
+            } else if (!isStatic)
+                CheckMeshData();
+
+            return meshInstance;
         }
 
         private void UpdateMeshData()
@@ -48,8 +63,11 @@ namespace QuizCanners.RayTracing
                 meshInstance.name = "Instanciated Mesh";
             }
 
+            var globalScaleInLocalRotation = tf.lossyScale; //tf.rotation * tf.lossyScale;
+
+
             meshInstance.SetUVs(0, CreateData(tf.position.ToVector4()));
-            meshInstance.SetUVs(1, CreateData(tf.localScale.ToVector4(0)));
+            meshInstance.SetUVs(1, CreateData(globalScaleInLocalRotation.ToVector4(0))); //tf.localScale.ToVector4(0)));
 
             var rot = tf.rotation.ToVector4();
             rot = new Vector4(-rot.x, -rot.y, -rot.z, rot.w);
@@ -67,7 +85,11 @@ namespace QuizCanners.RayTracing
             }
 
             meshFilter.sharedMesh = meshInstance;
-            
+
+            DataVersion++;
+            _position.TryChange(tf.position);
+            _rotation.TryChange(tf.rotation);
+            _sizeGate.TryChange(tf.lossyScale);
         }
 
         public void Managed_OnDisable() 
@@ -81,16 +103,14 @@ namespace QuizCanners.RayTracing
             if (originalMesh)
             {
                 meshFilter.sharedMesh = originalMesh;
-                originalMesh = null;
             }
         }
 
         public void Managed_OnEnable() 
         {
-            if (originalMesh)
+            if (!originalMesh)
             {
-                meshFilter.sharedMesh = originalMesh;
-                originalMesh = null;
+                originalMesh = meshFilter.sharedMesh;
             }
 
             UpdateMeshData();
@@ -99,14 +119,24 @@ namespace QuizCanners.RayTracing
         private readonly Gate.Vector3Value _position = new();
         private readonly Gate.Vector3Value _sizeGate = new();
         private readonly Gate.QuaternionValue _rotation = new();
+        private readonly Gate.Frame _frameGate = new();
         public void Managed_LateUpdate() 
+        {
+            CheckMeshData();
+        }
+
+
+        private void CheckMeshData() 
         {
             if (!meshFilter)
                 return;
 
+            if (!_frameGate.TryEnter())
+                return;
+
             var tf = meshFilter.gameObject.transform;
 
-            if (_position.TryChange(tf.position) | _rotation.TryChange(tf.rotation) | _sizeGate.TryChange(tf.localScale))
+            if (_position.TryChange(tf.position) | _rotation.TryChange(tf.rotation) | _sizeGate.TryChange(tf.lossyScale))
                 UpdateMeshData();
         }
 
@@ -114,9 +144,12 @@ namespace QuizCanners.RayTracing
         {
             meshFilter = parent.GetComponent<MeshFilter>();
         }
-             
+
 
         #region Inspector
+
+        public override string ToString() => "Write Transform into Mesh";
+
         void IPEGI.Inspect()
         {
             var changed = pegi.ChangeTrackStart();

@@ -3,15 +3,15 @@ using QuizCanners.Utils;
 using System;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     [CreateAssetMenu(fileName = FILE_NAME, menuName = QcUnity.SO_CREATE_MENU + "Ray Renderer/" + FILE_NAME)]
-    public class SO_RayRendering_TracerConfigs : SO_Configurations_Generic<RayRendering.Config>
+    public class SO_RayRendering_TracerConfigs : SO_Configurations_Generic<QcRender.Config>
     {
         public const string FILE_NAME = "Ray Renderer Tracer Config";
     }
 
-    public static partial class RayRendering
+    public static partial class QcRender
     {
         [Serializable]
         public class Config : Configuration
@@ -27,12 +27,12 @@ namespace QuizCanners.RayTracing
                     if (ActiveConfig == value)
                         return;
                     ActiveConfig = value;
-                    Singleton.Get<Singleton_RayRendering>().tracerManager.Decode(value);
+                    Singleton.Get<Singleton_QcRendering>().tracerManager.Decode(value);
                 }
 
             }
 
-            public override CfgEncoder EncodeData() => Singleton.Get<Singleton_RayRendering>().tracerManager.Encode();
+            public override CfgEncoder EncodeData() => Singleton.Get<Singleton_QcRendering>().tracerManager.Encode();
         }
     }
 }

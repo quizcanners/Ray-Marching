@@ -60,7 +60,7 @@ float DistanceToALine(float3 ro, float3 rd, float3 pos)
 }
 
 
-float GetDistanceToSegment(float3 ro, float3 rd, float3 pos, float3 lineDirection, float3 LINE_LENGTH, float3 depthPoint, out float toDepth)
+float GetDistanceToSegment(float3 ro, float3 rd, float3 pos, float3 lineDirection, float3 LINE_LENGTH, float3 depthPoint, out float toDepth, out float fromCameraToLine)
 {
 		// Get points on the ray
 		float rdDot = dot(rd, rd);
@@ -104,7 +104,7 @@ float GetDistanceToSegment(float3 ro, float3 rd, float3 pos, float3 lineDirectio
 
 		// Get Distance to camera
 		float t = saturate(dot(lineDirection, -cameraToStart_vec/LINE_LENGTH)); 
-		float fromCameraToLine = length(lineVector * t + cameraToStart_vec);
+		fromCameraToLine = length(lineVector * t + cameraToStart_vec);
 
 		// Get Distance to LineStream
 		float3 depthToStart_vec = startPos-depthPoint;

@@ -15,31 +15,34 @@ MonoBehaviour:
   configurations:
   - name: Blue Sky
     data:
-      _value: col|27|r|1|1|g|1|1|b|1|1|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.722331|y|9|-0.277935|z|8|0.265425|w|8|0.574926|||Rain|1|0|Amb|30|r|5|0.613|g|5|0.779|b|5|0.962||VolFog|1|0|SunInten|4|1.28|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|4.05||ArtLights|1|n|hdr|7|Daytime|
+      _value: col|27|r|1|1|g|1|1|b|1|1|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.722331|y|9|-0.277935|z|8|0.265425|w|8|0.574926|||Rain|1|0|Amb|30|r|5|0.613|g|5|0.779|b|5|0.962||SunInten|3|1.3|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|4.05||ArtLights|1|n|hdr|7|Daytime|layerFog|45|params|34|vis|8|val|1|0||dist|10|val|3|500||||
   - name: Space
     data:
-      _value: col|35|r|5|0.505|g|5|0.667|b|1|1|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.722135|y|9|-0.277622|z|8|0.265087|w|8|0.575478|||Rain|1|0|Amb|29|r|5|0.193|g|5|0.114|b|4|0.34||VolFog|1|0|SunInten|4|1.25|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|1||ArtLights|1|y|hdr|5|Space|
+      _value: col|39|r|5|0.357|g|5|0.508|b|5|0.764|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|62|rot|54|x|9|-0.022037|y|9|-0.226492|z|9|-0.005126|w|7|0.97375|||Rain|1|0|Amb|0||SunInten|4|0.67|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|1||ArtLights|1|y|hdr|5|Space|layerFog|50|params|39|vis|12|val|5|0.317||dist|10|val|3|500||||
   - name: Night
     data:
-      _value: col|39|r|5|0.417|g|5|0.428|b|5|0.783|a|4|0.75||fog|35|r|4|0.07|g|5|0.123|b|5|0.189|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|5|0.542|SnM|61|rot|53|x|8|0.911066|y|9|-0.162171|z|8|0.334871|w|8|0.177543|||Rain|1|0|Amb|29|r|5|0.202|g|4|0.31|b|5|0.472||VolFog|5|0.742|SunInten|4|0.98|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|0.45||ArtLights|1|y|hdr|5|Night|
+      _value: col|39|r|5|0.417|g|5|0.428|b|5|0.783|a|4|0.75||fog|35|r|4|0.07|g|5|0.123|b|5|0.189|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|5|0.542|SnM|60|rot|52|x|8|0.911063|y|9|-0.162137|z|8|0.334827|w|7|0.17767|||Rain|1|0|Amb|29|r|5|0.202|g|4|0.31|b|5|0.472||SunInten|4|1.53|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|0.45||ArtLights|1|y|hdr|5|Night|layerFog|50|params|39|vis|12|val|5|0.281||dist|10|val|3|500||||
   - name: Mid Day
     data:
-      _value: col|40|r|5|0.896|g|5|0.882|b|5|0.723|a|5|0.287||fog|36|r|5|0.344|g|5|0.585|b|5|0.736|a|1|1||maxFrms|3|500|ml|39|r|5|0.151|g|5|0.151|b|5|0.151|a|4|0.49||stars|1|0|Shad|1|0|SnM|59|rot|51|x|8|0.165901|y|8|0.205684|z|9|-0.240059|w|6|0.9341|||Rain|1|0|Amb|30|r|5|0.607|g|5|0.691|b|5|0.736||VolFog|1|0|SunInten|3|1.3|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|3||ArtLights|1|n|hdr|7|Daytime|
+      _value: col|40|r|5|0.896|g|5|0.882|b|5|0.723|a|5|0.287||fog|36|r|5|0.344|g|5|0.585|b|5|0.736|a|1|1||maxFrms|3|500|ml|39|r|5|0.151|g|5|0.151|b|5|0.151|a|4|0.49||stars|1|0|Shad|1|0|SnM|62|rot|54|x|8|0.284594|y|9|-0.594812|z|9|-0.069446|w|8|0.748586|||Rain|1|0|Amb|30|r|5|0.607|g|5|0.691|b|5|0.736||SunInten|3|1.7|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|3||ArtLights|1|n|hdr|7|Daytime|layerFog|45|params|34|vis|8|val|1|0||dist|10|val|3|500||||
   - name: Rainy Day
     data:
-      _value: col|28|r|1|1|g|1|1|b|1|1|a|5|0.293||fog|36|r|5|0.446|g|5|0.494|b|5|0.567|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|61|rot|53|x|8|0.369236|y|9|-0.241149|z|8|0.126197|w|8|0.888587|||Rain|5|0.331|Amb|40|r|5|0.501|g|5|0.822|b|5|0.849|a|5|0.506||VolFog|5|0.852|SunInten|3|0.8|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|3||ArtLights|1|n|hdr|0||
+      _value: col|28|r|1|1|g|1|1|b|1|1|a|5|0.293||fog|36|r|5|0.446|g|5|0.494|b|5|0.567|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|61|rot|53|x|8|0.369236|y|9|-0.241149|z|8|0.126197|w|8|0.888587|||Rain|5|0.885|Amb|39|r|4|0.23|g|5|0.411|b|5|0.425|a|5|0.506||SunInten|3|0.9|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|1||ArtLights|1|n|hdr|6|Cloudy|layerFog|50|params|39|vis|12|val|5|0.516||dist|10|val|3|500||||
   - name: Contrast Test
     data:
-      _value: col|40|r|5|0.664|g|5|0.383|b|5|0.237|a|5|1.752||fog|35|r|5|0.303|g|4|0.34|b|5|0.387|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|60|rot|52|x|8|0.197402|y|7|0.85955|z|9|-0.192665|w|8|0.430216|||Rain|1|0|Amb|30|r|5|0.575|g|5|0.443|b|5|0.274||VolFog|1|0|SunInten|3|1.3|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|1.73||ArtLights|1|n|hdr|6|Sunset|
+      _value: col|40|r|5|0.664|g|5|0.383|b|5|0.237|a|5|1.752||fog|35|r|5|0.303|g|4|0.34|b|5|0.387|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|60|rot|52|x|8|0.197402|y|7|0.85955|z|9|-0.192665|w|8|0.430216|||Rain|1|0|Amb|0||SunInten|3|1.3|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|1.73||ArtLights|1|n|hdr|6|Sunset|layerFog|45|params|34|vis|8|val|1|0||dist|10|val|3|500||||
   - name: Directional Only
     data:
-      _value: col|40|r|5|0.814|g|5|0.787|b|5|0.731|a|5|1.489||fog|36|r|5|0.284|g|5|0.319|b|5|0.362|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|60|rot|52|x|8|0.197402|y|7|0.85955|z|9|-0.192665|w|8|0.430216|||Rain|1|0|Amb|0||VolFog|1|0|SunInten|3|1.3|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|1||ArtLights|1|n|hdr|5|Weird|
+      _value: col|40|r|5|0.814|g|5|0.787|b|5|0.731|a|5|1.489||fog|36|r|5|0.284|g|5|0.319|b|5|0.362|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|60|rot|52|x|8|0.197402|y|7|0.85955|z|9|-0.192665|w|8|0.430216|||Rain|1|0|Amb|0||SunInten|3|1.3|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|1||ArtLights|1|n|hdr|5|Weird|layerFog|45|params|34|vis|8|val|1|0||dist|10|val|3|500||||
   - name: Blade Runner
     data:
-      _value: col|39|r|4|0.83|g|5|0.522|b|5|0.364|a|5|1.752||fog|36|r|5|0.265|g|5|0.299|b|5|0.339|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|61|rot|53|x|8|0.187717|y|8|0.856866|z|9|-0.151679|w|8|0.455561|||Rain|1|0|Amb|40|r|5|0.632|g|5|0.396|b|5|0.092|a|5|0.878||VolFog|5|0.971|SunInten|4|1.35|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|0||ArtLights|1|n|hdr|6|Cloudy|
+      _value: col|39|r|4|0.83|g|5|0.522|b|5|0.364|a|5|1.752||fog|36|r|5|0.265|g|5|0.299|b|5|0.339|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|1|SnM|61|rot|53|x|8|0.187717|y|8|0.856866|z|9|-0.151679|w|8|0.455561|||Rain|1|0|Amb|40|r|5|0.632|g|5|0.396|b|5|0.092|a|5|0.878||SunInten|4|1.35|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|0||ArtLights|1|n|hdr|6|Cloudy|layerFog|50|params|39|vis|12|val|5|0.504||dist|10|val|3|500||||
   - name: Pitch Black
     data:
-      _value: col|39|r|5|0.103|g|5|0.221|b|5|0.292|a|4|0.91||fog|35|r|4|0.07|g|5|0.123|b|5|0.189|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|60|rot|52|x|7|0.18768|y|8|0.857204|z|9|-0.151551|w|8|0.454982|||Rain|1|0|Amb|6|a|1|1||VolFog|1|0|SunInten|1|0|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|0||ArtLights|1|y|hdr|0||
+      _value: col|39|r|5|0.103|g|5|0.221|b|5|0.292|a|4|0.91||fog|35|r|4|0.07|g|5|0.123|b|5|0.189|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.187717|y|8|0.856866|z|9|-0.151679|w|8|0.455561|||Rain|1|0|Amb|6|a|1|1||SunInten|1|0|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|0||ArtLights|1|y|hdr|0||layerFog|50|params|39|vis|12|val|5|0.269||dist|10|val|3|500||||
   - name: Cloudy
     data:
-      _value: col|35|r|5|0.505|g|5|0.667|b|1|1|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.722135|y|9|-0.277622|z|8|0.265087|w|8|0.575478|||Rain|1|0|Amb|36|r|5|0.794|g|5|0.897|b|5|0.962|a|1|1||VolFog|5|0.777|SunInten|1|0|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|1.89||ArtLights|1|n|hdr|0||
+      _value: col|35|r|5|0.505|g|5|0.667|b|1|1|a|4|1.01||fog|36|r|5|0.223|g|5|0.471|b|5|0.557|a|1|1||maxFrms|3|500|ml|9|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.722135|y|9|-0.277622|z|8|0.265087|w|8|0.575478|||Rain|1|0|Amb|36|r|5|0.431|g|5|0.593|b|5|0.698|a|1|1||SunInten|1|0|atten|35|b|20|b|14|lm|1|0|sp|1|1|||f|4|1.89||ArtLights|1|n|hdr|0||layerFog|50|params|39|vis|12|val|5|0.584||dist|10|val|3|500||||
+  - name: Palace Interior
+    data:
+      _value: col|38|r|5|0.304|g|5|0.347|b|3|0.5|a|5|0.287||fog|36|r|5|0.344|g|5|0.585|b|5|0.736|a|1|1||maxFrms|3|500|ml|39|r|5|0.151|g|5|0.151|b|5|0.151|a|4|0.49||stars|1|0|Shad|1|0|SnM|61|rot|53|x|8|0.255667|y|8|-0.37884|z|9|-0.359204|w|8|0.813687|||Rain|1|0|Amb|0||SunInten|1|3|atten|32|b|20|b|14|lm|1|0|sp|1|1|||f|1|3||ArtLights|1|y|hdr|5|Weird|layerFog|50|params|39|vis|12|val|5|0.895||dist|10|val|3|500||||

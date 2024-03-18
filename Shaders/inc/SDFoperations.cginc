@@ -1,5 +1,9 @@
 // You can add/subtract sin(pos.x/y/y); but use: if  abs(dist)<0.1 
 // abs(dist) - thickness to create a shell
+
+
+#include "RayMathHelpers.cginc"
+
 float dot2(in float2 v) 
 { 
 	return dot(v, v); 
@@ -27,6 +31,13 @@ float3 RotateVec(in float3 vec, in float4 q)
 	return vec;
 }
 
+float3 hash3_3(float3 p3)
+{
+	p3 = (p3 * float3(.1031, .11369, .13787)) % 1;
+	p3 += dot(p3, p3.yxz + 19.19);
+	return -1.0 + 2.0 * ((float3((p3.x + p3.y) * p3.z, (p3.x + p3.z) * p3.y, (p3.y + p3.z) * p3.x)) % 1);
+}
+
 float4 GetGridAndSeed(float3 pos, float upscale, out float3 seed) 
 {
 	float4 result;
@@ -39,7 +50,7 @@ float4 GetGridAndSeed(float3 pos, float upscale, out float3 seed)
 	
 	result.xyz -= 0.5;
 
-	seed = hash33(scaled);
+	seed = hash3_3(scaled);
 
 	return result;
 }

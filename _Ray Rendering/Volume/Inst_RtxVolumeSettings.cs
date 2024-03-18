@@ -1,11 +1,12 @@
 using PainterTool;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     using Inspect;
     using Utils;
 
+    [ExecuteAlways]
     [DisallowMultipleComponent]
     public class Inst_RtxVolumeSettings : MonoBehaviour, IPEGI, IPEGI_Handles
     {
@@ -13,6 +14,7 @@ namespace QuizCanners.RayTracing
 
         public float Size = 1;
         public int hSlices = 4;
+        public bool IsDynamicRoot;
       //  public bool staticPosition;
 
         const int TEX_SIZE = 1024;
@@ -77,15 +79,15 @@ namespace QuizCanners.RayTracing
 
         private void Update()
         {
-            if (_position.TryChange(transform.position)) 
+            if (!IsDynamicRoot && _position.TryChange(transform.position)) 
             {
                 VolumeTracing.OnVolumePositionChanged(this);
-               // if (VolumeTracing.Stack.Count != 0 && VolumeTracing.Stack[VolumeTracing.Stack.Count - 1] == this)
-                  //  SetDirty();
             }
         }
 
         #region Inspector
+
+        public override string ToString() => gameObject.name;
 
         void IPEGI.Inspect()
         {
@@ -95,18 +97,25 @@ namespace QuizCanners.RayTracing
 
             pegi.Nl();
 
-          //  "Static Position".PegiLabel().ToggleIcon(ref staticPosition).Nl();
+            //  "Static Position".PegiLabel().ToggleIcon(ref staticPosition).Nl();
+
+            "Dynamic Root".PegiLabel().ToggleIcon(ref IsDynamicRoot).Nl();
 
             "Size".PegiLabel(50).Edit(ref Size, 0.01f, 2).Nl();
 
             "H Slices".PegiLabel(60).Edit(ref hSlices, 2, 10).Nl();
+
+            if (!Mathf.IsPowerOfTwo(hSlices)) 
+            {
+                "Non Power of two slices can introduce vertical wavy patterns on flat surfaces".PegiLabel().WriteWarning().Nl();
+            }
 
             "Will result in X:{0} Z:{0} Y:{1} volume".F(Width, Height).PegiLabel().Nl();
 
             "Stack".PegiLabel().Edit_List(VolumeTracing.Stack).Nl();
 
             if (changes)
-                VolumeTracing.SetDirty();
+                VolumeTracing.OnVolumeConfigStackChanged();
         }
 
         #endregion

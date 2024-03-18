@@ -4,12 +4,11 @@ using System;
 using UnityEngine;
 
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
-    public static partial class RayRendering
+    public static partial class QcRender
     {
         [Serializable]
-
         internal class BuffersManager : IPEGI, IPEGI_ListInspect, INeedAttention
         {
 
@@ -112,7 +111,7 @@ namespace QuizCanners.RayTracing
                 }
             }
 
-            protected Singleton_RayRendering Mgmt => Singleton.Get<Singleton_RayRendering>(); //.instance;
+            protected Singleton_QcRendering Mgmt => Singleton.Get<Singleton_QcRendering>(); //.instance;
 
             public void OnSwap(out RenderTexture targetBuff)
             {
@@ -150,16 +149,10 @@ namespace QuizCanners.RayTracing
 
             public void InspectInList(ref int edited, int ind)
             {
-                if (Icon.Enter.Click())
-                    edited = ind;
-
                 if (!this.isAttentionWrite())
                 {
-                    if ("Buffers MGMT".PegiLabel().ClickLabel())
-                        edited = ind;
+                    "Buffers MGMT".PegiLabel().ClickEnter(ref edited, ind);
                 }
-
-
             }
 
             public string NeedAttention()

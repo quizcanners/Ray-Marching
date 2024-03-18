@@ -1,14 +1,15 @@
 using System;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     using Migration;
     using Inspect;
     using Lerp;
     using Utils;
+    using QuizCanners.SpecialEffects;
 
-    public static partial class RayRendering
+    public static partial class QcRender
     {
         [Serializable]
         public class WeatherManager : IPEGI, ILinkedLerping, ICfgCustom, IPEGI_ListInspect
@@ -22,12 +23,11 @@ namespace QuizCanners.RayTracing
             private readonly ShaderProperty.TextureValue CLOUD_SHADOWS_TEXTURE = new("_qc_CloudShadows_Mask");
             private readonly LinkedLerp.ShaderFloatFeature CLOUD_SHADOWS_VISIBILITY = new("_qc_Rtx_CloudShadowsVisibility", "_qc_CLOUD_SHADOWS");
             private readonly LinkedLerp.ShaderFloatFeature SUN = new(nName: "_qc_SunVisibility", featureDirective: "_qc_USE_SUN");
-            private readonly LinkedLerp.ColorValue SUN_COLOR = new("Sun Colo", maxSpeed: 2);
+            private readonly LinkedLerp.ShaderColor SUN_COLOR = new("_qc_SunColor", Color.gray, maxSpeed: 2); //"Sun Colo", maxSpeed: 2);
             private readonly LinkedLerp.ShaderFloat SUN_LIGHT_ATTENUATION = new("_qc_Sun_Atten", initialValue: 1);
 
             private readonly LinkedLerp.ShaderColor MIN_LIGH_COLOR = new("_RayMarthMinLight", Color.black, 10);
             private readonly LinkedLerp.ShaderFloatFeature STARS_VISIBILITY = new(nName: "_StarsVisibility", featureDirective: "_RAY_MARCH_STARS");
-            private readonly ShaderProperty.FloatFeature FOG_VISIBILITY = new(name: "_qc_FogVisibility", featureDirective: "_RAY_MARCH_FOG");
             private readonly ShaderProperty.Feature INDOORS = new("_qc_IGNORE_SKY");
             private readonly LinkedLerp.ColorValue FOG_COLOR = new("Fog", maxSpeed: 1);
           
@@ -46,7 +46,7 @@ namespace QuizCanners.RayTracing
                 }
             }
 
-            private float _volumetricFog;
+            public float FogParticles;
 
             private bool lerpDone;
 
@@ -63,27 +63,8 @@ namespace QuizCanners.RayTracing
 
             public float SunIntensity
             {
-                get => SUN.GlobalValue;// Singleton.GetValue<Singleton_SunAndMoonRotator, float>(s => s.Intensity_Target, logOnServiceMissing: false);
+                get => SUN.GlobalValue;
                 set => SUN.GlobalValue = value;
-                /*set
-                {
-                    //SUN. = value;
-                    Singleton.Try<Singleton_SunAndMoonRotator>(s => s.SunIntensity = value, logOnServiceMissing: false);
-                    SUN.GlobalValue = value;
-                    UpdateIndoors();
-                }*/
-            }
-
-            public float VolumetricFog 
-            {
-                get => _volumetricFog;
-                set => _volumetricFog = value;
-            }
-
-            public float Fog 
-            {
-                get => FOG_VISIBILITY.GlobalValue;
-                set => FOG_VISIBILITY.GlobalValue = value;
             }
 
             public Color AmbientColor 
@@ -130,7 +111,8 @@ namespace QuizCanners.RayTracing
 
             private void UpdateEffectiveSunColor() 
             {
-                Singleton.Try<Singleton_SunAndMoonRotator>(s =>  s.SharedLight.color = SUN_COLOR.CurrentValue, logOnServiceMissing: false);
+                if (Singleton.TryGet<Singleton_SunAndMoonRotator>(out var s))
+                    s.SharedLight.color = SUN_COLOR.CurrentValue;
             }
 
             internal int MaxRenderFrames = 1500;
@@ -174,6 +156,7 @@ namespace QuizCanners.RayTracing
             {
                 Configs.IndexOfActiveConfiguration = -1;
                 CLOUD_SHADOWS_VISIBILITY.GlobalValue = 0;
+                HDRs.ManagedOnDisable();
             }
 
 
@@ -197,31 +180,39 @@ namespace QuizCanners.RayTracing
                     case "SnM": SunAndMoon.Decode(data); break;
                     case "Rain": _rainTargetValue = data.ToFloat(); break;
                     case "Amb": AmbientColor = data.ToColor(); break;
-                    case "VolFog": VolumetricFog = data.ToFloat(); break;
                     case "SunInten":  SUN.TargetValue = data.ToFloat(); break;
                     case "atten": SUN_LIGHT_ATTENUATION.Decode(data); break;
                     case "ArtLights":  ArtificialLightsExpected = data.ToBool(); break;
                     case "hdr": HDRs.CurrentHDR = data.ToString(); break;
+                    case "layerFog":
+                        if (Singleton.TryGet<Singleton_LayeredVolumetricFog>(out var layerFog))
+                            layerFog.Decode(data);
+                        break;
                 }
             }
 
-            public CfgEncoder Encode() => new CfgEncoder()
+            public CfgEncoder Encode()
+            {
+                var cody = new CfgEncoder()
                 .Add("col", SUN_COLOR.TargetValue)
                 .Add("fog", FOG_COLOR.TargetValue)
                 .Add("maxFrms", MaxRenderFrames)
                 .Add("ml", MIN_LIGH_COLOR.TargetValue)
-             //   .Add("liDir", LightDirection)
-             //   .Add("intn", SunIntensity)
                 .Add("stars", STARS_VISIBILITY.TargetValue)
                 .Add("Shad", CLOUD_SHADOWS_VISIBILITY.GlobalValue)
                 .Add("SnM", SunAndMoon)
                 .Add("Rain", RainTargetValue)
                 .Add("Amb", AmbientColor)
-                .Add("VolFog", VolumetricFog)
-                .Add("SunInten",  SUN.TargetValue)
+                .Add("SunInten", SUN.TargetValue)
                 .Add("atten", SUN_LIGHT_ATTENUATION)
                 .Add_Bool("ArtLights", ArtificialLightsExpected)
                 .Add_String("hdr", HDRs.CurrentHDR);
+
+                if (Singleton.TryGet<Singleton_LayeredVolumetricFog>(out var layerFog))
+                    cody.Add("layerFog", layerFog);
+
+                return cody;
+            }
               
 
             #endregion
@@ -232,9 +223,10 @@ namespace QuizCanners.RayTracing
 
             public void ManagedUpdate() 
             {
+                HDRs.ManagedUpdate();
+
                 if (!lerpDone)
                 {
-                    HDRs.ManagedUpdate();
                     _lerpData.Update(this, canSkipLerp: false);
                 }
             }
@@ -271,9 +263,12 @@ namespace QuizCanners.RayTracing
                 }
 
                 RenderSettings.fogColor = FOG_COLOR.CurrentValue;
-                Singleton.Try<Singleton_CameraOperatorConfigurable>(s => s.MainCam.backgroundColor = FOG_COLOR.CurrentValue, logOnServiceMissing: false);
 
-                Singleton.Try<Singleton_SunAndMoonRotator>(s => s.SunIntensity = SUN.CurrentValue, logOnServiceMissing: false);
+                if (Singleton.TryGet<Singleton_CameraOperatorConfigurable>(out var s))
+                    s.MainCam.backgroundColor = FOG_COLOR.CurrentValue;
+
+                if (Singleton.TryGet<Singleton_SunAndMoonRotator>(out var sm))
+                    sm.SunIntensity = SUN.CurrentValue; 
 
                 var ambint = AMBIENT_COLOR.CurrentValue;
 
@@ -355,14 +350,6 @@ namespace QuizCanners.RayTracing
                             FOG_COLOR.TargetValue = col;*/
 
 
-                        float fg = Fog;
-                        "Fog".PegiLabel(40).Edit_01(ref fg).Nl(()=> Fog = fg);
-
-                        var vf = VolumetricFog;
-                        "Volumetric Fog".PegiLabel().Edit_01(ref vf).Nl(()=> VolumetricFog = vf);
-
-                        if (vf > 0 && vf < 0.1f)
-                            "Volumetric fog is barely visible while having a performance impact. Setting to zero is recomended".PegiLabel().WriteWarning().Nl();
 
                         var dc = MIN_LIGH_COLOR.TargetValue;
                         if ("Dark Color".PegiLabel().Edit(ref dc).Nl())
@@ -399,31 +386,25 @@ namespace QuizCanners.RayTracing
                             this.SkipLerp();
                         }
 
-
-                        if ("Configs".PegiLabel().IsFoldout().Nl())
-                        {
-                            ConfigurationsSO_Base.Inspect(ref Configs).OnChanged(() => Singleton.Try<Singleton_RayRendering>(s => s.SetBakingDirty(reason: "Weather Config changed", invalidateResult: true)));
-                        }
-
-                        if ("HDRs".PegiLabel().IsFoldout().Nl_ifEntered())
-                            "HDRs".PegiLabel(40).Edit_Inspect(ref HDRs).Nl();
-                        else
-                            HDRs.InspectSelect().Nl();
-                        
-
-                        if ("Sun ".PegiLabel().IsFoldout().Nl()) 
-                        {
-                            Singleton.Try<Singleton_SunAndMoonRotator>(s => s.Nested_Inspect().Nl(()=> 
-                            {
-                                Mgmt.SetBakingDirty("Sun and Moon Changed");
-                            }));
-                        }
-
                         pegi.Nl();
 
                     }
 
-                    pegi.Nl();
+                    if (Singleton.TryGet<Singleton_LayeredVolumetricFog>(out var layerFog))
+                        layerFog.Enter_Inspect().Nl();
+
+
+                    if ("Configs".PegiLabel().IsEntered().Nl())
+                    {
+                        ConfigurationsSO_Base.Inspect(ref Configs).OnChanged(() => Singleton.Try<Singleton_QcRendering>(s => s.SetBakingDirty(reason: "Weather Config changed", invalidateResult: true)));
+                    }
+
+                    Singleton.Try<Singleton_SunAndMoonRotator>(s => s.Enter_Inspect().Nl(() =>
+                    {
+                        Mgmt.SetBakingDirty("Sun and Moon Changed");
+                    }));
+                    
+                    "HDRs".PegiLabel().Edit_Enter_Inspect(ref HDRs).Nl();
 
                     if (!lerpDone && "Skip Lerp".PegiLabel().Click())
                         this.SkipLerp();
@@ -435,8 +416,6 @@ namespace QuizCanners.RayTracing
                     }
                 }
             }
-
-
 
             public void Inspect_SelectConfig() 
             {
@@ -456,8 +435,7 @@ namespace QuizCanners.RayTracing
             public void InspectInList(ref int edited, int ind)
             {
                 var changes = pegi.ChangeTrackStart();
-                if (Icon.Enter.Click() | "Weather".PegiLabel().ClickLabel())
-                    edited = ind;
+                "Weather".PegiLabel().ClickEnter(ref edited, ind);
 
                 if (!Configs)
                     "CFG".PegiLabel(60).Edit(ref Configs);
@@ -466,11 +444,6 @@ namespace QuizCanners.RayTracing
 
                 if (INDOORS.Enabled)
                     "NO SKY".PegiLabel(40).Write();
-
-                if (changes) 
-                {
-                   // this.SkipLerp();
-                }
             }
 
 #endregion

@@ -5,9 +5,9 @@ using QuizCanners.Utils;
 using System;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
-    public static partial class RayRendering
+    public static partial class QcRender
     {
         [Serializable]
         internal class TracerManager : IPEGI, ILinkedLerping, ICfgCustom, IPEGI_ListInspect
@@ -15,11 +15,12 @@ namespace QuizCanners.RayTracing
             [SerializeField] public SO_RayRendering_TracerConfigs Configs;
             [SerializeField] private RayRenderingTarget _target;
 
-            private readonly ShaderProperty.KeywordEnum RAY_RENDERING_METHOD = new("RAY_RENDERING_METHOD", INTERSECTION, MARCHING, MARCHING_PROGRESSIVE);
             private const string INTERSECTION = "INTERSECTION";
-            private const string MARCHING = "_IS_RAY_MARCHING";
-            private const string MARCHING_PROGRESSIVE = "_IS_PROGRESSIVE_MARCHING";
+            private const string MARCHING = "IS_RAY_MARCHING";
+            private const string MARCHING_PROGRESSIVE = "IS_PROGRESSIVE_MARCHING";
 
+            private readonly ShaderProperty.KeywordEnum RAY_RENDERING_METHOD = new(name: "RAY_RENDERING_METHOD", INTERSECTION, MARCHING, MARCHING_PROGRESSIVE);
+   
             internal RayRenderingTarget Target
             {
                 get => _target;
@@ -29,10 +30,10 @@ namespace QuizCanners.RayTracing
 
                     switch (value) 
                     {
-                        case RayRenderingTarget.Disabled: RAY_RENDERING_METHOD["NONE"] = true; break;
-                        case RayRenderingTarget.ProgressiveRayMarching: RAY_RENDERING_METHOD[MARCHING_PROGRESSIVE] = true; break;
-                        case RayRenderingTarget.RayMarching: RAY_RENDERING_METHOD[MARCHING] = true; break;
-                        case RayRenderingTarget.RayIntersection: RAY_RENDERING_METHOD[INTERSECTION] = true; break;
+                        case RayRenderingTarget.Disabled: RAY_RENDERING_METHOD[-1] = true; break;
+                        case RayRenderingTarget.RayIntersection: RAY_RENDERING_METHOD[0] = true; break;
+                        case RayRenderingTarget.RayMarching: RAY_RENDERING_METHOD[1] = true; break;
+                        case RayRenderingTarget.ProgressiveRayMarching: RAY_RENDERING_METHOD[2] = true; break;
                     }
                 }
             }
@@ -155,17 +156,14 @@ namespace QuizCanners.RayTracing
 
             public void InspectInList(ref int edited, int ind)
             {
-                if (Icon.Enter.Click())
-                    edited = ind;
+                "Tracing".PegiLabel(70).ClickEnter(ref edited, ind);
+
+                Inspect_Select();
 
                 if (!Configs)
                 {
-                    Inspect_Select();
-
                     "CFG".PegiLabel(60).Edit(ref Configs);
                 }
-                else
-                    pegi.Nested_Inspect(Configs.InspectShortcut, Configs);
 
             }
             #endregion

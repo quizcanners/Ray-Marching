@@ -1,5 +1,6 @@
 //#include "Assets/The-Fire-Below/Common/Shaders/quizcanners_cg.cginc"
-
+	#include "UnityCG.cginc"
+	#include "AutoLight.cginc"
 /*
 struct appdata
 {
@@ -20,6 +21,41 @@ struct v2fMD
 	float3 rayPos: TEXCOORD1;
 	float4 centerPos: TEXCOORD2;
 };
+
+
+
+float getShadowAttenuation(float3 worldPos)
+{
+	#if _qc_IGNORE_SKY
+		return 0;
+	#endif
+
+#if defined(SHADOWS_CUBE)
+	{
+		unityShadowCoord3 shadowCoord = worldPos - _LightPositionRange.xyz;
+		float result = UnitySampleShadowmap(shadowCoord);
+		return result;
+	}
+#elif defined(SHADOWS_SCREEN)
+	{
+#ifdef UNITY_NO_SCREENSPACE_SHADOWS
+		unityShadowCoord4 shadowCoord = mul(unity_WorldToShadow[0], worldPos);
+#else
+		unityShadowCoord4 shadowCoord = ComputeScreenPos(mul(UNITY_MATRIX_VP, float4(worldPos, 1.0)));
+#endif
+		float result = unitySampleShadow(shadowCoord);
+		return result;
+	}
+#elif defined(SHADOWS_DEPTH) && defined(SPOT)
+	{
+		unityShadowCoord4 shadowCoord = mul(unity_WorldToShadow[0], float4(worldPos, 1.0));
+		float result = UnitySampleShadowmap(shadowCoord);
+		return result;
+	}
+#else
+	return 1.0;
+#endif  
+}
 
 
 // Color Part
@@ -46,6 +82,7 @@ struct v2fMarchBatchable
 	float3 rayPos: TEXCOORD2; 
 	float3 rayDir: TEXCOORD3;
 	float4 centerPos: TEXCOORD4; // w - maximum size (bounding)
+	fixed4 color :			COLOR;
 };
 
 struct v2fMarchBatchableTransparent
@@ -57,6 +94,7 @@ struct v2fMarchBatchableTransparent
 	float3 rayDir: TEXCOORD3;
 	float4 centerPos: TEXCOORD4; // w - maximum size (bounding)
 	float4 screenPos : TEXCOORD5;
+	fixed4 color :			COLOR;
 };
 
 inline void GetRayOrigin(float3 worldPos, float size, out float3 payPos, out float3 rayDir)
@@ -94,6 +132,7 @@ void InitializeBatchableMarcher(appdata_full v, inout v2fMarchBatchable o)
 	float size = max(o.meshSize.z, max(o.meshSize.x, o.meshSize.y));
 	o.centerPos = float4(meshPos, size);	
 	o.meshSize.w = min(o.meshSize.z, min(o.meshSize.x, o.meshSize.y));
+	o.color = v.color;
 	GetRayOrigin(worldPos, size, o.rayPos, o.rayDir);
 }
 
@@ -108,6 +147,7 @@ void InitializeBatchableTransparentMarcher(appdata_full v, inout v2fMarchBatchab
 	float size = max(o.meshSize.z, max(o.meshSize.x, o.meshSize.y));
 	o.centerPos = float4(meshPos, size);	
 	o.meshSize.w = min(o.meshSize.z, min(o.meshSize.x, o.meshSize.y));
+	o.color = v.color;
 	GetRayOrigin(worldPos, size, o.rayPos, o.rayDir);
 }
 

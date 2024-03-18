@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 937115710923069008}
   - component: {fileID: 6860328457428020480}
   - component: {fileID: 2355597335416559346}
-  - component: {fileID: 9118119790940958710}
+  - component: {fileID: 2070693796664855074}
   m_Layer: 0
   m_Name: Light Ray Decal Template
   m_TagString: Untagged
@@ -106,7 +106,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &9118119790940958710
+--- !u!114 &2070693796664855074
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -115,20 +115,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1951518558715971823}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cf9982798e6a1af40aa54ffd010e7d14, type: 3}
+  m_Script: {fileID: 11500000, guid: 049bf92b8ec0197448c407efa02cca38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _renderer: {fileID: 6860328457428020480}
-  Shape: 1
-  primitiveSize: {x: 1, y: 1, z: 1}
-  primitiveOffset: {x: 0, y: 0, z: 0}
-  _offsetFromCollider: 0
-  _colliderAndPrimitive: {fileID: 2355597335416559346}
-  excludiveMaterial:
-    MatType: 0
-    Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-    Roughtness: 0.5
-  LatestVolumeOverlap: 0
-  meshDataBake:
+  _meshDataBake:
     meshFilter: {fileID: 937115710923069008}
     originalMesh: {fileID: 0}
+  _color: {r: 1, g: 1, b: 1, a: 1}

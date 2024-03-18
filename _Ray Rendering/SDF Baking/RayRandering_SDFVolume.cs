@@ -4,49 +4,51 @@ using QuizCanners.Utils;
 using System;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
-    public static partial class RayRendering
+    public static partial class QcRender
     {
         [Serializable]
         public class SDFVolume : IPEGI, IPEGI_ListInspect
         {
             [SerializeField] private Shader bakingShader;
 
-            private RenderTexture _SDFtexture;
-            private readonly OnDemandRenderTexture.Single _renderTexture = new("QcSDF", 1024, isFloat: false);
+            private readonly OnDemandRenderTexture.Single _renderTexture = new("QcSDF", 1024, isFloat: false, isColor: false);
             private readonly ShaderProperty.TextureValue QC_SDF = new("Qc_SDF_Volume");
             private readonly ShaderProperty.FloatFeature QC_USE_SDF = new(name: "Qc_SDF_Visibility", "QC_USE_SDF_VOL");
 
-            private readonly Gate.Integer _volumePositionVersion = new();
-            private readonly Gate.Integer _bakerVersion = new();
+            private readonly Gate.Integer generalVersion = new();
 
             private readonly Gate.Frame _afterEnableGap = new();
 
             private int _bakeCounter;
 
-            private bool Dirty
+            public bool Dirty
             {
                 get
                 {
-                    return _bakerVersion.IsDirty(Mgmt.Version) 
-                        || Singleton.GetValue<Singleton_VolumeTracingBaker, bool>(s => _volumePositionVersion.IsDirty(s.PositionVersion));
+                    if (generalVersion.IsDirty(VolumeTracing.Version))
+                    {
+                        return true;
+                    }
+
+                    return false;
                 }
                 set
                 {
                     if (value)
                     {
-                        _bakerVersion.TryChange(Mgmt.Version);
-                        Singleton.GetValue<Singleton_VolumeTracingBaker, bool>(s => _volumePositionVersion.TryChange(s.PositionVersion));
+                        generalVersion.ValueIsDefined = false;
                     } else 
                     {
-                        _bakerVersion.ValueIsDefined = false;
+                        generalVersion.TryChange(VolumeTracing.Version);
+                       
                     }
                 }
             }
             internal void ManagedUpdate() 
             {
-                if (!_afterEnableGap.IsFramesPassed(2))
+                if (!_afterEnableGap.IsFramesPassed(1))
                     return;
 
                 if (Dirty)
@@ -54,7 +56,7 @@ namespace QuizCanners.RayTracing
                     Render();
                 }
 
-                QC_USE_SDF.GlobalValue = QcLerp.LerpBySpeed(QC_USE_SDF.GlobalValue, Dirty ? 1 : 0, 1, unscaledTime: true);
+                QC_USE_SDF.GlobalValue = QcLerp.LerpBySpeed(QC_USE_SDF.GlobalValue, to: Dirty ? 0 : 1, 1, unscaledTime: true);
             }
 
             internal void ManagedOnEnable()
@@ -64,12 +66,6 @@ namespace QuizCanners.RayTracing
 
             internal void ManagedOnDisable() 
             {
-                if (_SDFtexture)
-                {
-                    _SDFtexture.DestroyWhatever();
-                    _SDFtexture = null;
-                }
-
                 QC_USE_SDF.GlobalValue = 0;
             }
 
@@ -79,14 +75,11 @@ namespace QuizCanners.RayTracing
                 _bakeCounter++;
                 _renderTexture.Blit(bakingShader);
                 QC_SDF.GlobalValue = _renderTexture.GetRenderTexture();
-               
-              //  Debug.Log("Updating SDF");
             }
 
             #region Inspector
             void IPEGI.Inspect()
             {
-
                 "Bakes done: {0}".F(_bakeCounter).PegiLabel().Nl();
 
                 "Baking SHader".PegiLabel().Edit(ref bakingShader).Nl();
@@ -100,14 +93,12 @@ namespace QuizCanners.RayTracing
 
             public void InspectInList(ref int edited, int index)
             {
-                if (Icon.Enter.Click() | ToString().PegiLabel().ClickLabel())
-                    edited = index;
+                ToString().PegiLabel().ClickEnter(ref edited, index);
 
-                if (Icon.Play.Click()) 
-                {
-
-                }
+                if (Icon.Play.Click())
+                    Render();
             }
+
             #endregion
         }
     }

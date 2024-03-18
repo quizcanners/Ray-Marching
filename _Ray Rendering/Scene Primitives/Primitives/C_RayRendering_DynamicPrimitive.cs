@@ -2,7 +2,7 @@ using QuizCanners.Inspect;
 using QuizCanners.Utils;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     [ExecuteAlways]
     [AddComponentMenu(QcUtils.QUIZCANNERS + "/PrimitiveTracing/Proxy/Dynamic Primitive")]

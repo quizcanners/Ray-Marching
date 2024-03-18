@@ -2,7 +2,7 @@ using QuizCanners.Inspect;
 using QuizCanners.Utils;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     [DisallowMultipleComponent]
     public class C_TopDownLight : MonoBehaviour, INeedAttention

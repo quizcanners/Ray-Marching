@@ -1,29 +1,23 @@
-﻿using QuizCanners.Migration;
-using QuizCanners.Inspect;
-using QuizCanners.Lerp;
+﻿using QuizCanners.Inspect;
 using QuizCanners.Utils;
 using System;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
-    public static partial class RayRendering
+    public static partial class QcRender
     {
         [Serializable]
-        internal class SceneManager : IPEGI, ILinkedLerping, ICfgCustom, IPEGI_ListInspect, INeedAttention
+        internal class TracingPrimitivesManager : IPEGI, IPEGI_ListInspect, INeedAttention
         {
-            private Singleton_TracingPrimitivesController TracingPrimitives => Singleton.Get<Singleton_TracingPrimitivesController>();
-            private Singleton_RayRenderingCameraAndOutput TracingToCameraSource => Singleton.Get<Singleton_RayRenderingCameraAndOutput>();
-            private Singleton_RayRendering_UiScreenSpaceOutput UiScreenSpaceOutput => Singleton.Get<Singleton_RayRendering_UiScreenSpaceOutput>();
-
             [NonSerialized] public float StableFrames;
             [NonSerialized] private Vector3 _previousCamPosition = Vector3.zero;
             [NonSerialized] private Quaternion _previousCamRotation = Quaternion.identity;
             [NonSerialized] public float CameraMotion;
-           
 
-            private Singleton_CameraOperatorConfigurable GodModeCamera => Singleton.Get<Singleton_CameraOperatorConfigurable>();
-            public Camera MainCamera => TracingToCameraSource.WorldCamera; //GodModeCamera ? GodModeCamera.MainCam : null;
+            private Singleton_RayRenderingCameraAndOutput TracingToCameraSource => Singleton.Get<Singleton_RayRenderingCameraAndOutput>();
+            private Singleton_RayRendering_UiScreenSpaceOutput UiScreenSpaceOutput => Singleton.Get<Singleton_RayRendering_UiScreenSpaceOutput>();
+            public Camera MainCamera => TracingToCameraSource.WorldCamera; 
 
 
             public void OnSetBakingDirty()
@@ -32,20 +26,11 @@ namespace QuizCanners.RayTracing
             
             }
 
-            public void ManagedOnEnable() 
-            {
-                OnSetBakingDirty();
-            }
-
-            public void ManagedOnDisable() 
-            {
-                //Configs.IndexOfActiveConfiguration = -1;
-            }
-
             public void OnSwap(RenderTexture currentTargetBuffer)
             {
                 if (MainCamera)
                     MainCamera.targetTexture = currentTargetBuffer;
+
                 if (UiScreenSpaceOutput)
                     UiScreenSpaceOutput.RawImage.texture = currentTargetBuffer;
             }
@@ -53,6 +38,8 @@ namespace QuizCanners.RayTracing
             public void ManagedUpdate(out int stableFrames)
             {
                 var isScreen = Mgmt.TargetIsScreenBuffer;
+
+                Singleton.Try<Singleton_TracingPrimitivesController>(s => s.ManagedUpdate());
 
                 TracingToCameraSource.ShowTracing = isScreen;
 
@@ -88,96 +75,23 @@ namespace QuizCanners.RayTracing
 
             }
 
-            #region Linked Lerp
-            public void Lerp(LerpData ld, bool canSkipLerp)
-            {
-                if (GodModeCamera)
-                    GodModeCamera.Lerp(ld, canSkipLerp);
-
-                if (ld.IsDone)
-                {
-                    if (GodModeCamera)
-                        GodModeCamera.mode = Singleton_CameraOperatorConfigurable.Mode.FPS;
-                }
-            }
-
-            public void Portion(LerpData ld)
-            {
-                if (GodModeCamera)
-                    GodModeCamera.Portion(ld);
-            }
-            #endregion
-
-            #region Encode & Decode
-            public void DecodeTag(string key, CfgData data)
-            {
-                switch (key)
-                {
-                    case "gm":
-                        if (GodModeCamera)
-                        {
-                            GodModeCamera.DecodeInternal(data);
-                        }
-                        break;
-                }
-            }
-
-            public CfgEncoder Encode()
-            {
-                var cody = new CfgEncoder()
-                    .Add("gm", GodModeCamera)
-                     ;
-
-                return cody;
-            }
-
-            public void DecodeInternal(CfgData data)
-            {
-                new CfgDecoder(data).DecodeTagsFor(this);
-
-                if (GodModeCamera)
-                    GodModeCamera.mode = Singleton_CameraOperatorConfigurable.Mode.LERP;
-
-                Mgmt.RequestLerps("Scene Decoder");
-            }
-            #endregion
-
             #region Inspector
             public void InspectInList(ref int edited, int ind)
             {
-                if (Icon.Enter.Click() | ("Scene".PegiLabel().ClickLabel()))
-                    edited = ind;
+                "Scene".PegiLabel().ClickEnter(ref edited, ind);
             }
-
-            private readonly pegi.EnterExitContext _context = new();
 
             void IPEGI.Inspect()
             {
-                using (_context.StartContext())
-                {
-                    pegi.Nl();
-
-                    if (!_context.IsAnyEntered)
-                    {
-                        if (GodModeCamera && GodModeCamera.mode == Singleton_CameraOperatorConfigurable.Mode.STATIC && "Edit Camera".PegiLabel().Click().Nl())
-                            GodModeCamera.mode = Singleton_CameraOperatorConfigurable.Mode.FPS;
-                    }
-
-                    if ("Primitives".PegiLabel().IsConditionally_Entered(Primitives).Nl())
-                    {
-                        Primitives.Nested_Inspect();
-                    }
-                }
+                pegi.Nl();
+                TracingPrimitives.Inspect();
             }
 
-            public override string ToString() => "RTX Scene Manager";
+            public override string ToString() => "Tracing Primitives";
 
             public string NeedAttention()
             {
-                if (Application.isPlaying && GodModeCamera.TryGetAttentionMessage(out var msg))
-                    return msg;
-
-                if (TracingPrimitives.TryGetAttentionMessage(out msg))
+                if (Singleton.Get<Singleton_TracingPrimitivesController>().TryGetAttentionMessage(out var msg))
                     return msg;
 
                 if (UiScreenSpaceOutput.TryGetAttentionMessage(out msg))
@@ -191,9 +105,14 @@ namespace QuizCanners.RayTracing
 
             #endregion
 
-            protected Singleton_EnvironmentElementsManager Primitives => Singleton.Get<Singleton_EnvironmentElementsManager>();
+            public void ManagedOnEnable()
+            {
+                OnSetBakingDirty();
+            }
 
-           
+            public void ManagedOnDisable()
+            {
+            }
         }
     }
 }

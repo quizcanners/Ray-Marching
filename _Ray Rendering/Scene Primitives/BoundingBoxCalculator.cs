@@ -3,7 +3,7 @@ using QuizCanners.Utils;
 using UnityEngine;
 
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     public class BoundingBoxCalculator : IPEGI_Handles, IPEGI
     {

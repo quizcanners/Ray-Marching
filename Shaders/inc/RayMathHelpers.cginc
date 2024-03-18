@@ -1,6 +1,16 @@
+#ifndef QC_RMTH
+#define QC_RMTH
 static const float GAMMA_TO_LINEAR = 2.2;
 static const float LINEAR_TO_GAMMA = 1 / GAMMA_TO_LINEAR;
 
+float dot2(in float3 v) { return dot(v, v); }
+
+float3 Rotate (in float3 vec, in float4 q)
+{
+	float3 crossA = cross(q.xyz, vec) + q.w * vec;
+	vec += 2 * cross(q.xyz, crossA);	
+	return vec;
+}
 
 float3 hash33(float3 p3)
 {
@@ -24,3 +34,8 @@ float checkerBoard(float2 p) {
 	return abs((floor(p.x) + floor(p.y)) % 2);
 }
 
+float sharpstep(float a, float b, float x) 
+{
+	return saturate((x - a)/(b - a));
+}
+#endif

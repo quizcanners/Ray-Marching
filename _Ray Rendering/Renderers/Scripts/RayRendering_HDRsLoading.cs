@@ -6,7 +6,7 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using QuizCanners.Utils;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
 
     [CreateAssetMenu(fileName = FILE_NAME, menuName = QcUnity.SO_CREATE_MENU + "Ray Renderer/" + FILE_NAME)]
@@ -16,8 +16,6 @@ namespace QuizCanners.RayTracing
 
         [SerializeField] private List<HDRBox> _hdrs = new();
 
-        private bool _loading;
-        private string _targetHDR;
 
         private static readonly ShaderProperty.TextureValue QC_SKY_BOX = new("Qc_SkyBox");
 
@@ -30,53 +28,75 @@ namespace QuizCanners.RayTracing
             }
         }
 
-        public string CurrentHDR 
-        {
-            get => _targetHDR;
-            set
-            {
-                _targetHDR = value;
-                _loading = true;
-            }
-        }
+        public string CurrentHDR;
+
+        private State _state;
+        private enum State { Undefined, LoadngNew, Loaded, Error }
+        private readonly Gate.String _hdrVersion = new();
+        private HDRBox currentlyLoading;
+
 
         public void ManagedUpdate() 
         {
-            if (!_loading)
-                return;
-
-            try
+            switch (_state) 
             {
-             //   bool any = false;
-                foreach (var h in _hdrs)
-                {
-                    if (h.name.Equals(_targetHDR))
+                case State.Error:
+                case State.Loaded:
+                case State.Undefined: 
+                    if (_hdrVersion.TryChange(CurrentHDR)) 
                     {
-                        h.TryGet(out _, out _);
-                       // any = true;
+                        if (CurrentHDR.IsNullOrEmpty()) 
+                        {
+                            foreach (HDRBox h in _hdrs)
+                                h.Unload();
+                        }
+
+                        foreach (HDRBox h in _hdrs)
+                        {
+                            if (h.name.Equals(CurrentHDR))
+                            {
+                                currentlyLoading = h;
+                                currentlyLoading.TryGet(out _, out var error);
+                                if (!error) 
+                                    _state = State.LoadngNew;
+
+                                break;
+                            }
+                        }
                     }
-                    else
-                        h.Unload();
-                }
+                    break;
+                case State.LoadngNew:
+                    try
+                    {
+                        if (currentlyLoading.TryGet(out var tex, out var error))
+                        {
+                            _state = State.Loaded;
+                            SkyBox = tex;
+                            foreach (var h in _hdrs)
+                                if (h != currentlyLoading)
+                                    h.Unload();
+                        }
 
-                SkyBox = null;
-            } catch (Exception ex) 
-            {
-                Debug.LogException(ex);
+                        if (error)
+                            _state = State.Error;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogException(ex);
+                        _state = State.Error;
+                    }
+                    break;
             }
-
-            _loading = false;
         }
+
+        #region Inspector
 
         public pegi.ChangesToken InspectSelect() 
         {
             var changes = pegi.ChangeTrackStart();
             Icon.Clear.Click(() => CurrentHDR = "");
-            if (pegi.Select_iGotName(ref _targetHDR, _hdrs)) 
-            {
-                CurrentHDR = _targetHDR;
-            }
-
+            pegi.Select_iGotName(ref CurrentHDR, _hdrs);
+            
             return changes;
         }
 
@@ -84,20 +104,26 @@ namespace QuizCanners.RayTracing
         void IPEGI.Inspect()
         {
             inspected = this;
-
             InspectSelect().Nl();
-
             "HDRS".PegiLabel().Edit_List(_hdrs).Nl();
         }
 
+        #endregion
+
+        internal void ManagedOnDisable()
+        {
+            foreach (var h in _hdrs)
+                h.Unload();
+        }
 
         [Serializable]
-        private class HDRBox : IPEGI_ListInspect, ISerializationCallbackReceiver, IGotName
+        private class HDRBox : IPEGI_ListInspect, IGotName
         {
             public string name = "Unnamed";
             public AssetReference reference;
-            private Texture _cachedAsset;
             [NonSerialized] private State _state;
+
+           // AsyncOperationHandle<Texture> _handle;
 
             public string NameForInspector { get => name; set => name = value; }
 
@@ -110,14 +136,30 @@ namespace QuizCanners.RayTracing
 
                 switch (_state)
                 {
-                    case State.Loaded: tex = _cachedAsset; return true;
+                    case State.Loaded: tex = reference.OperationHandle.Result as Texture; return true;
                     case State.FailedToLoad: failed = true; return false;
-                    case State.Loading: return false;
+                    case State.Loading: 
+                        
+                        if (reference.OperationHandle.IsDone) 
+                        {
+                            if (reference.OperationHandle.Status == AsyncOperationStatus.Succeeded) 
+                            {
+                                _state = State.Loaded;
+                                tex = reference.OperationHandle.Result as Texture;
+                                
+                                return true;
+                            } else 
+                            {
+                                Debug.LogError("HDR loading failed");
+                                _state = State.FailedToLoad;
+                            }
+                        }
+                        
+                        return false;
                     case State.Uninitialized:
                         try
                         {
-                            AsyncOperationHandle handle = reference.LoadAssetAsync<Texture>();
-                            handle.Completed += Handle_Completed;
+                            reference.LoadAssetAsync<Texture>();
                             _state = State.Loading;
                             return false;
                         }
@@ -132,42 +174,30 @@ namespace QuizCanners.RayTracing
                 }
             }
 
-            // Instantiate the loaded prefab on complete
-            private void Handle_Completed(AsyncOperationHandle obj)
-            {
-                if (obj.Status == AsyncOperationStatus.Succeeded)
-                {
-                    _cachedAsset = reference.Asset as Texture;
-                    if (_cachedAsset)
-                    {
-                        _state = State.Loaded;
-                        SkyBox = _cachedAsset;
-                    }
-                    else
-                    {
-                        _state = State.FailedToLoad;
-                    }
-                }
-                else
-                {
-                    Debug.LogError($"AssetReference {reference.RuntimeKey} failed to load.");
-                    _state = State.FailedToLoad;
-                }
-            }
 
             // Release asset when parent object is destroyed
             public void Unload()
             {
-                if (_state == State.Uninitialized)
-                    return;
-
-                _state = State.Uninitialized;
-                if (reference != null)
+                try
                 {
-                    reference.ReleaseAsset();
-                    _cachedAsset = null;
+                    switch (_state)
+                    {
+                        case State.Uninitialized:
+                            return;
+                        case State.Loading:
+                            _state = State.Uninitialized;
+                            Addressables.Release(reference.OperationHandle);
+                            return;
+                        case State.Loaded:
+                            Addressables.Release(reference.OperationHandle);
+                            _state = State.Uninitialized;
+                            return;
+                    }
+                } catch(Exception ex) 
+                {
+                    Debug.LogException(ex);
                 }
-               
+                     
             }
 
             #region Inspector
@@ -175,9 +205,6 @@ namespace QuizCanners.RayTracing
 
             public void InspectInList(ref int edited, int index)
             {
-                if (_cachedAsset)
-                    pegi.Edit(ref _cachedAsset);
-
                 "Adressable".PegiLabel(60).Edit_Property(
                     () => reference,
                     nameof(_hdrs),
@@ -193,14 +220,16 @@ namespace QuizCanners.RayTracing
                 
                 pegi.Edit(ref name);
 
+                _state.ToString().PegiLabel().Write();
+
                 switch (_state)
                 {
                     case State.Loaded:
                         if (Icon.Clear.Click())
                             Unload();
                         pegi.Nl();
-                        pegi.Draw(_cachedAsset, Screen.width).Nl();
-                      
+                        pegi.Draw(reference.OperationHandle.Result as Texture, Screen.width).Nl();
+
                         break;
                     case State.Uninitialized: if (Icon.Download.Click()) TryGet(out _, out _); break;
                     case State.FailedToLoad: if (Icon.Refresh.Click()) _state = State.Uninitialized; break;
@@ -209,19 +238,7 @@ namespace QuizCanners.RayTracing
                 }
             }
 
-            public void OnBeforeSerialize()
-            {
-                Unload();
-            }
-
-            public void OnAfterDeserialize()
-            {
-                _state = State.Uninitialized;
-            }
-
             #endregion
         }
-
     }
-
 }

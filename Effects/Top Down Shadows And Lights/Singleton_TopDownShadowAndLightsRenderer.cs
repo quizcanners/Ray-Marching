@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
   
     [AddComponentMenu(QcUtils.QUIZCANNERS + "/Top Down Light Camera")]
@@ -97,7 +97,7 @@ namespace QuizCanners.RayTracing
         }
 
         #region Inspector
-        public override string InspectedCategory => nameof(RayTracing);
+        public override string InspectedCategory => nameof(VolumeBakedRendering);
 
         public override string ToString() => "Top Down";
         public override void Inspect()
@@ -164,6 +164,12 @@ namespace QuizCanners.RayTracing
             QcUnity.SetLayerMaskForSceneView(_renderLayer, false);
 
             UpdateCamera();
+
+            if (!Application.isPlaying) 
+            {
+                if (VolumeTracing.Stack.Count == 1)
+                    SetPosition(VolumeTracing.Stack[0].transform.position);
+            }
         }
 
         protected override void OnBeforeOnDisableOrEnterPlayMode(bool afterEnableCalled)

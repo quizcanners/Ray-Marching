@@ -100,7 +100,7 @@ Shader "RayTracing/Top Down/Light And Shadow"
 				#if _IGNORE_HEIGHT
 					alpha = smoothstep(0.25,0,dist) /(1+ pow(dist * _Range,2));
 				#else 
-					alpha = sharpness*smoothstep(0.25,0,dist) / (1 + pow(dist *  (1 + 9 * sharpness), 2));
+					alpha = sharpness*smoothstep(0.25,0,dist) / (1 + pow(dist * _Range *  (1 + 9 * sharpness), 2));
 				#endif
 #elif _SHAPE_SHARP
 				alpha = smoothstep(0.25, 0, dist);

@@ -2,7 +2,7 @@
 using QuizCanners.Inspect;
 using QuizCanners.Utils;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
 
     [DisallowMultipleComponent]
@@ -48,7 +48,7 @@ namespace QuizCanners.RayTracing
         }
 
 
-        public override bool TryReflect(C_RayT_PrimShape_EnvironmentElement el)
+        public override bool TryReflect(C_RayT_PrimShape el)
         {
             var changes = base.TryReflect(el);
 

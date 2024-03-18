@@ -3,10 +3,10 @@ using QuizCanners.Utils;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     [ExecuteAlways]
-    [AddComponentMenu(QcUtils.QUIZCANNERS + "/Ray Rendering/Output")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/Qc Rendering/Output")]
     internal class Singleton_RayRendering_UiScreenSpaceOutput : Singleton.BehaniourBase
     {
         public RawImage RawImage;
@@ -31,7 +31,7 @@ namespace QuizCanners.RayTracing
         }
 
         #region Inspector
-        public override string InspectedCategory => nameof(RayTracing);
+        public override string InspectedCategory => nameof(VolumeBakedRendering);
 
         public override void Inspect()
         {

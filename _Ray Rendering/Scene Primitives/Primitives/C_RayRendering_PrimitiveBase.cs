@@ -1,8 +1,8 @@
 using QuizCanners.Utils;
 using UnityEngine;
-using static QuizCanners.RayTracing.TracingPrimitives;
+using static QuizCanners.VolumeBakedRendering.TracingPrimitives;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     [DisallowMultipleComponent]
     [ExecuteInEditMode]

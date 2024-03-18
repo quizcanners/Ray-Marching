@@ -3,7 +3,7 @@ using QuizCanners.Utils;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     public class LowResolutionDepth : MonoBehaviour, IPEGI, IPEGI_ListInspect
     {

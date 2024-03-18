@@ -5,7 +5,7 @@ using QuizCanners.Utils;
 
 
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     public class VolumeShapeDraw : MonoBehaviour, IPEGI
     {
@@ -34,7 +34,9 @@ namespace QuizCanners.RayTracing
         {
             if (Vector3.Distance(_previousPosition, transform.position) > 0.01f)
             {
-               Singleton.Try<Singleton_RayRendering>(m => m.SetBakingDirty("Volume Shape Moved"));
+               if (Singleton.TryGet<Singleton_QcRendering>(out var m))
+                    m.SetBakingDirty("Volume Shape Moved");
+
                 BakedForLocation_Version = -1;
                 _previousPosition = transform.position;
             }

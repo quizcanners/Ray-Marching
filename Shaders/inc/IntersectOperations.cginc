@@ -31,11 +31,12 @@
 // Disk:            https://www.shadertoy.com/view/lsfGDB
 //
 
+#include "RayMathHelpers.cginc"
+
 #define MAX_DIST 10000//1e10
 #define MAX_DIST_EDGE MAX_DIST - 10//1e10
 
 
-float dot2(in float3 v) { return dot(v, v); }
 
 // Plane 
 float iPlane(in float3 ro, in float3 rd, in float2 distBound, inout float3 normal,
@@ -345,12 +346,7 @@ bool IsHitBox(in float3 ro, in float3 rd, in float3 boxSize, in float3 m)
 }
 
 
-float3 Rotate (in float3 vec, in float4 q)
-{
-	float3 crossA = cross(q.xyz, vec) + q.w * vec;
-	vec += 2 * cross(q.xyz, crossA);	
-	return vec;
-}
+
 
 
 bool isHitBoxRot(in float3 ro, in float3 rd, in float4 q, in float3 boxSize, in float2 distBound)
@@ -1336,4 +1332,3 @@ inline float3 Mix(float3 a, float3 b, float3 p) {
 inline float Mix(float a, float b, float p) {
 	return a * (1 - p) + b * p;
 }
-

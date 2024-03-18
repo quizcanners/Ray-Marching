@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using PainterTool;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     using Inspect;
     using static TracingPrimitives;
@@ -10,7 +10,7 @@ namespace QuizCanners.RayTracing
     using System;
 
     [ExecuteAlways]
-    [AddComponentMenu(QcUtils.QUIZCANNERS + "/Ray Rendering/Primitives Manager")]
+    [AddComponentMenu(QcUtils.QUIZCANNERS + "/Qc Rendering/Primitives Manager")]
     public class Singleton_TracingPrimitivesController : Singleton.BehaniourBase, IPEGI, IPEGI_Handles
     {
 #if UNITY_EDITOR
@@ -20,94 +20,120 @@ namespace QuizCanners.RayTracing
         [SerializeField] internal Dynamic dynamicObjects = new();
         [SerializeField] internal GeometryObjectArray rotatedCubes;
         [SerializeField] internal GeometryObjectArray unRotatedCubes;
-        [SerializeField] private Color _floorColor = Color.gray;
         
         private readonly Gate.Integer _arrangementVersion = new();
         private readonly Gate.Integer _volumeVersion = new();
 
         const string CUBE_ARRAY_NAME = "RayMarchCube";
 
-        [NonSerialized] private DebugShapes _debugShapes = DebugShapes.Off; 
+        [NonSerialized] private DebugShapes _debugShapes = DebugShapes.Off;
+
+        private ShapesUpdateState _updateState = ShapesUpdateState.Standby;
 
         private enum DebugShapes { Off, HideRotated, HideUnrotated }
 
-        protected Singleton_EnvironmentElementsManager GetEnvironment() => Singleton.Get<Singleton_EnvironmentElementsManager>();
+        private enum ShapesUpdateState { Standby, Gouping, Ready }
 
-        protected void Update()
+        public bool IsReady => _updateState == ShapesUpdateState.Ready;
+
+        internal void ManagedUpdate()
         {
-            if (!Application.isPlaying)
-                return;
-
-            var raySrv = Singleton.Get<Singleton_RayRendering>();
+            var raySrv = Singleton.Get<Singleton_QcRendering>();
 
             if (!raySrv)
                 return;
 
-            var environment = GetEnvironment();
-
-            var vol = C_VolumeTexture.LatestInstance;
-
-            if ((environment && _arrangementVersion.TryChange(ArrangementVersion)) | (vol && _volumeVersion.TryChange(vol.LocationVersion)))
+            switch (_updateState)
             {
-                bool changed = false;
+                case ShapesUpdateState.Standby:
+                case ShapesUpdateState.Ready:
 
-                if (_debugShapes == DebugShapes.HideRotated)
-                    HideAll(rotatedCubes.SortedElements);
-                else
-                    UpdateShapes(rotatedCubes.SortedElements, rotatedCubes.ShapeToReflect, rotated: true);
-                
-                if (_debugShapes == DebugShapes.HideUnrotated)
-                    HideAll(unRotatedCubes.SortedElements);
-                else
-                    UpdateShapes(unRotatedCubes.SortedElements, unRotatedCubes.ShapeToReflect, rotated: false);
-                
-                rotatedCubes.PassElementsToShader();
-                unRotatedCubes.PassElementsToShader();
+                    //var environment = GetEnvironment();
+                    var vol = C_VolumeTexture.LatestInstance;
 
-                void HideAll<T>(List<T> shapes) where T : SortedElement
-                {
-                    for (int i = 0; i < shapes.Count; i++)
+                    bool arrangementDirty = _arrangementVersion.TryChange(TracingPrimitives.ArrangementVersion);
+                    bool volumeDirty = vol && _volumeVersion.TryChange(vol.LocationVersion);
+
+                    if (!arrangementDirty && !volumeDirty)
+                        break;
+
+                        _updateState = ShapesUpdateState.Gouping;
+
+                    if (_debugShapes == DebugShapes.HideRotated)
+                        rotatedCubes.SortedElements = new SortedElement[0];
+                    else
+                        UpdateShapeLists(ref rotatedCubes.SortedElements, rotatedCubes.ShapeToReflect, rotated: true);
+
+                    if (_debugShapes == DebugShapes.HideUnrotated)
+                        unRotatedCubes.SortedElements = new SortedElement[0];
+                    else
+                        UpdateShapeLists(ref unRotatedCubes.SortedElements, unRotatedCubes.ShapeToReflect, rotated: false);
+
+                    rotatedCubes.StartGroupingBoxesJob();
+                    unRotatedCubes.StartGroupingBoxesJob();
+
+                    break;
+
+                    void UpdateShapeLists(ref SortedElement[] shapes, Shape shape, bool rotated)
                     {
-                        shapes[i].Hide();
-                    }
-                }
+                        var mgmt = TracingPrimitives.s_EnvironmentElements;
+                        var sortedForRotatedType = mgmt.GetSortedForVolume(rotated: rotated);
 
-                void UpdateShapes<T>(List<T> shapes, Shape shape, bool rotated ) where T: SortedElement
-                {
-                    for (int i = 0; i < shapes.Count; i++)
-                    {
-                        T el = shapes[i];
-                        changed |= el.TryReflect(environment.GetInstanceForShape(shape, rotated:rotated, i));
-                    }
-                }
+                        if (!sortedForRotatedType.TryGetValue(shape, out var sortedForShape)) 
+                        {
+                            shapes = new SortedElement[0];
+                            return;
+                        }
 
-                if (changed && raySrv.TargetIsScreenBuffer)
-                {
-                    raySrv.SetBakingDirty();
-                }
+                        var count = Mathf.Min(GeometryObjectArray.MAX_ELEMENTS_COUNT, sortedForShape.Count);
+
+                        shapes = new SortedElement[count];
+
+                        for (int i=0; i<count; i++) 
+                        {
+                            var srtEl = new SortedElement();
+                            shapes[i] = srtEl;
+                            srtEl.Reflect(s_EnvironmentElements.GetByIndex(sortedForShape[i]));
+                        }
+                    }
+
+                case ShapesUpdateState.Gouping:
+
+                    if (!rotatedCubes.IsGroupingDone || !unRotatedCubes.IsGroupingDone)
+                        break;
+
+                    rotatedCubes.ProcessBoxesAfterJob();
+                    unRotatedCubes.ProcessBoxesAfterJob();
+
+                    rotatedCubes.PassToShader();
+                    unRotatedCubes.PassToShader();
+
+                    _updateState = ShapesUpdateState.Ready;
+                    break;
             }
         }
 
         void LateUpdate() 
         {
+            if (QcScenes.IsAnyLoading)
+                return;
+
             dynamicObjects.ManagedUpdate();
-        }
-
-
-        protected override void OnAfterEnable()
-        {
-            base.OnAfterEnable();
         }
 
         protected override void OnBeforeOnDisableOrEnterPlayMode(bool afterEnableCalled)
         {
             base.OnBeforeOnDisableOrEnterPlayMode(afterEnableCalled);
+
+
+            rotatedCubes.Clear();
+            unRotatedCubes.Clear();
         }
 
         #region Inspector
 
         public override string ToString() => "Primitives";
-        public override string InspectedCategory => nameof(RayTracing);
+        public override string InspectedCategory => nameof(VolumeBakedRendering);
 
         [SerializeField] private pegi.EnterExitContext context = new();
         readonly pegi.CollectionInspectorMeta _arrays = new("Object Arrays");
@@ -161,7 +187,6 @@ namespace QuizCanners.RayTracing
         public void OnDrawGizmos() => this.OnSceneDraw_Nested();
 
         #endregion
-
     }
     
     [PEGI_Inspector_Override(typeof(Singleton_TracingPrimitivesController))] internal class TracingPrimitivesControllerDrawer : PEGI_Inspector_Override { }

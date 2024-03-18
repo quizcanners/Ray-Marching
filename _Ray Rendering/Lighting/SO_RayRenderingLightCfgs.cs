@@ -4,7 +4,7 @@ using System;
 using UnityEngine;
 
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     [CreateAssetMenu(fileName = FILE_NAME, menuName = QcUnity.SO_CREATE_MENU + "Ray Renderer/" + FILE_NAME)]
     internal class SO_RayRenderingLightCfgs : SO_Configurations_Generic<LightConfig>
@@ -24,10 +24,10 @@ namespace QuizCanners.RayTracing
             set
             {
                 ActiveConfig = value;
-                Singleton.Get<Singleton_RayRendering>().lightsManager.Decode(ActiveConfig);
+                Singleton.Get<Singleton_QcRendering>().lightsManager.Decode(ActiveConfig);
             }
         }
 
-        public override CfgEncoder EncodeData() => Singleton.Get<Singleton_RayRendering>().lightsManager.Encode();
+        public override CfgEncoder EncodeData() => Singleton.Get<Singleton_QcRendering>().lightsManager.Encode();
     }
 }

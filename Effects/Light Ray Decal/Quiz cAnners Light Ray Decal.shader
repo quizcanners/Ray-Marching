@@ -28,10 +28,13 @@
 			{
 				CGPROGRAM
 
-				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Debug.cginc"
+				#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Standard.cginc"
 				#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
 				#include "Assets/Qc_Rendering/Shaders/inc/RayDistanceOperations.cginc"
 		
+				#include "Assets/Qc_Rendering/Shaders/Signed_Distance_Functions.cginc"
+				#include "Assets/Qc_Rendering/Shaders/RayMarching_Forward_Integration.cginc"
+
 				#pragma vertex vert
 				#pragma fragment frag
 				#pragma multi_compile_fwdbase
@@ -73,7 +76,8 @@
 					float3 lineDirection = Rotate(float3(0,0,1),q);
 
 					float toDepth;
-					float combinedDistance = GetDistanceToSegment(ro, rd, pos, lineDirection,  size * 0.6, farPoint, toDepth);
+					float fromCameraToLine;
+					float combinedDistance = GetDistanceToSegment(ro, rd, pos, lineDirection,  size * 0.6, farPoint, toDepth, fromCameraToLine);
 
 					float gyroid = LaserGyroid(farPoint + lineDirection * toDepth, 4) ; 
 

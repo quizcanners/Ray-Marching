@@ -75,7 +75,7 @@ namespace QuizCanners.Utils
             }
         }
 
-        private float CameraWindowNearClip()
+        public float DesiredCameraNearClip()
         {
             float val = (CameraHeight / Mathf.Tan(Mathf.Deg2Rad * _mainCam.fieldOfView * 0.5f));
 
@@ -84,15 +84,17 @@ namespace QuizCanners.Utils
 
         public float CameraClipDistance
         {
-            get => _mainCam.farClipPlane - CameraWindowNearClip();
+            get => _mainCam.farClipPlane - DesiredCameraNearClip();
             set
             {
-                _mainCam.farClipPlane = CameraWindowNearClip() + value;
+                _mainCam.farClipPlane = DesiredCameraNearClip() + value;
                 AdjsutCamera();
             }
         }
 
-        private Vector3 _adjustePosition;
+        private Vector3 _adjustedPosition;
+
+        
 
         protected virtual void AdjsutCamera()
         {
@@ -101,9 +103,9 @@ namespace QuizCanners.Utils
             if (!camTf.parent || camTf.parent != transform)
                 return;
 
-            float clip = CameraWindowNearClip();
-            _adjustePosition = transform.position - camTf.forward * clip;
-            camTf.position = _adjustePosition;
+            float clip = DesiredCameraNearClip();
+            _adjustedPosition = transform.position - camTf.forward * clip;
+            camTf.position = _adjustedPosition;
             _mainCam.nearClipPlane = clip * Mathf.Clamp(1 - offsetClip, 0.01f, 0.99f);
             _mainCam.farClipPlane = clip + _mainCam.farClipPlane - clip;// CameraClipDistance;
         }
@@ -322,7 +324,7 @@ namespace QuizCanners.Utils
                     if ("Clip Range".PegiLabel(90).Edit_Delayed(ref clipDistance).Nl())
                         CameraClipDistance = Mathf.Clamp(clipDistance, 0.03f, 100000);
 
-                    "Clip Distance (Debug): {0}".F(CameraWindowNearClip()).PegiLabel().Nl();
+                    "Clip Distance (Debug): {0}".F(DesiredCameraNearClip()).PegiLabel().Nl();
 
                     "Offset Clip".PegiLabel(90).Edit(ref offsetClip, 0.01f, 0.99f).Nl();
 

@@ -5,7 +5,7 @@ using QuizCanners.Utils;
 using System;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
 
     public partial class Singleton_VolumeTracingBaker
@@ -191,7 +191,7 @@ namespace QuizCanners.RayTracing
 
                             try 
                             {
-                                parent.Paint(null, parent._doubleBuffer.Target, parent.bakingShader);
+                                parent.Blit(null, parent._doubleBuffer.Target, parent.bakingShader);
                             } catch (Exception ex) 
                             {
                                 Debug.LogException(ex);

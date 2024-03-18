@@ -1,11 +1,11 @@
 using QuizCanners.Utils;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
-    public static partial class RayRendering
+    public static partial class QcRender
     {
-        internal static Singleton_RayRendering Mgmt => Singleton.Get<Singleton_RayRendering>();
+        internal static Singleton_QcRendering Mgmt => Singleton.Get<Singleton_QcRendering>();
 
         public enum RayRenderingTarget 
         { 

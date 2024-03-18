@@ -3,13 +3,13 @@ using QuizCanners.Inspect;
 using QuizCanners.Utils;
 using UnityEngine;
 
-namespace QuizCanners.RayTracing
+namespace QuizCanners.VolumeBakedRendering
 {
     public static partial class TracingPrimitives
     {
         public class CfgAndInstance : IPEGI_ListInspect, IPEGI
         {
-            public C_RayT_PrimShape_EnvironmentElement EnvironmentElement;
+            public C_RayT_PrimShape EnvironmentElement;
             //private CfgData _data;
 
             public float LatestOverlapCheck => EnvironmentElement.LatestVolumeOverlap;
@@ -20,9 +20,9 @@ namespace QuizCanners.RayTracing
 
             public bool IsValid => EnvironmentElement && EnvironmentElement.gameObject.activeInHierarchy;//Instances[i].EnvironmentElement || !Instances[i].EnvironmentElement.gameObject.activeInHierarchy
 
-            public float GetOverlap(Vector3 bottomCenter, Vector3 size) 
+            public float GetOverlap(Vector3 bottomCenter, Vector3 size, bool prioratizeHigher) 
             {
-                return EnvironmentElement.GetOverlap(bottomCenter: bottomCenter, size);
+                return EnvironmentElement.GetOverlap(bottomCenter: bottomCenter, size, prioratizeHigher: prioratizeHigher);
             }
 
             public float VolumeWeight
@@ -44,7 +44,7 @@ namespace QuizCanners.RayTracing
                             _weight = EnvironmentElement.GetOverlap(
                                 worldPos: vol.GetPositionAndSizeForShader().XYZ(),
                                 width: vol.TextureWidth * size,
-                                height: vol.TextureHeight * size);
+                                height: vol.TextureHeight * size, prioratizeHigher: true);
                         }
                     }
 
@@ -76,7 +76,7 @@ namespace QuizCanners.RayTracing
             
             #endregion
 
-            public CfgAndInstance(C_RayT_PrimShape_EnvironmentElement el)
+            public CfgAndInstance(C_RayT_PrimShape el)
             {
                 EnvironmentElement = el;
                 el.Registered = true;

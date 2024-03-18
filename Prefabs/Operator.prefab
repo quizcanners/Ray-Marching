@@ -159,7 +159,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &6317648481319968358
 Transform:
   m_ObjectHideFlags: 0
@@ -235,10 +235,13 @@ GameObject:
   m_Component:
   - component: {fileID: 6317648482230473004}
   - component: {fileID: 6317648482230472994}
+  - component: {fileID: 2488748603592186620}
+  - component: {fileID: 3532211958429336081}
   - component: {fileID: 524405632809085521}
+  - component: {fileID: 6844992817991346678}
   - component: {fileID: 6106885524159962129}
   m_Layer: 0
-  m_Name: Main Camera
+  m_Name: Main Geometry Camera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -271,7 +274,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.344, g: 0.585, b: 0.736, a: 1}
+  m_BackGroundColor: {r: 0.223, g: 0.471, b: 0.557, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -300,7 +303,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 129943
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -312,6 +315,57 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &2488748603592186620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6317648482230472993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9cf2c8bc3687364395ed87ed961fccf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _camera: {fileID: 6317648482230472994}
+  _pass_1_Depth:
+    Shader: {fileID: 4800000, guid: 27e64a84ecb928e49a3f73a4bc296f13, type: 3}
+    _optionalMaterial: {fileID: 0}
+  _pass_2_Baking:
+    Shader: {fileID: 4800000, guid: 6baa3b95c4ce3d5428dd477ed50659d0, type: 3}
+    _optionalMaterial: {fileID: 0}
+  _pass_3_Denoising:
+    Shader: {fileID: 4800000, guid: d846197f0fbe1ea498dfcabe3544b39f, type: 3}
+    _optionalMaterial: {fileID: 0}
+  _pass_4_AppendingToFar:
+    Shader: {fileID: 4800000, guid: 9bfdabce3f26f294a9d6c3b8addb9718, type: 3}
+    _optionalMaterial: {fileID: 0}
+  _pass_5_ToScreen:
+    Shader: {fileID: 4800000, guid: 972028e5601820f488e594183e1eb42a, type: 3}
+    _optionalMaterial: {fileID: 0}
+  _smoothResult: 0
+--- !u!114 &3532211958429336081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6317648482230472993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 480b68871518dc34dae4e3641bb16e09, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Camera: {fileID: 6317648482230472994}
+  IlluminationDecals:
+    materialCenter: {fileID: 2100000, guid: c0cfe4c4777fc0c4a8b2c42a51d20aa4, type: 2}
+    materialSide: {fileID: 2100000, guid: bde25329544395c4587611c22541dfa1, type: 2}
+    materialEdge: {fileID: 2100000, guid: fd520010b75e5ac4cbf5de35cfb86786, type: 2}
+    materialCorner: {fileID: 2100000, guid: ad72b89048fb2544cbf182ec487251fa, type: 2}
+    shad_CapsuleMaterial: {fileID: 2100000, guid: 4f49834b831a3de44a31dd0056d1fbd2, type: 2}
+    shad_BoxMaterial: {fileID: 2100000, guid: 6d97d7683250ffc4494818e4d75a394a, type: 2}
+    shad_SphereMaterial: {fileID: 2100000, guid: 510994e8aa08c4248adaf5d354443cf9, type: 2}
+    mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!114 &524405632809085521
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -325,6 +379,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   myCamera: {fileID: 6317648482230472994}
+--- !u!114 &6844992817991346678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6317648482230472993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1580e32f765c994b86a57bb3c49fe75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hbaoShader: {fileID: 4800000, guid: 7b834eafaedd0d842bb05a969d9d14bd, type: 3}
+  _config: {fileID: 11400000, guid: c2da252493371764992a281c4d4190ff, type: 2}
+  HbaoCamera: {fileID: 6317648482230472994}
 --- !u!114 &6106885524159962129
 MonoBehaviour:
   m_ObjectHideFlags: 0

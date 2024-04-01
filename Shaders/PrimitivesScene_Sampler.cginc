@@ -107,7 +107,7 @@ float3 SampleVolume_CubeMap(float3 pos, float3 normal)
 	float upperFraction;
 	float4 uvs = WorldPosToVolumeUV(pos, _RayMarchingVolumeVOLUME_POSITION_N_SIZE, _RayMarchingVolumeVOLUME_H_SLICES, upperFraction, outOfBounds);
 
-	float3 bake = SampleVolume_Internal(_RayMarchingVolume, uvs, upperFraction).rgb; // To compensate brightness
+	float3 bake = SampleVolume_Internal(_RayMarchingVolume, uvs, upperFraction).rgb * 2; // To compensate brightness
 		
 
 		float3 absDir = abs(normal + 0.01);
@@ -163,7 +163,7 @@ float3 SampleVolume_CubeMap(float3 pos, float3 normal)
 		cubeBake += absDir.z * lerp(bake, toAdd, smoothstep(0, 100, toAdd.a));
 		*/
 	
-		bake = lerp(bake, cubeBake, _RT_CubeMap_FadeIn); 
+		bake = cubeBake; // lerp(bake, cubeBake, _RT_CubeMap_FadeIn); 
 
 	//}
 

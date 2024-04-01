@@ -7,6 +7,8 @@ Shader "QcRendering/Terrain/Integration Triplanar"
 
         _BlendHeight("Blend Height", Range(0,100)) = 1
         _BlendSharpness("Blend Sharpness", Range(0,1)) = 0
+
+        _FoceContactBlend("Force Contact Blend", Range(0,1)) = 0.1
     }
 
     Category
@@ -46,11 +48,11 @@ Shader "QcRendering/Terrain/Integration Triplanar"
             #pragma multi_compile ___ _qc_USE_RAIN 
 			#pragma multi_compile qc_NO_VOLUME qc_GOT_VOLUME 
 			#pragma multi_compile ___ _qc_IGNORE_SKY 
+            #pragma multi_compile ___ qc_USE_TERRAIN
 
             #include "Qc_TerrainCommon.cginc"
             #include "UnityCG.cginc"
 			#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Standard.cginc"
-				
 			#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_VolumetricFog.cginc"
 
             struct v2f
@@ -94,23 +96,26 @@ Shader "QcRendering/Terrain/Integration Triplanar"
             float _BlendHeight;
             float _BlendSharpness;
 
+            float _FoceContactBlend;
+
             fixed4 frag (v2f i) : SV_Target
             {
                 float3 viewDir = normalize(i.viewDir);
                 float2 screenUv = i.screenPos.xy / i.screenPos.w;
 
-                float3 rawTerrainNormal;
-                float4 terrainControl = Ct_SampleTerrainAndNormal(i.worldPos, rawTerrainNormal);
+                #if qc_USE_TERRAIN
+                    float3 rawTerrainNormal;
+                    float4 terrainControl = Ct_SampleTerrainAndNormal(i.worldPos, rawTerrainNormal);
 
-                float height;
-                GetTerrainHeight(terrainControl, height);
+                    float height;
+                    GetTerrainHeight(terrainControl, height);
 
             
-                float4 terrainMads;
-                float3 terrainNormal;
-                float3 terrainCol;
-                GetTerrainBlend(i.worldPos, terrainControl, rawTerrainNormal , terrainNormal, terrainCol, terrainMads);
-
+                    float4 terrainMads;
+                    float3 terrainNormal;
+                    float3 terrainCol;
+                    GetTerrainBlend(i.worldPos, terrainControl, rawTerrainNormal , terrainNormal, terrainCol, terrainMads);
+                #endif
 
                //  fixed4 objTex = tex2D(_MainTex, i.texcoord);
               //   float3 bump = UnpackNormal(tex2D(_BumpMap, i.texcoord));
@@ -119,48 +124,43 @@ Shader "QcRendering/Terrain/Integration Triplanar"
                  float4 madsBig = tex2D(_MadsBig, i.texcoord);
                  float3 bumpBig = UnpackNormal(tex2D(_BumpMapBig, i.texcoord));
                  
-                 float3 objectNormal = i.normal.xyz;
-                 ApplyTangent (objectNormal, bumpBig, i.wTangent);
+                 float3 normal = i.normal.xyz;
+                 ApplyTangent (normal, bumpBig, i.wTangent);
 
-                 float3 objTex;
+                 float3 tex;
                  float3 objNormalTrip;
-                 float4 madsMapObj;
-                 TriplanarSampling(i.worldPos, i.normal.xyz, objTex, objNormalTrip, madsMapObj);
+                 float4 madsMap;
+                 TriplanarSampling(i.worldPos, i.normal.xyz, tex, objNormalTrip, madsMap);
 
-               
+                 float3 rawNormal = i.normal.xyz;
 
-               //  objectNormal = normalize(lerp(objectNormal,objNormalTrip, 0.5));
-          
                  float ao = madsBig.g;
 
-                // return ao;
+                 #if qc_USE_TERRAIN
+                     float forcedShowTerrain;
+                     float showTerrain;
+                     GetIntegration(terrainControl, terrainMads, madsMap, rawNormal, i.worldPos, _BlendHeight, _BlendSharpness, _FoceContactBlend, showTerrain, forcedShowTerrain);
 
-                 float showTerrain;
-                 GetIntegration(terrainControl, terrainMads, madsMapObj, i.normal.xyz, i.worldPos, _BlendHeight, _BlendSharpness,  showTerrain);
+                    tex = lerp( tex, terrainCol, showTerrain);
+                    madsMap = lerp(madsMap, terrainMads, showTerrain);
+                    rawNormal = normalize(lerp(rawNormal, rawTerrainNormal, showTerrain));
+                    float3 projectedNormal = lerp(objNormalTrip,terrainNormal, showTerrain);
 
-            //   showTerrain = 0;
+                    normal = lerp((normal + projectedNormal) * 0.5, terrainNormal, forcedShowTerrain);
 
-               
-
-
-                float3 tex = lerp( objTex, terrainCol, showTerrain);
-                float4 madsMap = lerp(madsMapObj, terrainMads, showTerrain);
-                float3 rawNormal = normalize( lerp(i.normal.xyz, rawTerrainNormal, showTerrain));
-                float3 projectedNormal = lerp(objNormalTrip,terrainNormal, showTerrain);
-
-                 
-
-                float3 normal = normalize((objectNormal + projectedNormal) * 0.5);
-
+                    normal = normalize(normal);
+                #endif
                  //  return float4(normal,1);
+
+
 
                 float rawFresnel = saturate(1- dot(viewDir, rawNormal));
 
-                ao *= madsMap.g; //, smoothstep(0.9,1,showTerrain));
-
-               
            //    return ao;
-
+           
+                #if qc_USE_TERRAIN
+                    ao = lerp(ao, 1, forcedShowTerrain); 
+                #endif
 
                 float shadow = SHADOW_ATTENUATION(i);
 
@@ -172,10 +172,12 @@ Shader "QcRendering/Terrain/Integration Triplanar"
 
 			    shadow *= saturate(1-illumination.b);
 
-                ao *= madsMap.g;
+                ao *= madsMap.g + (1-madsMap.g) * rawFresnel;
+
+              //  ao = 1;
 
                 float metal =  madsMap.r;
-				float fresnel =  GetFresnel_FixNormal(normal, terrainNormal, viewDir);
+				float fresnel =  GetFresnel_FixNormal(normal, rawNormal, viewDir);
 
 				MaterialParameters precomp;
 					
@@ -198,6 +200,8 @@ Shader "QcRendering/Terrain/Integration Triplanar"
 				float3 col = GetReflection_ByMaterialType(precomp, normal, rawNormal, viewDir, i.worldPos);
 
 				ApplyBottomFog(col, i.worldPos.xyz, viewDir.y);
+
+               
 
                 return float4(col,1);
             }

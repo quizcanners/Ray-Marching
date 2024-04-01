@@ -41,6 +41,8 @@ namespace QuizCanners.StampTerrain
         protected int bakingVersion;
         protected int _debug_stampBatches;
 
+        private readonly ShaderProperty.Feature USING_TERRAIN = new("qc_USE_TERRAIN");
+
         private readonly ShaderProperty.TextureValue TERRAIN_TEXTURE_PUBLISHED = new("Ct_Control");
         private readonly ShaderProperty.VectorValue TERRAIN_POSITION_PUBLISHED = new("Ct_Pos");
         private readonly ShaderProperty.VectorValue TERRAIN_SIZE_PUBLISHED = new("Ct_Size");
@@ -54,8 +56,10 @@ namespace QuizCanners.StampTerrain
         private readonly ShaderProperty.VectorValue DEFAULT_TERRAIN = new("Ct_TerrainDefault"); // Not needed
 
         private readonly BakeState _baking = new();
-        [NonSerialized]public RenderTexture[] _bakingBufferTextures;
+        [NonSerialized] public RenderTexture[] _bakingBufferTextures;
         [NonSerialized] private RenderTexture _baked_Normal;
+        [NonSerialized] public RenderTexture _baked_Normal_Back;
+        [SerializeField] private Shader _expandSdfPass;
         public Texture2D PublishedControlMap { get; private set; }
        
 
@@ -119,6 +123,21 @@ namespace QuizCanners.StampTerrain
             return _baked_Normal;
         }
 
+        private RenderTexture SwapAndGetNormalTarget()
+        {
+            if (!_baked_Normal)
+                Debug.LogError("Baked Normal not initialized");
+
+            if (!_baked_Normal_Back)
+            {
+                _baked_Normal_Back = GetRenderTexture("Terrain's Normal 2");
+            }
+
+            (_baked_Normal_Back, _baked_Normal) = (_baked_Normal, _baked_Normal_Back);
+
+            return _baked_Normal;
+        }
+
         public RenderTexture[] GetBakingBufferTextures()
         {
             if (_bakingBufferTextures.IsNullOrEmpty())
@@ -155,6 +174,8 @@ namespace QuizCanners.StampTerrain
             TERRAIN_POSITION_PUBLISHED.GlobalValue = _baking.adjustedBakePosition.Y(0);
             float size = _baking.ProjectionSize * 2f;
             TERRAIN_SIZE_PUBLISHED.GlobalValue = new Vector4(size, 1 / size, 0, 0);
+
+            USING_TERRAIN.Enabled = true;
         }
 
         private void Publish() 
@@ -233,8 +254,7 @@ namespace QuizCanners.StampTerrain
 #endif
         }
 
-        int blurIterations = 0;
-
+  
         void LateUpdate() 
         {
             if (!_camera)
@@ -292,10 +312,16 @@ namespace QuizCanners.StampTerrain
                 case BakingStage.BakingNormal:
 
                     Graphics.Blit(ActiveControlTexture, GetNormalTexture(), _baking.GetPostprocessMaterial(_calculateNormalShader));
+               
+                    goto case BakingStage.ExpandingSdf;
+                case BakingStage.ExpandingSdf:
+
+                    var newNorm = SwapAndGetNormalTarget();
+                    Graphics.Blit(_baked_Normal_Back, newNorm, _baking.GetPostprocessMaterial(_expandSdfPass));
+
                     TERRANIN_NORMAL_PUBLISHED.GlobalValue = _baked_Normal;
                     AllBakingDone();
                     break;
-
                 case BakingStage.ClearingBakerTextures:
                     CheckForChanges();
                     if (Time.unscaledTime - _timeWhenBakingFinished > 3) 
@@ -394,6 +420,8 @@ namespace QuizCanners.StampTerrain
                 _baked_Normal.DestroyWhatever();
                 _baked_Normal = null;
             }
+
+            USING_TERRAIN.Enabled = false;
         }
 
         void ClearBakerTextures() 
@@ -456,6 +484,11 @@ namespace QuizCanners.StampTerrain
                 }
             });
 
+            if (_baked_Normal)
+                "Normal & SDF".PegiLabel().Draw(_baked_Normal).Nl(); //.Draw("Normal", 256).Nl();
+
+            if (TERRAIN_TEXTURE_PUBLISHED.GlobalValue)
+                "Control and Height".PegiLabel().Draw(TERRAIN_TEXTURE_PUBLISHED.GlobalValue).Nl();
 
             float size = _camera.orthographicSize;
 
@@ -475,6 +508,7 @@ namespace QuizCanners.StampTerrain
             Dirty,
             BakingStamps,
             BakingNormal,
+            ExpandingSdf,
             ClearingBakerTextures,
             Finished,
         }

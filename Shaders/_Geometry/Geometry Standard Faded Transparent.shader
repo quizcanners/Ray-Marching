@@ -1,4 +1,4 @@
-Shader "QcRendering/Geometry/Standard Transparent"
+Shader "QcRendering/Geometry/Faded Transparent"
 {
 	Properties
 	{
@@ -81,7 +81,7 @@ Shader "QcRendering/Geometry/Standard Transparent"
 			{
 			
 
-				Blend One OneMinusSrcAlpha
+				Blend SrcAlpha OneMinusSrcAlpha
 				ColorMask RGBA
 				Cull Off //Back
 				ZWrite Off
@@ -266,9 +266,9 @@ Shader "QcRendering/Geometry/Standard Transparent"
 					float4 result =  float4(col.rgb, tex.a);
 
 
-					result = lerp(float4(reflectionColor * rawFresnel, 0), result, tex.a);
+					result = lerp(float4(reflectionColor * rawFresnel, tex.a), result, tex.a);
 
-					ApplyLayeredFog_Transparent_Premultiplied(result, i.screenPos.xy, i.worldPos);
+					ApplyLayeredFog_Transparent(result, i.screenPos.xy, i.worldPos);
 
 
 					return result;

@@ -1,7 +1,12 @@
 ﻿
 Shader "RayTracing/Integrated SDF/Volumetric World Space"
 {
-	Properties	{}
+	Properties	
+	{
+		[KeywordEnum(OFF, PLASTIC, METAL, LAYER, MIXED_METAL, PAINTED_METAL)] _REFLECTIVITY("Reflective Material Type", Float) = 0
+		[KeywordEnum(OFF, ON, INVERTEX, MIXED)] _PER_PIXEL_REFLECTIONS("Traced Reflections", Float) = 0
+		_Reflectivity("Added Reflectiveness (Mat)", Range(0,1)) = 0.33
+	}
 
 	SubShader
 	{
@@ -11,6 +16,10 @@ Shader "RayTracing/Integrated SDF/Volumetric World Space"
 		}
 
 		CGINCLUDE
+
+						#pragma shader_feature_local _PER_PIXEL_REFLECTIONS_OFF _PER_PIXEL_REFLECTIONS_ON _PER_PIXEL_REFLECTIONS_INVERTEX  _PER_PIXEL_REFLECTIONS_MIXED
+			#pragma shader_feature_local _REFLECTIVITY_OFF _REFLECTIVITY_PLASTIC _REFLECTIVITY_METAL _REFLECTIVITY_LAYER  _REFLECTIVITY_MIXED_METAL  _REFLECTIVITY_PAINTED_METAL
+
 
 			#include "Assets/Qc_Rendering/Shaders/Savage_Sampler_Standard.cginc"
 			#include "Assets/Qc_Rendering/Shaders/Savage_DepthSampling.cginc"
@@ -78,23 +87,75 @@ Shader "RayTracing/Integrated SDF/Volumetric World Space"
 				return o;
 			}
 
+			float _Reflectivity;
+
 			FragColDepth frag(v2f i)
 			{
 				MARCH_FROM_DEPTH(newPos, spherePos, shadow, viewDir, screenUv);
 			
 				INIT_SDF_NORMAL(normal, newPos, spherePos, SampleSDF);
 
-				PrimitiveLight(lightColor, ambientCol, outOfBounds, newPos, normal);
+				//float4 col = i.color;
+
+				/*PrimitiveLight(lightColor, ambientCol, outOfBounds, newPos, normal);
 
 				TopDownSample(newPos, ambientCol);
 
-				float4 col = i.color;
-				col.rgb *= (ambientCol + lightColor * shadow);
+				
+				col.rgb *= (ambientCol + lightColor * shadow);*/
+
+					float4 illumination;
+
+			float ao = 
+			#if _NO_HB_AMBIENT
+				1;
+				illumination = 0;
+			#else
+				SampleSS_Illumination( screenUv, illumination);
+			#endif			
+
+			shadow *= saturate(1-illumination.b);
+
+		//	shadow *= getShadowAttenuation(newPos);
+
+					// **************** light
+
+					float metal = 0;// madsMap.r;
+					float fresnel = GetFresnel_FixNormal(normal, normal, viewDir);//GetFresnel(normal, viewDir) * ao;
+
+					MaterialParameters precomp;
+					
+					precomp.shadow = shadow;
+					precomp.ao = ao;
+					precomp.fresnel = fresnel;
+					precomp.tex = i.color.rgb;
+				
+					precomp.reflectivity = _Reflectivity;
+					precomp.metal = metal;
+					precomp.traced = 0;
+					precomp.water = 0;
+					precomp.smoothsness = 1; // madsMap.a;
+
+					precomp.microdetail = 0.5; //_MudColor;
+					precomp.metalColor = 0.5; //lerp(tex, _MetalColor, _MetalColor.a);
+
+					precomp.microdetail.a = 0;
+				
+					float3 col = GetReflection_ByMaterialType(precomp, normal, normal, viewDir, newPos);
+
+
+
+
+
+
+
+
 
 				ApplyBottomFog(col.rgb, newPos, viewDir.y);
+
 				FragColDepth result;
 				result.depth = calculateFragmentDepth(newPos);
-				result.col = col;
+				result.col = float4(col,1);
 				return result;
 			}
 

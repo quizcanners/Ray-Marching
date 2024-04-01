@@ -55,7 +55,7 @@
 				return volumeUVtoWorld(uv, _RayMarchingVolumeVOLUME_POSITION_N_SIZE_PREVIOUS, _RayMarchingVolumeVOLUME_H_SLICES_PREVIOUS);
 			}
 
-			float4 frag(v2f o) : COLOR{
+			float4 frag(v2f o) : SV_TARGET {
 
 				float3 worldPos = volumeUVtoWorld(o.texcoord.xy);
 

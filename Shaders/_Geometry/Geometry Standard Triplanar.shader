@@ -11,6 +11,8 @@ Shader "QcRendering/Geometry/Standard Triplanar"
 
 		_BumpMap("Normal Map", 2D) = "bump" {}
 
+		_BumpScale("Bump Intensity", Range(0,1)) = 0.33
+
 		[KeywordEnum(MADS, None, Separate)] _AO("AO Source", Float) = 0
 		_OcclusionMap("Ambient Map", 2D) = "white" {}
 		

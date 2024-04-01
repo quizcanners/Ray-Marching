@@ -7,27 +7,27 @@ namespace QuizCanners.StampTerrain
     [ExecuteAlways]
     public abstract class TerrainManagerBase : Singleton.BehaniourBase, IPEGI
     {
-        [SerializeField] public Terrain_BakeController _baker;
+        public Terrain_BakeController Baker;
         [SerializeField] protected Terrain_ToUnityController _toUnityTerrain = new();
 
         public float GetTerrainHeight(Vector3 position) => _toUnityTerrain.GetHeight(position);
 
         public Vector3 GetNormal(Vector3 position) => _toUnityTerrain.GetNormal(position);
 
-        public bool TerrainGenerationCompleted => !IsDirty && _baker.IsBakingFinished && !IsTerrainDirty;
+        public bool TerrainGenerationCompleted => !IsDirty && Baker.IsBakingFinished && !IsTerrainDirty;
 
         private readonly Gate.Integer _stampsVersionGate = new();
         private readonly Gate.Integer _bakeVersionGate = new();
 
         protected bool IsTerrainDirty 
         {
-            get => _bakeVersionGate.IsDirty(_baker.BakedVersion);
+            get => _bakeVersionGate.IsDirty(Baker.BakedVersion);
             set 
             {
                 if (value)
                     _bakeVersionGate.ValueIsDefined = false;
                 else
-                    _bakeVersionGate.TryChange(_baker.BakedVersion);
+                    _bakeVersionGate.TryChange(Baker.BakedVersion);
             }
         }
 
@@ -47,10 +47,10 @@ namespace QuizCanners.StampTerrain
         public void GetPixelsAndMappingData(out BakedTerrainBiomeData data)
         {
             data = new();
-            data.pixels = _baker.GetControlMapPixels(out data.resolution);
-            data.size = _baker.BakedAreaSize;
-            data.startPos = _baker.BakedAreaCenterPosition - new Vector3(data.size.x * 0.5f, 0, data.size.z * 0.5f);
-            data.minMaxHeight = new Vector2(_baker.MinHeight, _baker.MaxHeight);
+            data.pixels = Baker.GetControlMapPixels(out data.resolution);
+            data.size = Baker.BakedAreaSize;
+            data.startPos = Baker.BakedAreaCenterPosition - new Vector3(data.size.x * 0.5f, 0, data.size.z * 0.5f);
+            data.minMaxHeight = new Vector2(Baker.MinHeight, Baker.MaxHeight);
         }
 
 
@@ -65,7 +65,7 @@ namespace QuizCanners.StampTerrain
             if (IsDirty)
                 return;
             
-            if (IsTerrainDirty && _baker.IsBakingFinished)
+            if (IsTerrainDirty && Baker.IsBakingFinished)
             {
                 IsTerrainDirty = false;
                 ToUnityTerrain();
@@ -75,7 +75,7 @@ namespace QuizCanners.StampTerrain
 
         protected void RestartBake()
         {
-            _baker.SetDirty();
+            Baker.SetDirty();
             IsDirty = false;
             IsTerrainDirty = true;
         }

@@ -56,6 +56,7 @@ Shader "QcRendering/Terrain/Internal/Stamp Content Aware"
                 float2 uv : TEXCOORD0;
                 float3 worldPos : 	TEXCOORD1;
                 float4 vertex : SV_POSITION;
+                float height : TEXCOORD2;
             };
 
             sampler2D _MainTex;
@@ -72,6 +73,10 @@ Shader "QcRendering/Terrain/Internal/Stamp Content Aware"
 
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.texcoord; //TRANSFORM_TEX(v.texcoord, _MainTex);
+
+
+                o.height = -mul(unity_ObjectToWorld, float3(0,0,1)).y; // length(float3(unity_ObjectToWorld[0].y, unity_ObjectToWorld[1].y, unity_ObjectToWorld[2].y));
+
                 return o;
             }
 
@@ -86,6 +91,8 @@ Shader "QcRendering/Terrain/Internal/Stamp Content Aware"
             float4 frag (v2f i) : SV_Target
             {
                 // ************ Stamp Reading
+
+                _Height *= i.height;
 
                 float4 stamp = tex2D(_MainTex, i.uv);
 
@@ -142,14 +149,8 @@ Shader "QcRendering/Terrain/Internal/Stamp Content Aware"
 
                 //mask = lerp(mask,)
 
-          
-
                 _HeightVisibility *= mask;
                 _BiomeVisibility *= mask;
-
-
-           
-
 
                 // Blending
            

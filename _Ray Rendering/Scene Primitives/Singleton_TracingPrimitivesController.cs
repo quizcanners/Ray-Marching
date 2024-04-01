@@ -51,7 +51,7 @@ namespace QuizCanners.VolumeBakedRendering
                     //var environment = GetEnvironment();
                     var vol = C_VolumeTexture.LatestInstance;
 
-                    bool arrangementDirty = _arrangementVersion.TryChange(TracingPrimitives.ArrangementVersion);
+                    bool arrangementDirty = _arrangementVersion.TryChange(ArrangementVersion);
                     bool volumeDirty = vol && _volumeVersion.TryChange(vol.LocationVersion);
 
                     if (!arrangementDirty && !volumeDirty)
@@ -76,7 +76,7 @@ namespace QuizCanners.VolumeBakedRendering
 
                     void UpdateShapeLists(ref SortedElement[] shapes, Shape shape, bool rotated)
                     {
-                        var mgmt = TracingPrimitives.s_EnvironmentElements;
+                        var mgmt = s_EnvironmentElements;
                         var sortedForRotatedType = mgmt.GetSortedForVolume(rotated: rotated);
 
                         if (!sortedForRotatedType.TryGetValue(shape, out var sortedForShape)) 

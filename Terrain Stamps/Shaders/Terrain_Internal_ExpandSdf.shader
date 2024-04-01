@@ -1,4 +1,4 @@
-Shader "QcRendering/Terrain/Internal/Terrain_NormalFromHeight"
+Shader "QcRendering/Terrain/Internal/Terrain_ExpandSDF"
 {
     Properties
     {
@@ -52,56 +52,48 @@ Shader "QcRendering/Terrain/Internal/Terrain_NormalFromHeight"
                 return o;
             }
 
-            float _HeightVisibility;
-            float _BiomeVisibility;
-
-        //    float4 Ct_Control_Previous_ST;
-         //   float4 Ct_Control_Previous_TexelSize;
-
-         float IsWater (float4 control)
-         {
-          float terrainHeight;
-            GetTerrainHeight(control, terrainHeight);
-            return step(0, Ct_WaterLevel.x - terrainHeight);
-            
-               // return smoothstep(-0.1, 0.1, Ct_WaterLevel.x - terrainHeight);
-         }
-
-            void AddNormal(inout float2 bump, inout float toWater, inout float toTerrain, inout float totalPower, float center, float2 uv, float kernelX, float kernelY, float power)
+            void ExtendSdf(inout float toWater, inout float toTerrain, float isWater, float2 uv, float kernelX, float kernelY)
             {
                 float2 d = _MainTex_TexelSize.xy;
 
-                float4 pix = tex2Dlod(_MainTex, float4(uv + float2(kernelX * d.x, kernelY* d.y)  ,0,0)).a;
-
-                float isWater = IsWater(pix); 
+                float4 pix = tex2Dlod(_MainTex, float4(uv + float2(kernelX * d.x, kernelY* d.y)  ,0,0));
 
                 float distanceToPixel = length(float2(kernelX, kernelY));
 
-                toWater = lerp(toWater, min(toWater, distanceToPixel),isWater);
-                toTerrain = lerp(toTerrain, min(toTerrain, distanceToPixel), 1-isWater);
+                float pixIsWater = step(pix.a, 0);
 
-                float diff = center - pix.a;
-                bump += float2(kernelX, kernelY) * diff * power;
-                totalPower += power;
+                if (pix.a <= 0)
+                {
+                    toTerrain = min(toTerrain, distanceToPixel - pix.a);
+                } else 
+                {
+                    toWater = min(toWater, distanceToPixel + pix.a);
+                }
             }
 
             float4 frag (v2f i) : SV_Target
             {
                 float2 uv = i.uv;
 
-                float4 center = tex2Dlod(_MainTex, float4(uv,0,0)).a;
+                float4 center = tex2Dlod(_MainTex, float4(uv,0,0));
+                float currentIsWater = step(center.a, 0);
 
-                float2 bump = 0;
-                float totalPower = 0;
-                float toWater = CT_SDF_RANGE; // 159
-                float toTerrain = CT_SDF_RANGE;
-                // If resolution is < 1 pixel per meter, the sampling distance will decrease
-                float distanceCoefficient = 1; // min(1.0,Ct_Size_Bake.x * _MainTex_TexelSize.x); // 256 area / 1024 pixels 
+                 float distanceCoefficient = 3;
+
+                 float currentHeight = center.a;
+
+                float toTerrain = CT_SDF_RANGE; // 50 * currentIsWater;
+                float toWater = CT_SDF_RANGE; //currentHeight * (1-currentIsWater);
+               
     
-                #define GRABPIXEL(kernelX, kernelY, weight) AddNormal(bump, toWater, toTerrain, totalPower, center.a, uv, kernelX * distanceCoefficient, kernelY * distanceCoefficient, weight);
+                #define GRABPIXEL(kernelX, kernelY, weight) ExtendSdf(toWater, toTerrain, currentIsWater,  uv, kernelX * distanceCoefficient, kernelY * distanceCoefficient);
+
+                for (int x = -5; x<=5; x++)
+                   for (int y = -5; y<=5; y++)
+                      GRABPIXEL(x,  y , 97)
 
                 // Using Gaussian Blur coefficients
-                GRABPIXEL(-1,  0 , 97)
+           /*     GRABPIXEL(-1,  0 , 97)
                 GRABPIXEL( 1,  0 , 97)
                 GRABPIXEL( 0,  1 , 97)
                 GRABPIXEL( 0, -1, 97)
@@ -144,21 +136,15 @@ Shader "QcRendering/Terrain/Internal/Terrain_NormalFromHeight"
                 GRABPIXEL(-1, -3, 1)
                 GRABPIXEL(-1,  3, 1)
                 GRABPIXEL(-3, -1, 1)
-                GRABPIXEL( 3, -1, 1)
+                GRABPIXEL( 3, -1, 1)*/
 
-                float water = IsWater(center);
+          
 
-                float sdf = lerp(toWater, -toTerrain,water);
+                float sdf = lerp(toWater, -toTerrain, currentIsWater);
 
-                bump /= totalPower;
-                bump *= Ct_HeightRange.z;
-            
-                float3 normal = normalize(float3(bump.x, 1, bump.y));
-
-               // #define GRABPIXEL(kernelX, kernelY, float weight) normalDirection += tex2Dlod(Ct_Control_Previous, float4(uv + float2(kernelX*xker, kernelY*yker)  ,0,0)); \
-                 //   totalPower += weight;
-
-               return float4 (normal, sdf);
+                center.a = sdf;
+             
+               return center;
             }
             ENDCG
         }

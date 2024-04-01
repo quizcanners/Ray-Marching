@@ -15,13 +15,19 @@ namespace QuizCanners.VolumeBakedRendering
         public float Size = 1;
         public int hSlices = 4;
         public bool IsDynamicRoot;
-      //  public bool staticPosition;
+        //  public bool staticPosition;
 
-        const int TEX_SIZE = 1024;
+        static int GetDisplaySize()
+        {
+            var current = C_VolumeTexture.LatestInstance; // 1024;
+            if (!current)
+                return 1024;
 
+            return current.TextureWidth;
+        }
         public int Height => hSlices * hSlices;
 
-        public int Width => TEX_SIZE / hSlices;
+        public int Width => GetDisplaySize() / hSlices;
 
         public bool IsInsideHalfBounds(Vector3 point)
         {

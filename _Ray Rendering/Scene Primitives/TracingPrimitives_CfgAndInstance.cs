@@ -43,7 +43,7 @@ namespace QuizCanners.VolumeBakedRendering
 
                             _weight = EnvironmentElement.GetOverlap(
                                 worldPos: vol.GetPositionAndSizeForShader().XYZ(),
-                                width: vol.TextureWidth * size,
+                                width: vol.SliceWidth * size,
                                 height: vol.TextureHeight * size, prioratizeHigher: true);
                         }
                     }

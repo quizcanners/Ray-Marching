@@ -39,7 +39,7 @@ Material:
     - MIX: 0
     - _AdditiveFactor: 0
     - _BiomeVisibility: 1
-    - _Height: 300
+    - _Height: 1
     - _HeightVisibility: 1
     - _MaskClipping: 0.1
     - _MaskOpaqueness: 0.1

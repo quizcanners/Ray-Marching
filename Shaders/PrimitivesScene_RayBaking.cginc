@@ -89,11 +89,11 @@ float4 render(in float3 ro, in float3 rd, in float4 seed)
 
 		ro += rd * res.y;
 
-		float3 postColor;
-		float postAo;
-		SamplePostEffects(ro - rd*0.01, normal, postColor, postAo, seed);
-		gatherLight += postColor * col * albedo;
-		col *= postAo;
+		//float3 postColor;
+		//float postAo;
+		//SamplePostEffects(ro - rd*0.01, normal, postColor, postAo, seed);
+		//gatherLight += postColor * col * albedo;
+		//col *= postAo;
 
 		col *= smoothstep(0, FADE_RAY_AT, rayHitDist);
 

@@ -87,7 +87,7 @@
 			}
 
 
-			float4 frag(v2f o) : COLOR{
+			float4 frag(v2f o) : SV_TARGET {
 
 				float3 rayOrigin = _WorldSpaceCameraPos.xyz;
 				float3 rayDirection = -normalize(o.viewDir.xyz);

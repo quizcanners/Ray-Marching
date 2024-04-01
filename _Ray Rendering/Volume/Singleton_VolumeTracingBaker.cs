@@ -118,7 +118,7 @@ namespace QuizCanners.VolumeBakedRendering
                     || _bakedPositionAndSize.CurrentValue != newPosition)
                 {
 
-                    if (!TracedVolume.HasValidData || (Vector3.Distance(newPosition.XYZ(), _bakedPositionAndSize.CurrentValue.XYZ()) > volume.TextureWidth * volume.size)) 
+                    if (!TracedVolume.HasValidData || (Vector3.Distance(newPosition.XYZ(), _bakedPositionAndSize.CurrentValue.XYZ()) > volume.SliceWidth * volume.size)) 
                     {
                         ClearBake(eraseResult: true);
                         return true;

@@ -66,7 +66,7 @@
 			float4 _RT_CubeMap_Direction;
 			uniform sampler2D _Global_Noise_Lookup;
 
-			float4 frag(v2f o) : COLOR
+			float4 frag(v2f o) : SV_TARGET 
 			{
 
 				float3 worldPos = volumeUVtoWorld(o.texcoord.xy);

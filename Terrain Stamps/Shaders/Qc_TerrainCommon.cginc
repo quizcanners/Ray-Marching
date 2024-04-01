@@ -79,7 +79,7 @@ void TriplanarSampling(float3 position, float3 normal, out float3 albedo, out fl
 {
 	float3 weights = abs(normal);
 
-	float isFar01 = smoothstep(10, 50, length(_WorldSpaceCameraPos - position));
+	float isFar01 = smoothstep(10, 25, length(_WorldSpaceCameraPos - position));
 
 	float3 cubeUv = Ct_CliffTiling.x * position;
 	
@@ -353,7 +353,7 @@ float4 Ct_SampleTerrainAndNormal(float3 worldPos, out float3 normal)
 	control = lerp ( Ct_TerrainDefault, control,alpha);
 
 	float4 bumpAndSdf = tex2Dlod(_Ct_Normal, float4(uv,0,0));
-	bumpAndSdf = lerp (float4(0,1,0,-6),bumpAndSdf, alpha);
+	bumpAndSdf = lerp (float4(0,1,0,-CT_SDF_RANGE),bumpAndSdf, alpha);
 
 	normal = bumpAndSdf.xyz;
 	float sdf = bumpAndSdf.a;
@@ -378,7 +378,7 @@ float3 SampleTerrainPosition(float3 worldPos)
 }
 
 
-void GetIntegration(float4 terrainControl, float4 terrainMOHS, float4 objectMohs, float3 objectNormal, float3 worldPos, float blendHeight, float blendSharpness, out float showTerrain)
+void GetIntegration(float4 terrainControl, float4 terrainMOHS, float4 objectMohs, float3 objectNormal, float3 worldPos, float blendHeight, float blendSharpness, float forceContact, out float showTerrain, out float forced)
 {
 	float terrainHeight;
 	GetTerrainHeight(terrainControl, terrainHeight);
@@ -386,6 +386,8 @@ void GetIntegration(float4 terrainControl, float4 terrainMOHS, float4 objectMohs
 	float objectDisplacement = objectMohs.b;
     float objectAO = objectMohs.g;
 	float terrainAO = terrainMOHS.g;
+
+	float terrainDiffRaw = terrainHeight - worldPos.y; 
 
 	float diff = ((worldPos.y + objectDisplacement) - (terrainHeight + terrainMOHS.b));
 
@@ -397,7 +399,11 @@ void GetIntegration(float4 terrainControl, float4 terrainMOHS, float4 objectMohs
     showTerrain = smoothstep(blendHeight, blendHeight * blendSharpness * 0.99 - 0.00001, objectWeight) ;
 
 	float isUp = smoothstep(0.5,1, objectNormal.y);
-	showTerrain *= isUp; // Verticality
+	showTerrain *= isUp; 
+	
+	forced = smoothstep(0, 0.01 + blendSharpness, forceContact * (1 + terrainDiffRaw));
+
+	showTerrain = lerp(showTerrain, 1, smoothstep(0, blendSharpness, forced)); // Verticality
 }
 
 void GetIntegration_Complimentary(float4 terrainControl, float4 terrainMOHS, float4 objectMohs, float3 objectNormal, float3 worldPos, float blendHeight, float blendSharpness, out float showTerrain)

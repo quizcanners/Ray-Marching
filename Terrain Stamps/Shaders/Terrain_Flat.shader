@@ -102,7 +102,7 @@ Shader "QcRendering/Terrain/Flat"
 
                 float4 illumination;
 
-			    float ao = 	SampleSS_Illumination( screenUv, illumination);
+			    float ao = SampleSS_Illumination( screenUv, illumination);
 
 			    shadow *= saturate(1-illumination.b);
 
@@ -110,7 +110,7 @@ Shader "QcRendering/Terrain/Flat"
 
 
           //  return float4(rawNormal, 1);
-
+               // ao = 1;
 
                 float metal = madsMap.r;
 				float fresnel = GetFresnel_FixNormal(normal, rawNormal, viewDir);//GetFresnel(normal, viewDir) * ao;
@@ -122,7 +122,7 @@ Shader "QcRendering/Terrain/Flat"
 				precomp.fresnel = fresnel;
 				precomp.tex = tex;
 				
-				precomp.reflectivity = 1;
+				precomp.reflectivity = 0.5;
 				precomp.metal = metal;
 				precomp.traced = 0;
 				precomp.water = 0;

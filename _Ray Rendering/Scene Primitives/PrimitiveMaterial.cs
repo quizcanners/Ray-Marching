@@ -59,7 +59,7 @@ namespace QuizCanners.VolumeBakedRendering
 
             "Color".PegiLabel(60).Edit(ref Color, hdr: true).Nl();
 
-            if (Color.Alpha(1).Equals(Color.white))
+            if (MatType != PrimitiveMaterialType.emissive && Color.Alpha(1).Equals(Color.white))
                 "White Color will look weird as it has perfect reflectivity".PegiLabel().Write_Hint();
 
             "Roughness".PegiLabel(90).Edit(ref Roughtness, 0, 1).Nl();

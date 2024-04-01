@@ -99,8 +99,20 @@ Shader "Unlit/Fog Layers Display"
 
                // return smoothstep(0,100, distance);
 
-                return SampleLayeredFog_Test(distance, i.uv);
+           
 
+                float4 result = SampleLayeredFog(distance, i.uv);
+
+                float4 noise = tex2Dlod(_Global_Noise_Lookup, 
+				float4(i.uv * (123.12345678) + float2(_SinTime.x, _CosTime.y + i.uv.y) * 32.12345612, 0, 0));
+
+                float noiseAmount = 0.15;
+
+                result.rgb *= (1 + noiseAmount*0.5 - noise.rgb * noiseAmount);
+
+              //  result.a = 1;
+
+                return result;
             }
             ENDCG
         }

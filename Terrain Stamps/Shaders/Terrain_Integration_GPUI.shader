@@ -7,6 +7,7 @@ Shader "GPUInstancer/QcRendering/Terrain/Integration"
         _BumpMap("Normal Map", 2D) = "bump" {}
         _BlendHeight("Blend Height", Range(0,100)) = 1
         _BlendSharpness("Blend Sharpness", Range(0,1)) = 0
+        _FoceContactBlend("Force Contact Blend", Range(0,1)) = 0.1
     }
     SubShader
     {
@@ -78,6 +79,7 @@ Shader "GPUInstancer/QcRendering/Terrain/Integration"
             sampler2D _SpecularMap;
             float _BlendHeight;
             float _BlendSharpness;
+            float _FoceContactBlend;
 
             fixed4 frag (v2f i) : SV_Target
             {
@@ -105,7 +107,8 @@ Shader "GPUInstancer/QcRendering/Terrain/Integration"
                   float ao = madsMapObj.g;
 
                  float showTerrain;
-                 GetIntegration(terrainControl, terrainMads, madsMapObj, objectNormal, i.worldPos, _BlendHeight, _BlendSharpness,  showTerrain);
+                 float forcedShowTerrain;
+                 GetIntegration(terrainControl, terrainMads, madsMapObj, objectNormal, i.worldPos, _BlendHeight, _BlendSharpness, _FoceContactBlend, showTerrain, forcedShowTerrain);
 
                
 
@@ -115,7 +118,9 @@ Shader "GPUInstancer/QcRendering/Terrain/Integration"
                 float3 normal = normalize(lerp( objectNormal,terrainNormal, showTerrain));
                 float rawFresnel = saturate(1- dot(viewDir, rawNormal));
 
-                ao = min(ao, madsMap.g); //, smoothstep(0.9,1,showTerrain));
+               // ao = min(ao, madsMap.g); //, smoothstep(0.9,1,showTerrain));
+
+                 ao = lerp(ao * madsMap.g, madsMap.g, forcedShowTerrain);
 
                 float shadow = SHADOW_ATTENUATION(i);
 

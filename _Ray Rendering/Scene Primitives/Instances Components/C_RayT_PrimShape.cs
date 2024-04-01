@@ -184,26 +184,30 @@ namespace QuizCanners.VolumeBakedRendering
         public float GetOverlap(Vector3 bottomCenter, Vector3 volumeSize, bool prioratizeHigher)
         {
             // TODO: Calculate overlap
+            /*
+                        Bounds bounds = GetBounds();
 
-            var bounds = GetBounds();
+                        //  var upscale = transform.localScale;
+                        //  var size = Vector3.Scale(PrimitiveUpscale, upscale);
+                        Vector3 elementCenter = bounds.center; //PrimitiveCenter;
 
-            //  var upscale = transform.localScale;
-            //  var size = Vector3.Scale(PrimitiveUpscale, upscale);
-            Vector3 elementCenter = bounds.center; //PrimitiveCenter;
+                        Vector3 elementMin = bounds.min;// elementCenter - size * 0.5f;
+                        Vector3 elementMax = bounds.max;//elementCenter + size * 0.5f;
 
-            Vector3 elementMin = bounds.min;// elementCenter - size * 0.5f;
-            Vector3 elementMax = bounds.max;//elementCenter + size * 0.5f;
+                        //elementMin.y = bottomCenter.y; // Roof will have strong affect on the underlying area
 
-            //elementMin.y = bottomCenter.y; // Roof will have strong affect on the underlying area
-
-            Vector3 volumeMin = bottomCenter - new Vector3(volumeSize.x, 0, volumeSize.z)*0.5f; // volumeVec.XY().ToVector3(0);
-            Vector3 volumeMax = bottomCenter + new Vector3(volumeSize.x * 0.5f, volumeSize.y, volumeSize.z * 0.5f) ;
+                        Vector3 volumeMin = bottomCenter - new Vector3(volumeSize.x, 0, volumeSize.z)*0.5f; // volumeVec.XY().ToVector3(0);
+                        Vector3 volumeMax = bottomCenter + new Vector3(volumeSize.x * 0.5f, volumeSize.y, volumeSize.z * 0.5f) ;
 
 
-            Vector3 overlapMin = Vector3.Max(elementMin, volumeMin);
-            Vector3 overlapMax = Vector3.Min(elementMax, volumeMax);
+                        Vector3 overlapMin = Vector3.Max(elementMin, volumeMin);
+                        Vector3 overlapMax = Vector3.Min(elementMax, volumeMax);
+                        */
 
-            Vector3 overlap = Vector3.Max(Vector3.zero, overlapMax - overlapMin);
+            Bounds elementBounds = GetBounds();
+            Bounds volumeBounds = new Bounds(center: bottomCenter + Vector3.up * volumeSize.y, size: volumeSize);
+
+            Vector3 overlap = volumeBounds.GetOverlapAreaVector(elementBounds);//GetOverlapAreaVector(elementBounds, volumeBounds);//Vector3.Max(Vector3.zero, overlapMax - overlapMin);
 
             LatestVolumeOverlap = overlap.x * (prioratizeHigher ? 1 : overlap.y) 
                                     * overlap.z;
@@ -212,9 +216,9 @@ namespace QuizCanners.VolumeBakedRendering
 
             if (LatestVolumeOverlap <= 0)
             {
-                float distance = Vector3.Distance(elementCenter, bottomCenter);
+                float distance = Vector3.Distance(elementBounds.center, volumeBounds.center);
 
-                LatestVolumeOverlap = -Mathf.Abs((1 + distance) * 10 / (1 + bounds.size.magnitude * transform.lossyScale.magnitude));
+                LatestVolumeOverlap = -Mathf.Abs((1 + distance) * 10 / (1 + elementBounds.size.magnitude * transform.lossyScale.magnitude));
 
                 LatestVolumeOverlap /= GetMaterialWeight(Material);
 

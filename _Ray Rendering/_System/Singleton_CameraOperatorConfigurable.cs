@@ -26,6 +26,17 @@ namespace QuizCanners.Utils
 
         private bool IsControlledExternally => !_cameraControlsGate.IsFramesPassed(5);
 
+        public override Vector3 Position
+        {
+            get => base.Position;//transform.position;
+            set
+            {
+                if (!_externalUpdateStarted)
+                    Debug.LogError("Changing camera position outside of External update Lock");
+                base.Position = value;
+            }
+        }
+
         public void SetDepthTexture(DepthTextureMode mode, bool isOn) 
         {
             _overrideDepthTextureMode = true;
@@ -192,13 +203,17 @@ namespace QuizCanners.Utils
 
         #endregion
 
+        private bool _externalUpdateStarted;
+
         public IDisposable ExternalUpdateStart(UnityEngine.Object controller) 
         {
+            _externalUpdateStarted = true;
             return QcSharp.DisposableAction(() =>
             {
                 _externalCameraController = controller;
                 _cameraControlsGate.TryEnter();
                 AdjsutCamera();
+                _externalUpdateStarted = false;
             });
         }
 

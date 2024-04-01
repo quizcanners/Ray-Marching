@@ -115,8 +115,17 @@ namespace QuizCanners.VolumeBakedRendering
 
         public void Update()
         {
+
+
             if (!IsAnimating)
+            {
+                if (Application.isEditor)
+                {
+                    SUN_BACK_ROTATION.GlobalValue = -SharedLight.transform.forward.ToVector4(0);
+                    UpdateIntensity();
+                }
                 return;
+            }
 
             _lerpData.Update(this, canSkipLerp: false);
             OnTimeOfDayChanged();

@@ -6,7 +6,7 @@
 //#include "PrimitivesScene_SDF.cginc"
 
 
-#define ARRAY_POINT_LIGHT_COUNT 16
+#define ARRAY_POINT_LIGHT_COUNT 32
 uniform float4 PostRtx_PointLight_Pos[ARRAY_POINT_LIGHT_COUNT];
 uniform float4 PostRtx_PointLight_Color[ARRAY_POINT_LIGHT_COUNT];
 uniform int PostRtx_PointLight_Count;

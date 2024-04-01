@@ -50,6 +50,10 @@ float4 SampleLayeredFog(float distance, float2 uv)
 
 	float4 result = lerp(previous, last, fraction);
 
+	//float fullCoverage = smoothstep(qc_LayeredFog_Distance * 0.5, qc_LayeredFog_Distance, distance);
+
+	//result.a = lerp(result.a, 1, fullCoverage);
+
 	return result;
 }
 
@@ -69,7 +73,6 @@ inline void ApplyLayeredFog_Transparent(inout float4 col, float2 uv, float3 pos)
 		float distance = length(_WorldSpaceCameraPos - pos);
 		float4 fogColor = SampleLayeredFog(distance, uv);
 		col.rgb = lerp(col.rgb, fogColor.rgb, fogColor.a);
-	
 	#endif
 }
 
